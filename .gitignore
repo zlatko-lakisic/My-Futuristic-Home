@@ -1,0 +1,9 @@
+# Ignore sensitive HA files
+homeassistant/secrets.yaml
+homeassistant/.storage/
+homeassistant/*.db
+homeassistant/*.log
+
+# Ignore MikroTik private backups
+infrastructure/configs/*.backup
+infrastructure/configs/*.rsc
