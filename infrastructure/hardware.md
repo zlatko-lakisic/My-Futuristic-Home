@@ -28,6 +28,13 @@ All core networking and compute hardware is rack-mounted in a secured 9U cabinet
 - **OS:** Home Assistant OS (Bare Metal)
 - **Role:** Primary Automation Engine.
 
+### **NVR Server**
+- **CPU:** Intel Core i7-8700T
+- **GPU:** NVIDIA RTX A4000
+- **Networking:** Triple-Homed (10G Management, 1G Camera, Direct-Attach Storage)
+- **OS:** Ubuntu 24.04
+- **Role:** Primary Surveillance & AI Processing.
+
 ### **Storage Server: NAS1**
 - **Hardware:** FriendlyElec CM3588 NAS Kit
 - **Enclosure:** [3D Printed 10" Rack Case](https://www.printables.com/model/826870)
@@ -43,6 +50,7 @@ All core networking and compute hardware is rack-mounted in a secured 9U cabinet
 - **OS:** OpenMediaVault 7.7
 - **NIC Count:** 16 Interfaces
 - **Special Config:** Bridged Port 2 to NVR for direct storage access.
+- **Role:** High-speed NFS target for NVR video files.
 
 ### **Networking Server: Beelink EQ14**
 - **OS:** Docker / Linux
