@@ -8,6 +8,8 @@ A key design feature is the **Multi-Homed Management Plane**, where the Network 
 ## 📊 Global Topology Diagram
 This diagram visualizes the flow from the Gateway through the distribution switches to the end-point clients and the cross-subnet management plane.
 
+
+
 ```mermaid
 graph TD
     %% Core Gateway
@@ -32,7 +34,7 @@ graph TD
         Pine64[Pine64: MQTT Broker - 192.168.89.26]
         Beelink_H[Beelink NIC 2: UniFi Inform]
         
-        subgraph "Wireless APs (192.168.89.x)"
+        subgraph "Wireless APs (192.168.89.x / VLAN 2)"
             AP1[Basement]
             AP2[Office]
             AP3[Hallway]
