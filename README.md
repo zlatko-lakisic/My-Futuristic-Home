@@ -11,6 +11,7 @@ This repository serves as the single source of truth for the physical and logica
 ### **2. Services (The Workloads)**
 * [**Traefik Edge Proxy**](services/traefik.md): Ingress, SSL extraction, and certificate distribution.
 * [**UniFi Controller**](services/unifi.md): WiFi SSIDs, Radio settings, and device adoption.
+* [**mDNS Repeater**](services/mdns_repeater.md): Cross-subnet device discovery for IoT and Media.
 * [**NVR & AI Stack**](services/nvr.md): Frigate with TensorRT on NVIDIA RTX A4000.
 * [**Home Assistant**](services/home_assistant.md): Core automation engine.
 

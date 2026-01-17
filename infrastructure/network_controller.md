@@ -6,7 +6,10 @@ The Network Controller manages the UniFi ecosystem and serves as the primary ing
 ## **Hardware Specifications**
 - **Model:** Beelink EQ14
 - **CPU:** Intel Processor N150 (Efficient Quad-Core)
-- **Networking:** Dual Realtek 1GbE NICs (`10.0.10.6` / `192.168.89.6`)
+- **RAM:** 16GB DDR4
+- **Storage:** 500GB NVMe SSD
+- **OS:** Ubuntu 24.04 LTS
+- **Networking:** Dual Realtek 1GbE NICs
 
 ## **Multi-Homed Networking Logic**
 | Interface | Connection | IP Address | Purpose |
@@ -36,3 +39,5 @@ To allow other servers (like the NVR or NAS) to use the Let's Encrypt certificat
 
 ### **Docker Compose Fragment**
 - [Unifi](../infrastructure/unifi.md)
+- [Traefik](../services/traefik.md)
+- [mDNS Repeater](../services/mdns_repeater.md)
