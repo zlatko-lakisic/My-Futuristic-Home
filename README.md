@@ -10,6 +10,17 @@ This repository documents a professional-grade home automation system. It is bui
 - **Engine:** Home Assistant OS (Native)
 - **Protocols:** Zigbee 3.0, Z-Wave 700, BLE, and Multi-Subnet Ethernet.
 
+| Component | Specification |
+| :--- | :--- |
+| **Messaging** | Pine64 (PoE Powered) | Dedicated MQTT Broker (192.168.89.26) |
+| **Storage** | NAS1 & NAS2 | High-density storage (Details in /storage) |
+| **Surveillance**| NVR | Dedicated Video Recording Server |
+| **Power/PoE** | PoE Texas 12-Port Midspan | Gigabit / 48V 60W (Passive) |
+| **Patching** | Rapink 48-Port Cat6 | Inline Keystone / 10G Pass-Thru |
+| **Enclosure** | Tecmojo 9U Wall Mount Server Cabinet (17.7" Depth) |
+| **Cooling** | Integrated 120mm Exhaust Fan |
+| **Security** | Lockable Glass Door & Side Panels |
+
 ## **Networking Server: Beelink EQ14**
 Dedicated appliance for network management and infrastructure controllers.
 
