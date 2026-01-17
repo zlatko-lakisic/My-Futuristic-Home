@@ -14,7 +14,7 @@ All core equipment is housed in a **Tecmojo 9U Wall Mount Server Cabinet** featu
 | **U6** | PoE Texas Injector | 12-Port Passive PoE Midspan (APs & IoT) |
 | **U5** | TP-Link TL-SG1024 | House LAN Switching |
 | **U4** | Shelf: Mixed | Beelink (Network Controller), Pine64 (MQTT), NAS1 |
-| **U1-3** | Storage/Video | NAS2 (Left) & NVR (Right) |
+| **U1-3** | Storage/Video | NAS2 (Left), NVR (Right), **The Home Assistant Server** |
 
 ---
 
@@ -24,24 +24,18 @@ The network is split into two primary physical and logical segments to ensure th
 ### **Subnet Strategy**
 - **Perimeter (10.0.10.x):** Secured server management, storage (NAS), and surveillance (NVR).
 - **House LAN (192.168.89.x):** General wired devices, Access Points, and the dedicated MQTT broker.
-- **IoT/Guest VLANs:** Isolated segments for untrusted devices.
-
-### **Key Performance Logic**
-- **Dual-Homing:** The Beelink Network Server is physically connected to both switches. It manages UniFi APs directly on the House LAN (`192.168.89.6`) while providing the management UI on the Perimeter (`10.0.10.6`).
-- **Distributed Messaging:** A standalone **Pine64** (`192.168.89.26`) acts as a dedicated MQTT broker, ensuring the smart home's "nervous system" stays alive even during main server maintenance.
 
 ---
 
 ## 🛠 Tech Stack
 | Category | Component |
 | :--- | :--- |
+| **Automation** | **The Home Assistant Server** (i7-7700T) |
 | **Routing** | RouterOS (MikroTik hAP ac) |
 | **Switching** | SwOS (CSS326) + Unmanaged (TP-Link) |
-| **Automation** | Home Assistant OS (i7-7700T) |
 | **Messaging** | Mosquitto MQTT (Pine64) |
 | **Controller** | UniFi Network Application (Docker on Beelink) |
 | **Storage** | Custom NAS1 & NAS2 |
-| **Fabrication** | PETG 3D Printed custom mounts |
 
 ---
 
