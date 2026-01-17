@@ -18,16 +18,16 @@ Each MSN Switch is configured with **UIS (Uninterrupted Internet System)** rules
 - **Connection:** MikroTik Port 3
 - **Targets:**
   - **Outlet 1:** MikroTik Router (`10.0.10.1`)
-  - **Outlet 2:** Verizon Fios Gateway (`192.168.1.1`)
+  - **Outlet 2:** Verizon Fios Gateway (**`8.8.8.8`** via Google DNS)
 
 ### **2. Surveillance Watchdog (NVR MSN Switch)**
 - **Target:**
-  - **Outlet 1:** NVR Server (`10.0.10.5`)
+  - **Outlet 1:** NVR Server (`10.0.10.16`)
 
 ### **3. Data & Comms Watchdog (NAS MSN Switch)**
 - **Targets:**
-  - **Outlet 1:** NAS1 Server (`10.0.10.10`)
-  - **Outlet 2:** MQTT Broker (`10.0.10.11`)
+  - **Outlet 1:** NAS1 Server (`10.0.10.3`)
+  - **Outlet 2:** MQTT Broker (`192.168.89.26`)
 
 ## **Integration**
 While the switches act autonomously, they are integrated into [Home Assistant](../homeassistant/README.md) via REST API for status monitoring and manual overrides.
