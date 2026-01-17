@@ -2,6 +2,18 @@
 
 This repository serves as the single source of truth for the physical and logical infrastructure of my home network and automation environment. The setup is designed for high availability, security through segmentation, and local-first reliability.
 
+## 📂 Documentation Directory
+
+### **1. Infrastructure (The Foundation)**
+* [**Networking**](infrastructure/networking.md): VLANs, subnets, and the specialized NAS2 bridge.
+* [**Hardware Inventory**](infrastructure/hardware.md): Beelink EQ14, Proxmox Cluster, and Rack Elevation.
+
+### **2. Services (The Workloads)**
+* [**Traefik Edge Proxy**](services/traefik.md): Ingress, SSL extraction, and certificate distribution.
+* [**UniFi Controller**](services/unifi.md): WiFi SSIDs, Radio settings, and device adoption.
+* [**NVR & AI Stack**](services/nvr.md): Frigate with TensorRT on NVIDIA RTX A4000.
+* [**Home Assistant**](services/home_assistant.md): Core automation engine.
+
 ## 🏗 Physical Infrastructure (9U Rack)
 All core equipment is housed in a **Tecmojo 9U Wall Mount Server Cabinet** featuring active cooling and integrated cable management.
 
@@ -24,11 +36,6 @@ The network is split into two primary physical and logical segments to ensure th
 ### **Subnet Strategy**
 - **Perimeter (10.0.10.x):** Secured server management, storage (NAS), and surveillance (NVR).
 - **House LAN (192.168.89.x):** General wired devices, Access Points, and the dedicated MQTT broker.
-
-### **1. Infrastructure**
-* [**Networking**](infrastructure/networking.md): Details on VLANs, subnets, and the specialized NAS2 direct-attach bridge.
-* [**Traefik Proxy**](infrastructure/traefik.md): SSL management and edge ingress logic.
-* [**Hardware Inventory**](infrastructure/hardware.md): Full specifications for all physical servers.
 
 ---
 

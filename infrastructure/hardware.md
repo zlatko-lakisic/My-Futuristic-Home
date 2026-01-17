@@ -53,9 +53,12 @@ All core networking and compute hardware is rack-mounted in a secured 9U cabinet
 - **Role:** High-speed NFS target for NVR video files.
 
 ### **Networking Server: Beelink EQ14**
+The Beelink EQ14 is the backbone for management services.
 - **OS:** Docker / Linux
-- **NIC 1:** 10.0.10.6 (Management)
-- **NIC 2:** 192.168.89.6 (UniFi Inform)
+- **Role:** Physical host for Traefik and UniFi.
+- **Connectivity:** 
+  - **eth0:** 10.0.10.6 (Perimeter Management)
+  - **eth1:** 192.168.89.6 (House LAN Adoption)
 
 ### **Messaging Broker: Pine64**
 - **Hardware:** ARM64 Single Board Computer
