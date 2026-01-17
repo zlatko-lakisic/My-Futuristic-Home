@@ -35,6 +35,9 @@ To ensure the NVR consistently mounts storage from both NAS units without stalli
 10.0.10.3:/export/PublicShare2    /nfs/publicshare2    nfs x-systemd,auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0
 ```
 
+## **Service Mapping**
+This infrastructure hosts the [Frigate Service](../services/frigate.md), which manages the application-level logic, AI detection, and recording rules.
+
 ## **Docker Infrastructure**
 - **Internal Network:** `box-network` (`172.20.0.0/24`)
 - **Base Directory:** `/var/docker/` (for local configs)
