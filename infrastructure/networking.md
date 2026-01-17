@@ -1,56 +1,51 @@
-# 🌐 Network Topology & Subnets
+# 🌐 Network Infrastructure
 
-## 🛰 Core Router: MikroTik hAP ac
-The house is managed via **RouterOS**, providing enterprise-level firewalling and VLAN segmentation.
+## 🔭 Architecture Overview
+The network utilizes a "Security-First" philosophy, leveraging a Layer 3 gateway (MikroTik hAP ac) to enforce isolation between the high-performance Perimeter, the general House LAN, and the IoT ecosystem.
 
-### **Subnet Architecture**
-| Subnet | Name | Role |
-| :--- | :--- | :--- |
-| `192.168.89.0/24` | **LAN_Wired** | Physical ports throughout the house (Eth5). |
-| `192.168.90.0/24` | **Home_WiFi** | Trusted wireless clients via `home_wifi_lan` VLAN. |
-| `172.16.90.0/24` | **IoT_VLAN** | Untrusted/Isolated smart devices. |
-| `10.0.10.0/24` | **Perimeter** | High-performance servers, NAS, and compute. |
-| `172.16.91.0/24` | **VPN_Remote** | Secure access via OpenVPN / L2TP. |
+## 📊 Global Topology Diagram
+This diagram visualizes the flow from the Gateway through the distribution switches to the end-point clients and the cross-subnet management plane.
 
-### **The Bridge Logic**
-The `home_lan` bridge aggregates the physical Ethernet 5 trunk with the Home WiFi and IoT VLANs, allowing for granular firewall control between wireless and wired house clients.
-
-#### **3. `infrastructure/networking.md` (Updated Mermaid Diagram)**
-We now show the management flow from the Beelink server to the APs across subnets.
-
-## 📊 Visual Infrastructure Map
 ```mermaid
 graph TD
     %% Core Gateway
     Router[MikroTik hAP ac Gateway]
     
-    %% Perimeter/Server Side
+    %% Perimeter/Server Side (U8/U4/U1-3)
     subgraph "Perimeter Subnet (10.0.10.x)"
         CSS326[MikroTik CSS326 Switch]
         Beelink[Beelink EQ14: UniFi Controller]
-        SFF[i7-7700T: Home Assistant OS]
+        NAS1[Primary Storage]
+        NAS2[Secondary Storage]
+        NVR[Video Recorder]
+        SFF[i7-7700T: HAOS Host]
     end
 
-    %% House Side
+    %% House Side (U5/U6/U7)
     subgraph "House & IoT (Bridge: home_lan)"
         TPSwitch[TP-Link TL-SG1024]
+        PoE[PoE Texas Injector]
+        Pine64[Pine64: MQTT Broker - 192.168.89.26]
+        
         subgraph "Wireless APs (192.168.89.x)"
-            AP1[nanoHD: Basement]
-            AP2[nanoHD: Office]
-            AP3[nanoHD: Hallway]
-            AP4[UAP-AC-M: Backyard]
+            AP1[Basement]
+            AP2[Office]
+            AP3[Hallway]
+            AP4[Backyard]
         end
     end
 
     %% Physical Links
-    Router -- Port 2 (Perimeter) --- CSS326
-    Router -- Port 5 (House Trunk) --- TPSwitch
+    Router -- Port 2 --- CSS326
+    Router -- Port 5 --- TPSwitch
     
-    CSS326 --- Beelink
-    CSS326 --- SFF
+    CSS326 --- Beelink & SFF & NAS1 & NAS2 & NVR
     
-    TPSwitch --- AP1 & AP2 & AP3 & AP4
+    TPSwitch --- PoE
+    PoE --- AP1 & AP2 & AP3 & AP4
+    TPSwitch --- Pine64
 
-    %% Management Flow
+    %% Management & Messaging Flow
     Beelink -.->|L3 Adoption| AP1 & AP2 & AP3 & AP4
+    Pine64 <==>|Port 1883| SFF
     Router -- VPN --- Remote[172.16.91.x Clients]
