@@ -79,3 +79,98 @@ The stack utilizes Docker Secrets for sensitive credentials located at `/var/doc
 - `influxdb2-admin-token`
 - `frigate-rtsp-password` (for camera authentication)
 - `telegraf-mqtt-password`
+
+## **Software Stack (Docker Compose)**
+The stack is deployed using a custom `box-network` to isolate AI inference traffic from the rest of the management plane.
+
+```yaml
+version: "3.9"
+
+networks:
+  box-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+services:
+  frigate:
+    container_name: frigate
+    image: ghcr.io/blakeblackshear/frigate:stable-tensorrt
+    privileged: true
+    restart: unless-stopped
+    shm_size: "128mb"
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/docker/frigate/config:/config
+      - /nfs/nas2_storage/frigate:/media/frigate
+      - type: tmpfs
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+    ports:
+      - "5000:5000"
+      - "8554:8554" # RTSP feeds
+    environment:
+      - FRIGATE_RTSP_PASSWORD=password
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    networks:
+      box-network:
+        ipv4_address: 172.20.0.3
+
+  codeproject-ai:
+    container_name: codeproject-ai
+    image: codeproject/ai-server:cuda12_2
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - /var/docker/codeproject/etc:/etc/codeproject/ai
+      - /var/docker/codeproject/opt:/opt/codeproject/ai
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      box-network:
+        ipv4_address: 172.20.0.6
+
+  double-take:
+    container_name: double-take
+    image: skrashevich/double-take:latest
+    restart: unless-stopped
+    volumes:
+      - /var/docker/double-take://.storage
+    ports:
+      - "3001:3001"
+    networks:
+      box-network:
+        ipv4_address: 172.20.0.4
+
+  influxdb:
+    container_name: influxdb
+    image: influxdb:latest
+    restart: unless-stopped
+    volumes:
+      - /var/docker/influxdb/data:/var/lib/influxdb2
+    networks:
+      box-network:
+        ipv4_address: 172.20.0.8
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    volumes:
+      - /var/docker/grafana/data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      box-network:
+        ipv4_address: 172.20.0.10
