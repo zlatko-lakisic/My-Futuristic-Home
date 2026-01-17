@@ -10,6 +10,7 @@ The Network Controller manages the UniFi ecosystem and serves as the primary ing
 - **Storage:** 500GB NVMe SSD
 - **OS:** Ubuntu 24.04 LTS
 - **Networking:** Dual Realtek 1GbE NICs
+- **Power:** Monitored via the [MSN Switch Infrastructure](../infrastructure/msn_switches.md).
 
 ## **Multi-Homed Networking Logic**
 | Interface | Connection | IP Address | Purpose |
