@@ -7,6 +7,7 @@ This repository serves as the single source of truth for the physical and logica
 ### **1. Infrastructure (The Foundation)**
 * [**Networking**](infrastructure/networking.md): VLANs, subnets, and the specialized NAS2 bridge.
 * [**Hardware Inventory**](infrastructure/hardware.md): Beelink EQ14, Proxmox Cluster, and Rack Elevation.
+* [**Proxmox Virtualization**](infrastructure/proxmox.md): VM/LXC strategy, compute nodes, and backup logic.
 * [**MSN Switch Watchdogs**](infrastructure/msn_switches.md): Automated power-cycle logic for WAN, NVR, and Storage.
 
 ### **2. Services (The Workloads)**
