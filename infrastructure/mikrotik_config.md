@@ -1,13 +1,13 @@
 # 🛰 MikroTik RouterOS Configuration (hAP ac)
 
-[cite_start]**Device Model:** RB962UiGS-5HacT2HnT [cite: 38]
-[cite_start]**Software Version:** RouterOS 7.21 [cite: 38]
-[cite_start]**Serial Number:** `<REDACTED_SERIAL>` [cite: 38]
+**Device Model:** RB962UiGS-5HacT2HnT 
+**Software Version:** RouterOS 7.21 
+**Serial Number:** `<REDACTED_SERIAL>` 
 
 ---
 
 ## 🏗 Bridge & Interface Assignments
-[cite_start]The system is logically segmented into three primary bridges and several VLANs for isolation[cite: 38, 39].
+The system is logically segmented into three primary bridges and several VLANs for isolation.
 
 ```routeros
 /interface bridge
