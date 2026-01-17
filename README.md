@@ -25,6 +25,11 @@ The network is split into two primary physical and logical segments to ensure th
 - **Perimeter (10.0.10.x):** Secured server management, storage (NAS), and surveillance (NVR).
 - **House LAN (192.168.89.x):** General wired devices, Access Points, and the dedicated MQTT broker.
 
+### **1. Infrastructure**
+* [**Networking**](infrastructure/networking.md): Details on VLANs, subnets, and the specialized NAS2 direct-attach bridge.
+* [**Traefik Proxy**](infrastructure/traefik.md): SSL management and edge ingress logic.
+* [**Hardware Inventory**](infrastructure/hardware.md): Full specifications for all physical servers.
+
 ---
 
 ## 🛠 Tech Stack
