@@ -1,7 +1,7 @@
-# 🛣 Traefik Edge Proxy & SSL Management
+# 🛣 Service: Traefik Edge Proxy
 
 ## **Overview**
-Traefik serves as the primary gateway for all HTTP/HTTPS and specific mail-related traffic (IMAPS/SMTPS) entering the network. It is hosted on the [Beelink EQ14](../services/network_controller.md) and leverages Docker for dynamic service discovery.
+Traefik runs as a service on the [Beelink EQ14](../infrastructure/hardware.md). It handles all network ingress and manages Let's Encrypt SSL certificates.
 
 ## **Ingress Architecture**
 Traefik is configured with multiple entrypoints to handle web traffic and secure mail protocols.
@@ -45,6 +45,7 @@ The proxy monitors `/etc/traefik/dynamic` for manual file-based routing rules, a
 ## **Deployment Configuration**
 The following Docker Compose stack defines the Traefik edge proxy and the automated certificate extraction logic.
 
+## **Implementation**
 ```yaml
 volumes:
   traefik-dynamic:
