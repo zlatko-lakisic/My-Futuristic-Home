@@ -1,12 +1,31 @@
 # 🏠 Home Assistant Configuration
 
-This directory contains the logic that drives the house. 
+This directory contains the logic, blueprints, and hardware-specific configurations for the "My-Futuristic-Home" OS.
 
-## **Installation Type**
-- **Type:** Home Assistant OS (HAOS)
-- **Installation:** Bare Metal on i7-7700T
-- **Database:** MariaDB (optimized for 32GB RAM)
+## 📡 Wireless Strategy
+My system follows a "Local-First" philosophy. We utilize dedicated radios for different classes of devices to minimize interference and maximize the "Wife Approval Factor" (WAF) through 100% reliability.
 
-## **Protocol Documentation**
-- [Zigbee Configuration](./docs_ha/zigbee.md)
-- [Z-Wave Configuration](./docs_ha/zwave.md)
+### **Network Topology**
+For a detailed look at how the Zigbee and Z-Wave meshes are physically and logically structured, see:
+👉 **[Wireless Mesh Architecture](./docs_ha/radio_topology.md)**
+
+---
+
+## 📟 Hardware Controllers
+These physical dongles are passed through directly to the HAOS environment:
+
+| Protocol | Hardware | Integration | Role |
+| :--- | :--- | :--- | :--- |
+| **Zigbee 3.0** | Sonoff ZBDongle-E | ZHA | Lighting, Motion & Environment Sensors |
+| **Z-Wave 700** | Aeotec Z-Stick 7 | Z-Wave JS UI | High-Security (Locks, Switches, Valves) |
+| **Bluetooth** | TP-Link UB400 | Bluetooth | Presence Tracking (BLE) |
+
+## 🛠 Software Environment
+- **Core:** Home Assistant OS (Bare Metal)
+- **Database:** MariaDB (Local)
+- **Add-ons:** Zigbee Home Automation (ZHA), Z-Wave JS UI, Mosquitto MQTT, Samba Share.
+
+## 📂 Directory Map
+* `/blueprints`: Reusable automation templates.
+* `/dashboards`: YAML and screenshots of the UI.
+* `/docs_ha`: Deep dives into specific radio protocols and mesh health.
