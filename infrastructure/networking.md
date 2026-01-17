@@ -3,7 +3,7 @@
 ## 🔭 Architecture Overview
 The network utilizes a "Security-First" philosophy, leveraging a Layer 3 gateway (MikroTik hAP ac) to enforce isolation between the high-performance Perimeter, the general House LAN, and the IoT ecosystem. 
 
-A key design feature is the **Multi-Homed Management Plane**, where critical servers sit on both the Perimeter and House LANs to optimize traffic flow and ensure high availability.
+A key design feature is the **Multi-Homed Management Plane**, where the Network Controller sits on both the Perimeter and House LANs to optimize traffic flow and ensure high availability for UniFi devices.
 
 ## 📊 Global Topology Diagram
 This diagram visualizes the flow from the Gateway through the distribution switches to the end-point clients and the cross-subnet management plane.
@@ -20,6 +20,7 @@ graph TD
         NAS1[Primary Storage]
         NAS2[Secondary Storage]
         NVR[Video Recorder]
+        HA_Srv[The Home Assistant Server]
         MSN_NC[MSNSwitch: Network Controller]
         MSN_NAS[MSNSwitch: NAS1]
     end
@@ -50,6 +51,7 @@ graph TD
     CSS326 ---|Port 5| MSN_NAS
     CSS326 ---|Port 13| NAS2
     CSS326 ---|Port 23| NVR
+    CSS326 ---|Port X| HA_Srv
 
     %% House Connections
     TPSwitch ---|Port 6| Beelink_H
@@ -59,4 +61,4 @@ graph TD
 
     %% Management & Messaging Flow
     Beelink_H -.->|Direct L2 Inform| AP1 & AP2 & AP3 & AP4
-    Pine64 <==>|Port 1883| HAOS[Home Assistant Server]
+    Pine64 <==>|Port 1883| HA_Srv
