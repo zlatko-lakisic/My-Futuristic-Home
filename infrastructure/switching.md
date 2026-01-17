@@ -1,15 +1,20 @@
 # ⚡ Switching Infrastructure
 
-## **Core Switch: MikroTik CSS326-24G-2S+**
-This device acts as the high-speed distribution layer for the **Perimeter Network (10.0.10.x)**.
+## **Device: MikroTik CSS326-24G-2S+RM**
+* **Management IP:** `10.0.10.2` (Static)
+* **Subnet:** Perimeter (10.0.10.x)
+* **OS:** SwOS
 
-### **Port Configuration**
-| Port | Connected Device | Speed | Notes |
+### **Port Name & Device Mapping**
+| Port | Name | Connected Device | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Port 1** | i7-7700T Server (NIC 1) | 1Gbps | Primary HAOS Management |
-| **Port 2** | [Secondary Compute] | 1Gbps | |
-| **Port 24** | MikroTik hAP ac | 1Gbps | Uplink to Gateway |
-| **SFP+ 1** | Reserved | 10Gbps | Future Fiber Link to NAS/Server |
+| **1** | Mikrotik | hAP ac (Port 2) | Primary Uplink / Gateway |
+| **2** | NC MSN Switch | MSNSwitch Device | Power Mgmt: Network Controller |
+| **3** | NC | Beelink EQ14 (NIC 1) | Network Controller Management |
+| **4** | NAS1 | Custom NAS Server | Primary Storage Data Link |
+| **5** | NAS1 MSNSwitch| MSNSwitch Device | Power Mgmt: NAS1 |
+| **13** | NAS2 | Secondary NAS | Backup Storage Data Link |
+| **23** | NVR | Surveillance Server | Video Feed / Recording Link |
 
 ### **SwOS Features Enabled**
 * **VLAN Tagging:** Ensuring only Perimeter traffic (10.0.10.x) flows through specific ports.

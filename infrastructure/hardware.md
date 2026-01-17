@@ -18,6 +18,10 @@ The brain of the home runs on a dedicated Small Form Factor appliance.
 - **Specs:** 48V, 60W total budget.
 - **Role:** Providing power to UniFi nanoHD APs and outdoor mesh units.
 
+## **Networking Server: Beelink EQ14**
+- **NIC 1:** Connected to MikroTik CSS326 (Port 3) -> **10.0.10.6** (Management/UI)
+- **NIC 2:** Connected to TP-Link TL-SG1024 (Port 6) -> **192.168.89.6** (UniFi Device Inform/L2 Traffic)
+
 # 🏗 Physical Hardware & Rack Elevation
 
 ## **Enclosure: Tecmojo 9U Wall Mount Cabinet**
