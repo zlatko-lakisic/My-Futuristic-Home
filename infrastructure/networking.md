@@ -15,30 +15,42 @@ The house is managed via **RouterOS**, providing enterprise-level firewalling an
 ### **The Bridge Logic**
 The `home_lan` bridge aggregates the physical Ethernet 5 trunk with the Home WiFi and IoT VLANs, allowing for granular firewall control between wireless and wired house clients.
 
+#### **3. `infrastructure/networking.md` (Updated Mermaid Diagram)**
+We now show the management flow from the Beelink server to the APs across subnets.
+
 ## 📊 Visual Infrastructure Map
 ```mermaid
 graph TD
-    %% Define the Router
-    Router[MikroTik hAP ac]
+    %% Core Gateway
+    Router[MikroTik hAP ac Gateway]
     
-    %% Define the Trunk
-    Router -- Ethernet 5 Trunk --> House[House Bridge]
-    
-    %% Define Subnets
-    subgraph "Subnets & VLANs"
-        House --> LAN[192.168.89.x - Wired LAN]
-        House --> WiFi[192.168.90.x - Home WiFi]
-        House --> IoT[172.16.90.x - IoT VLAN]
-    end
-    
-    %% Define Perimeter
-    Router -- Dedicated Link --> Perimeter[10.0.10.x - Perimeter Zone]
-    
-    %% Define the Server
-    subgraph "Compute Core"
-        Perimeter --> Server[i7-7700T Server]
-        Server --- HA[Home Assistant OS]
+    %% Perimeter/Server Side
+    subgraph "Perimeter Subnet (10.0.10.x)"
+        CSS326[MikroTik CSS326 Switch]
+        Beelink[Beelink EQ14: UniFi Controller]
+        SFF[i7-7700T: Home Assistant OS]
     end
 
-    %% Define Remote Access
-    Router -- L2TP/OVPN --> VPN[172.16.91.x - VPN Clients]
+    %% House Side
+    subgraph "House & IoT (Bridge: home_lan)"
+        TPSwitch[TP-Link TL-SG1024]
+        subgraph "Wireless APs (192.168.89.x)"
+            AP1[nanoHD: Basement]
+            AP2[nanoHD: Office]
+            AP3[nanoHD: Hallway]
+            AP4[UAP-AC-M: Backyard]
+        end
+    end
+
+    %% Physical Links
+    Router -- Port 2 (Perimeter) --- CSS326
+    Router -- Port 5 (House Trunk) --- TPSwitch
+    
+    CSS326 --- Beelink
+    CSS326 --- SFF
+    
+    TPSwitch --- AP1 & AP2 & AP3 & AP4
+
+    %% Management Flow
+    Beelink -.->|L3 Adoption| AP1 & AP2 & AP3 & AP4
+    Router -- VPN --- Remote[172.16.91.x Clients]
