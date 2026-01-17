@@ -28,8 +28,9 @@ NAS2 utilizes a dual-homed approach with a custom bridge for direct client acces
 ### **Direct-Attach Logic (The Storage Bridge)**
 To reduce latency and overhead on the MikroTik CSS326, NAS2 acts as a virtual switch for storage clients:
 - **Member Ports:** Ports 2, 3, 4, and 5 are bridged.
-- **Direct Link:** **Port 2** is physically connected to the **NVR Server**.
-- **Result:** The NVR records video directly to NAS2 at line speed without passing through the core perimeter switch.
+- **Direct Link:** **Port 2** is physically connected to **NVR Ethernet Port 7**.
+- **Network:** `172.16.100.1` (NAS2 Side) to `172.16.100.2` (NVR Side).
+- **Service:** NFS v4.1 Share exported specifically for NVR Docker volumes.
 
 ## **Services & Access**
 - **NFS/SMB:** Served over the 172.16.100.x subnet for NVR recording.
