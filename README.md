@@ -6,15 +6,16 @@ This repository serves as the single source of truth for the physical and logica
 
 ### **1. Infrastructure (The Foundation)**
 * [**Networking**](infrastructure/networking.md): VLANs, subnets, and the specialized NAS2 bridge.
-* [**Hardware Inventory**](infrastructure/hardware.md): Beelink EQ14, Proxmox Cluster, and Rack Elevation.
-* [**Proxmox Virtualization**](infrastructure/proxmox.md): VM/LXC strategy, compute nodes, and backup logic.
-* [**MSN Switch Watchdogs**](infrastructure/msn_switches.md): Automated power-cycle logic for WAN, NVR, and Storage.
+* [**Hardware Inventory**](infrastructure/hardware.md): Beelink EQ14 and Proxmox Cluster specs.
+* [**Security Cameras**](infrastructure/cameras.md): IP camera inventory and stream paths.
+* [**NVR & AI Stack**](infrastructure/nvr.md): Frigate, TensorRT, and NVIDIA RTX A4000 logic.
+* [**Proxmox Virtualization**](infrastructure/proxmox.md): VM/LXC strategy and backup logic.
+* [**MSN Switch Watchdogs**](infrastructure/msn_switches.md): Automated power-cycle logic.
 
 ### **2. Services (The Workloads)**
 * [**Traefik Edge Proxy**](services/traefik.md): Ingress, SSL extraction, and certificate distribution.
 * [**UniFi Controller**](services/unifi.md): WiFi SSIDs, Radio settings, and device adoption.
 * [**mDNS Repeater**](services/mdns_repeater.md): Cross-subnet device discovery for IoT and Media.
-* [**NVR & AI Stack**](services/nvr.md): Frigate with TensorRT on NVIDIA RTX A4000.
 * [**Home Assistant**](homeassistant/README.md): Core automation engine.
 
 ## 🏗 Physical Infrastructure (9U Rack)
