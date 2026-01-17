@@ -13,7 +13,7 @@ This repository serves as the single source of truth for the physical and logica
 * [**UniFi Controller**](services/unifi.md): WiFi SSIDs, Radio settings, and device adoption.
 * [**mDNS Repeater**](services/mdns_repeater.md): Cross-subnet device discovery for IoT and Media.
 * [**NVR & AI Stack**](services/nvr.md): Frigate with TensorRT on NVIDIA RTX A4000.
-* [**Home Assistant**](homeassistant/home_assistant.md): Core automation engine.
+* [**Home Assistant**](homeassistant/README.md): Core automation engine.
 
 ## 🏗 Physical Infrastructure (9U Rack)
 All core equipment is housed in a **Tecmojo 9U Wall Mount Server Cabinet** featuring active cooling and integrated cable management.
