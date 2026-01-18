@@ -1,9 +1,9 @@
 # 🤖 Service: Frigate NVR Configuration
 
 ## **Overview**
-This service handles AI-powered object detection. To maintain security, all sensitive credentials (passwords, RTSP tokens) have been moved to an environment file (`.env`) which is not tracked in version control.
+This is the complete configuration for the Frigate NVR service. It is designed to work with **CodeProject.AI** for object, face, and plate detection and utilizes an **NVIDIA RTX A4000** for hardware acceleration.
 
-## **Sanitized Configuration (`config.yml`)**
+## **Full Configuration (`config.yml`)**
 
 ```yaml
 # yaml-language-server: $schema=http://{FRIGATE_IP}:5000/api/config/schema.json
@@ -14,8 +14,9 @@ mqtt:
   password: {MQTT_PASSWORD}
 
 detectors:
-  deepstack:
-    api_url: http://{DEEPSTACK_IP}:32168/v1/vision/detection
+  # Integrated with CodeProject.AI machine at 172.20.0.6
+  codeproject_ai:
+    api_url: http://{CPAI_IP}:32168/v1/vision/detection
     type: deepstack
 
 ffmpeg:
@@ -54,16 +55,17 @@ lpr:
   enabled: True
   known_plates:
     Family Car:
-      - {PLATE_ID_1}
-      - {PLATE_ID_2}
+      - "{PLATE_ID_1}"
+      - "{PLATE_ID_2}"
 
 audio:
   enabled: True
 
+detect:
+  enabled: true # Required for Frigate 0.16+
+
 cameras:
-  # All cameras utilize internal go2rtc restreams
   back_yard:
-    enabled: true
     ffmpeg:
       inputs:
         - path: rtsp://127.0.0.1:8554/back_yard
@@ -71,19 +73,88 @@ cameras:
           roles: [audio, detect, record]
     objects:
       track: [person, deer, dog, mouse, cat, face]
+    birdseye:
+      order: 1
 
   driveway:
-    enabled: true
     ffmpeg:
       inputs:
         - path: rtsp://127.0.0.1:8554/driveway
           input_args: preset-rtsp-restream
           roles: [audio, detect, record]
+    objects:
+      track: [person, deer, dog, car]
     zones:
       near_driveway:
         coordinates: 712,1080,282,1080,193,468,170,292,503,411,982,197,1581,188,1920,147,1920,1080
     review:
       alerts:
         required_zones: near_driveway
+    birdseye:
+      order: 2
 
-  # ... [Other cameras truncated for brevity in documentation]
+  front_door:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/front_door
+          input_args: preset-rtsp-restream
+          roles: [audio, detect, record]
+    zones:
+      near_front_door:
+        coordinates: 361,451,557,473,661,403,1024,366,1024,576,0,576,0,294
+    birdseye:
+      order: 3
+
+  west_side:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/west_side
+          input_args: preset-rtsp-restream
+          roles: [audio, detect, record]
+    birdseye:
+      order: 4
+
+  garden_north:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/garden_north
+          input_args: preset-rtsp-restream
+          roles: [audio, detect, record]
+    birdseye:
+      order: 5
+
+  garden_south:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/garden_south
+          input_args: preset-rtsp-restream
+          roles: [audio, detect, record]
+    zones:
+      Peppers_and_Kale:
+        coordinates: 0.293,0.998,0.292,0.67,0.221,0.635,0.194,0.849,0.082,0.992
+      Tomatoes:
+        coordinates: 0.392,0.99,0.352,0.712,0.38,0.586,0.42,0.59,0.524,0.996
+      Zucchini:
+        coordinates: 0.961,0.992,0.697,0.746,0.639,0.611,0.703,0.561,0.998,0.702,0.997,0.994
+    birdseye:
+      order: 6
+
+  east_side:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/east_side
+          input_args: preset-rtsp-restream
+          roles: [audio, detect, record]
+    birdseye:
+      order: 7
+
+  basement:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/basement
+          input_args: preset-rtsp-restream
+          roles: [audio, detect]
+    birdseye:
+      order: 8
+
+version: 0.16-0
