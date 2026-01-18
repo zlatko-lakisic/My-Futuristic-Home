@@ -10,6 +10,12 @@ The NVR server runs a containerized stack centered around **Frigate** for video 
 - **Internal Storage:** 450GB Boot Drive (OS & Docker Configs).
 - **External Storage:** NAS1 & NAS2 via Network File System (NFS).
 
+## **GPU Setup & Verification**
+The GPU is passed directly from the host to Docker containers using the NVIDIA Container Toolkit.
+- **Verification Command:** `nvidia-smi`
+- **Official Driver Link:** [NVIDIA RTX A4000 Drivers](https://www.nvidia.com/en-us/drivers/)
+- **Official CUDA Link:** [CUDA Toolkit Documentation](https://developer.nvidia.com/cuda-toolkit)
+
 ## **Software Stack**
 - **OS:** Ubuntu 24.04 LTS
 - **Engine:** Docker (Containerized NVR software)

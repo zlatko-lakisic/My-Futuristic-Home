@@ -1,7 +1,7 @@
 # 🤖 Service: Frigate NVR Configuration
 
 ## **Overview**
-This is the complete configuration for the Frigate NVR service. It is designed to work with **CodeProject.AI** for object, face, and plate detection and utilizes an **NVIDIA RTX A4000** for hardware acceleration.
+This is the complete configuration for the Frigate NVR service. It is designed to work with **CodeProject.AI** for object, face, and plate detection and utilizes an NVIDIA RTX A4000; this is documented in the [NVR Infrastructure File](../infrastructure/nvr.md).
 
 ## **Full Configuration (`config.yml`)**
 *Note: This file uses environment variables (e.g., `{MQTT_USER}`) which are defined in the [frigate.env](./frigate.env) file.*
