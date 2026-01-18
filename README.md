@@ -1,6 +1,6 @@
-# 🏠 Home Data Center & Automation Framework
+# 🚀 My Futuristic Home
 
-This repository serves as the single source of truth for the physical and logical infrastructure of my home network and automation environment. The setup is designed for high availability, security through segmentation, and local-first reliability.
+Welcome to the central documentation for my smart home ecosystem. This repository tracks the configuration, hardware inventory, and infrastructure layout for a high-performance, locally-controlled automation environment.
 
 ## 📂 Documentation Directory
 
