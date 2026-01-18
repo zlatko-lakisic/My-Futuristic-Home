@@ -13,17 +13,18 @@ For a detailed look at how the Zigbee and Z-Wave meshes are physically and logic
 * ⚡ [**Z-Wave Device Inventory**](zwave_inventory.md) - GE/Enbrighten and Aeotec mesh network.
 * 🐝 [**Zigbee Device Inventory**](zigbee_inventory.md) - IKEA lighting and Aqara presence sensors.
 * ☁️ [**SmartThings Inventory**](smartthings_inventory.md) - Samsung Smart TV integrations.
+* 🗣️ [**Google Nest Inventory**](google_nest_inventory.md) - Voice control and Gemini interface.
+* 📩 [**Messaging Infrastructure**](../../infrastructure/messaging.md) - MQTT broker backbone details.
 * 🤖 [**Automations**](automations.yaml) - Core logic for lighting, security, and hardware watchdogs.
 
 ## **Deployment Details**
 - **Type:** Home Assistant OS (HAOS) 
-- **Network:** Home_LAN
+- **Voice Control:** Integrated with **Google Home / Gemini** for mobile, automotive, and in-home control.
 - **Primary Integrations:**
-  - **MQTT:** Connects to the broker at `192.168.89.26` for Frigate and Zigbee2MQTT.
-  - **Z-Wave JS UI:** Manages the Z-Wave mesh.
-  - **ZHA:** Manages the [Zigbee network](zigbee_inventory.md).
-  - **SmartThings:** Cloud integration for [Samsung TVs](smartthings_inventory.md).
-  - **Frigate Proxy:** Provides Lovelace UI cards for cameras.
+  - **MQTT:** Utilizes the [Messaging Infrastructure](../../infrastructure/messaging.md) at `192.168.89.26`.
+  - **Z-Wave JS UI & ZHA:** Local mesh radio management.
+  - **Google Cast:** Manages [Nest Speakers](google_nest_inventory.md) for TTS and media.
+  - **SmartThings:** Cloud integration for Samsung TVs.
 
 ---
 
