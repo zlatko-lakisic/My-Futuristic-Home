@@ -17,6 +17,12 @@ This repository serves as the single source of truth for the physical and logica
 * [**UniFi Controller**](services/unifi.md): WiFi SSIDs, Radio settings, and device adoption.
 * [**mDNS Repeater**](services/mdns_repeater.md): Cross-subnet device discovery for IoT and Media.
 * [**Home Assistant**](homeassistant/README.md): Core automation engine.
+* [**Frigate NVR**](services/frigate.md): **(Primary)** AI detection and `config.yml`.
+* [**Frigate Environment**](services/frigate.env): Sanitized `.env` template for local deployment.
+* [**CodeProject.AI**](services/codeproject-ai.md): Dedicated AI inference server (Object/Face/ALPR).
+
+## 🗄️ Storage
+* [**NAS2**](storage/nas2.md): 10GbE Network Attached Storage for NVR recordings and backups.
 
 ## 🏗 Physical Infrastructure (9U Rack)
 All core equipment is housed in a **Tecmojo 9U Wall Mount Server Cabinet** featuring active cooling and integrated cable management.
@@ -40,6 +46,8 @@ The network is split into two primary physical and logical segments to ensure th
 ### **Subnet Strategy**
 - **Perimeter (10.0.10.x):** Secured server management, storage (NAS), and surveillance (NVR).
 - **House LAN (192.168.89.x):** General wired devices, Access Points, and the dedicated MQTT broker.
+- **House WLAN (192.168.90.x):** Home wifi devices.
+- **IOT WLAN (172.16.90.x):** Home iot wifi devices.
 
 ---
 
