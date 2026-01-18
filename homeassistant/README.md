@@ -10,12 +10,12 @@ For a detailed look at how the Zigbee and Z-Wave meshes are physically and logic
 👉 **[Wireless Mesh Architecture](./docs_ha/radio_topology.md)**
 
 ## **Quick Links**
-* ⚡ [**Z-Wave Device Inventory**](zwave_inventory.md) - GE/Enbrighten and Aeotec mesh network.
-* 🐝 [**Zigbee Device Inventory**](zigbee_inventory.md) - IKEA lighting and Aqara presence sensors.
+* ⚡ [**Z-Wave Device Inventory**](zwave_inventory.md) - Mesh lighting and switches.
+* 🐝 [**Zigbee Device Inventory**](zigbee_inventory.md) - Sensors and drivers.
+* 🛡️ [**Nest Protect Inventory**](nest_protect_inventory.md) - Smoke & CO detectors.
 * ☁️ [**SmartThings Inventory**](smartthings_inventory.md) - Samsung Smart TV integrations.
 * 🗣️ [**Google Nest Inventory**](google_nest_inventory.md) - Voice control and Gemini interface.
-* 📩 [**Messaging Infrastructure**](../../infrastructure/messaging.md) - MQTT broker backbone details.
-* 🤖 [**Automations**](automations.yaml) - Core logic for lighting, security, and hardware watchdogs.
+* 📩 [**Messaging Infrastructure**](../../infrastructure/messaging.md) - MQTT broker details.
 
 ## **Deployment Details**
 - **Type:** Home Assistant OS (HAOS) 
@@ -25,6 +25,8 @@ For a detailed look at how the Zigbee and Z-Wave meshes are physically and logic
   - **Z-Wave JS UI & ZHA:** Local mesh radio management.
   - **Google Cast:** Manages [Nest Speakers](google_nest_inventory.md) for TTS and media.
   - **SmartThings:** Cloud integration for Samsung TVs.
+- **Voice Control:** Integrated with **Google Home / Gemini** for mobile and automotive control.
+- **Safety System:** [Nest Protect](nest_protect_inventory.md) provides whole-home smoke/CO monitoring via cloud-push.
 
 ---
 
