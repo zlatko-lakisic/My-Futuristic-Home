@@ -12,6 +12,7 @@ For a detailed look at how the Zigbee and Z-Wave meshes are physically and logic
 ## **Quick Links**
 * ⚡ [**Z-Wave Device Inventory**](zwave_inventory.md) - GE/Enbrighten and Aeotec mesh network.
 * 🐝 [**Zigbee Device Inventory**](zigbee_inventory.md) - IKEA lighting and Aqara presence sensors.
+* ☁️ [**SmartThings Inventory**](smartthings_inventory.md) - Samsung Smart TV integrations.
 * 🤖 [**Automations**](automations.yaml) - Core logic for lighting, security, and hardware watchdogs.
 
 ## **Deployment Details**
@@ -20,7 +21,8 @@ For a detailed look at how the Zigbee and Z-Wave meshes are physically and logic
 - **Primary Integrations:**
   - **MQTT:** Connects to the broker at `192.168.89.26` for Frigate and Zigbee2MQTT.
   - **Z-Wave JS UI:** Manages the Z-Wave mesh.
-  - **ZHA:** Manages the [Zigbee network](zigbee_inventory.md) via EZSP Coordinator.
+  - **ZHA:** Manages the [Zigbee network](zigbee_inventory.md).
+  - **SmartThings:** Cloud integration for [Samsung TVs](smartthings_inventory.md).
   - **Frigate Proxy:** Provides Lovelace UI cards for cameras.
 
 ---
