@@ -9,6 +9,19 @@ My system follows a "Local-First" philosophy. We utilize dedicated radios for di
 For a detailed look at how the Zigbee and Z-Wave meshes are physically and logically structured, see:
 👉 **[Wireless Mesh Architecture](./docs_ha/radio_topology.md)**
 
+## **Quick Links**
+* ⚡ [**Z-Wave Device Inventory**](zwave_inventory.md) - Full list of 24 devices connected via the primary Z-Wave controller.
+* 🤖 [**Automations**](automations.yaml) - Core logic for lighting, security, and hardware watchdogs.
+
+## **Deployment Details**
+- **Type:** Home Assistant OS (HAOS) 
+- **Network:** Home_LAN
+- **Primary Integrations:**
+  - **MQTT:** Connects to the broker at `192.168.89.26` to receive Frigate events.
+  - **Z-Wave JS UI:** Manages the mesh network for [GE/Enbrighten and Aeotec devices](zwave_inventory.md).
+  - **Frigate Proxy:** Provides the Lovelace UI cards for 24/7 camera viewing.
+  - **UniFi:** For managing PoE ports and network presence.
+
 ---
 
 ## 📟 Hardware Controllers
