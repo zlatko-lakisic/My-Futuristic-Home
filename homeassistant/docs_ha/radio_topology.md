@@ -1,39 +1,47 @@
-# 📡 Wireless Mesh Architecture
+# 📡 Radio & Network Topology
 
-To ensure 100% reliability, the system uses two distinct mesh networks. This prevents 2.4GHz congestion and provides redundancy for critical infrastructure.
+This document maps the wireless protocols and communication paths used by **My Futuristic Home**. It serves as a guide for troubleshooting interference and understanding device dependencies.
 
-## 📊 Mesh Topology Diagram
+## **System Architecture**
+
+
+
 ```mermaid
 graph TD
-    %% Controllers connected to Server
-    subgraph "SFF Server (i7-7700T)"
+    subgraph "Cloud / External"
+        ST[SmartThings Cloud]
+        NP[Nest Cloud]
+        G[Google Gemini / Home]
+    end
+
+    subgraph "Infrastructure (192.168.89.x)"
         HA[Home Assistant OS]
-        USB[USB 2.0 Bus]
+        MQTT[Mosquitto Broker]
     end
 
-    %% Zigbee Mesh
-    subgraph "Zigbee 3.0 (2.4GHz)"
-        DongleE[Sonoff ZBDongle-E]
-        ZRouter[Mains-Powered Bulbs/Plugs]
-        ZEnd[Battery Sensors/Buttons]
+    subgraph "Local Radio Mesh"
+        ZW_JS[Z-Wave JS UI]
+        ZHA[Zigbee Home Automation]
         
-        DongleE --- ZRouter
-        ZRouter --- ZEnd
-        DongleE -.-> ZEnd
+        ZW_STICK((Zooz 800 Stick))
+        ZB_STICK((EZSP Zigbee Stick))
     end
 
-    %% Z-Wave Mesh
-    subgraph "Z-Wave 700 (Sub-GHz)"
-        ZStick[Aeotec Z-Stick 7]
-        ZW_Switch[Mains Switches/Repeaters]
-        ZW_Lock[Door Locks/Security]
-        
-        ZStick --- ZW_Switch
-        ZW_Switch --- ZW_Lock
-        ZStick -.-> ZW_Lock
-    end
-
-    %% Physical Connections
-    HA --> USB
-    USB -- 2m Extender --- DongleE
-    USB -- 2m Extender --- ZStick
+    %% Connections
+    HA <--> ZW_JS
+    HA <--> ZHA
+    HA <--> MQTT
+    
+    ZW_JS --- ZW_STICK
+    ZHA --- ZB_STICK
+    
+    %% Device Links
+    ZW_STICK -- "908.4 MHz" --- ZW_DEVICES[Z-Wave Mesh]
+    ZB_STICK -- "2.4 GHz" --- ZB_DEVICES[Zigbee Mesh]
+    
+    ST -- "API" --- HA
+    NP -- "API" --- HA
+    G -- "Voice" --- HA
+    
+    %% MQTT Consumers
+    MQTT <--> FRIGATE[Frigate NVR]
