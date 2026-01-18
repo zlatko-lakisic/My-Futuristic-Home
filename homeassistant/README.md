@@ -10,17 +10,18 @@ For a detailed look at how the Zigbee and Z-Wave meshes are physically and logic
 👉 **[Wireless Mesh Architecture](./docs_ha/radio_topology.md)**
 
 ## **Quick Links**
-* ⚡ [**Z-Wave Device Inventory**](zwave_inventory.md) - Full list of 24 devices connected via the primary Z-Wave controller.
+* ⚡ [**Z-Wave Device Inventory**](zwave_inventory.md) - GE/Enbrighten and Aeotec mesh network.
+* 🐝 [**Zigbee Device Inventory**](zigbee_inventory.md) - IKEA lighting and Aqara presence sensors.
 * 🤖 [**Automations**](automations.yaml) - Core logic for lighting, security, and hardware watchdogs.
 
 ## **Deployment Details**
 - **Type:** Home Assistant OS (HAOS) 
 - **Network:** Home_LAN
 - **Primary Integrations:**
-  - **MQTT:** Connects to the broker at `192.168.89.26` to receive Frigate events.
-  - **Z-Wave JS UI:** Manages the mesh network for [GE/Enbrighten and Aeotec devices](zwave_inventory.md).
-  - **Frigate Proxy:** Provides the Lovelace UI cards for 24/7 camera viewing.
-  - **UniFi:** For managing PoE ports and network presence.
+  - **MQTT:** Connects to the broker at `192.168.89.26` for Frigate and Zigbee2MQTT.
+  - **Z-Wave JS UI:** Manages the Z-Wave mesh.
+  - **ZHA:** Manages the [Zigbee network](zigbee_inventory.md) via EZSP Coordinator.
+  - **Frigate Proxy:** Provides Lovelace UI cards for cameras.
 
 ---
 
