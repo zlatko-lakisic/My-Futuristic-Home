@@ -30,6 +30,22 @@ For a detailed look at how the Zigbee and Z-Wave meshes are physically and logic
 
 ---
 
+## **📹 Camera & NVR Infrastructure**
+
+To keep the setup organized, all camera-related documentation is split into two parts:
+
+* **[Camera Inventory](frigate_inventory.md):** A master list of all 14 cameras, their locations (Basement, Driveway, Garden), and direct links to their Frigate streams.
+* **[Frigate Setup & Capabilities](docs_ha/frigate_setup.md):** Detailed technical documentation on AI object detection, sound recognition (v0.16.3), and HACS dashboard configuration.
+
+---
+
+## **🛠️ Key Features**
+* **AI Detection:** Real-time tracking for people, cars, and pets.
+* **Smart Alerts:** Critical notifications sent via Telegram/Mobile App.
+* **Dashboard:** High-performance viewing using the Advanced Camera Card.
+
+---
+
 ## 📟 Hardware Controllers
 These physical dongles are passed through directly to the HAOS environment:
 
