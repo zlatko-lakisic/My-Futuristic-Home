@@ -1,0 +1,636 @@
+views:
+  - title: Backyard Overview
+    path: backyard
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading_style: title
+            heading: SURVEILLANCE & SECURITY
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 30% 70%
+              grid-template-rows: 1fr
+              place-items: stretch
+            cards:
+              - type: custom:advanced-camera-card
+                cameras:
+                  - camera_entity: camera.back_yard
+                live:
+                  preload: false
+                grid_options:
+                  columns: full
+                  rows: 4
+              - type: vertical-stack
+                cards:
+                  - square: false
+                    type: grid
+                    cards:
+                      - type: custom:advanced-camera-card
+                        cameras:
+                          - camera_entity: camera.east_side
+                        live:
+                          preload: false
+                      - type: custom:advanced-camera-card
+                        cameras:
+                          - camera_entity: camera.west_side
+                        live:
+                          preload: false
+                      - type: custom:advanced-camera-card
+                        cameras:
+                          - camera_entity: camera.garden_south
+                        live:
+                          preload: false
+                      - type: custom:advanced-camera-card
+                        cameras:
+                          - camera_entity: camera.garden_north
+                        live:
+                          preload: false
+                    columns: 4
+                  - square: false
+                    type: grid
+                    cards:
+                      - type: tile
+                        entity: binary_sensor.east_side_door_door
+                        name: East Gate
+                        color: green
+                      - type: tile
+                        entity: binary_sensor.west_side_door_door
+                        name: West Gate
+                        color: green
+                      - type: tile
+                        entity: binary_sensor.fence_gate_door
+                        name: Back Gate
+                        color: red
+                    columns: 3
+            grid_options:
+              columns: full
+        column_span: 4
+      - type: grid
+        cards:
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 30% 70%
+            grid_options:
+              columns: full
+            cards:
+              - type: custom:layout-card
+                layout_type: custom:vertical-layout
+                layout: {}
+                cards:
+                  - type: horizontal-stack
+                    cards:
+                      - type: gauge
+                        entity: sensor.garden_controller_indoor_temperature
+                        min: 0
+                        max: 100
+                        needle: false
+                      - type: gauge
+                        entity: sensor.garden_controller_indoor_humidity
+                  - type: custom:statistics-graph-chart-card
+                    card_header: SOIL MOISTURE
+                    card_icon_position: left
+                    show_grid: true
+                    show_tooltip: false
+                    show_tooltip_total: true
+                    show_legend: false
+                    show_y_axis: true
+                    show_y2_axis: true
+                    show_y_axis_label: false
+                    show_x_axis: true
+                    show_x_ticks: false
+                    show_y_ticks: false
+                    logarithmic: false
+                    cache: true
+                    animate_graph: false
+                    stacked: false
+                    sparkline: false
+                    scroll_mode: scrollbar
+                    show_interval_picker: false
+                    interval_picker_position: left
+                    show_attribute_list: false
+                    attribute_list_position: left
+                    hours_to_show: 24
+                    points_per_hour: 2
+                    auto_scale_points: false
+                    height: 150
+                    show_full_period: false
+                    tooltip_sync: false
+                    energy_date_sync: false
+                    align_header: left
+                    state_layout: horizontal
+                    group_by: interval
+                    chart_mode: ranking
+                    entities:
+                      - entity: sensor.garden_controller_soil_moisture_1
+                        statistic_id: null
+                        name: Cabbage
+                        icon: null
+                        icon_color: null
+                        color: '#ff4757'
+                        y_axis: primary
+                        graph_type: bar
+                        line_width: 2.5
+                        points_per_hour: null
+                        show_state: false
+                        show_state_last: false
+                        state_adaptive_color: false
+                        show_graph: true
+                        show_in_legend: false
+                        legend_stats:
+                          - min
+                          - avg
+                          - max
+                        show_points: false
+                        point_colors: null
+                        show_line: true
+                        show_fill: true
+                        show_range_band: false
+                        gradient: true
+                        smooth: true
+                        decimals: 1
+                        aggregate_func: last
+                        number_format: system
+                        trend_period_hours: 1
+                        show_trend_icon: false
+                        rise_fall_colors: null
+                        color_thresholds: null
+                        lower_bound: null
+                        upper_bound: null
+                        show_extrema: click
+                        show_average: false
+                        name_size: null
+                        icon_size: null
+                        state_size: null
+                        state_color: null
+                        trend_icon_size: null
+                        value_factor: 0
+                        value_transform: null
+                        fixed_value: false
+                        offset: 0
+                        state_map: null
+                        align_state: left
+                        stack_group: null
+                        tap_action: null
+                      - entity: sensor.garden_controller_soil_moisture_5
+                        statistic_id: null
+                        name: Peppers
+                        icon: null
+                        icon_color: null
+                        color: '#378ADD'
+                        y_axis: primary
+                        graph_type: line
+                        line_width: 2.5
+                        points_per_hour: null
+                        show_state: false
+                        show_state_last: false
+                        state_adaptive_color: false
+                        show_graph: true
+                        show_in_legend: false
+                        legend_stats:
+                          - min
+                          - avg
+                          - max
+                        show_points: false
+                        point_colors: null
+                        show_line: true
+                        show_fill: true
+                        show_range_band: false
+                        gradient: true
+                        smooth: true
+                        decimals: 1
+                        aggregate_func: last
+                        number_format: system
+                        trend_period_hours: 1
+                        show_trend_icon: false
+                        rise_fall_colors: null
+                        color_thresholds: null
+                        lower_bound: null
+                        upper_bound: null
+                        show_extrema: click
+                        show_average: false
+                        name_size: null
+                        icon_size: null
+                        state_size: null
+                        state_color: null
+                        trend_icon_size: null
+                        attribute: null
+                        value_factor: 0
+                        value_transform: null
+                        fixed_value: false
+                        offset: 0
+                        state_map: null
+                        align_state: left
+                        stack_group: null
+                        tap_action: null
+                      - entity: sensor.garden_controller_soil_moisture_4
+                        statistic_id: null
+                        name: Tomatoes
+                        icon: null
+                        icon_color: null
+                        color: '#2ecc71'
+                        y_axis: primary
+                        graph_type: line
+                        line_width: 2.5
+                        points_per_hour: null
+                        show_state: false
+                        show_state_last: false
+                        state_adaptive_color: false
+                        show_graph: true
+                        show_in_legend: false
+                        legend_stats:
+                          - min
+                          - avg
+                          - max
+                        show_points: false
+                        point_colors: null
+                        show_line: true
+                        show_fill: true
+                        show_range_band: false
+                        gradient: true
+                        smooth: true
+                        decimals: 1
+                        aggregate_func: last
+                        number_format: system
+                        trend_period_hours: 1
+                        show_trend_icon: false
+                        rise_fall_colors: null
+                        color_thresholds: null
+                        lower_bound: null
+                        upper_bound: null
+                        show_extrema: click
+                        show_average: false
+                        name_size: null
+                        icon_size: null
+                        state_size: null
+                        state_color: null
+                        trend_icon_size: null
+                        attribute: null
+                        value_factor: 0
+                        value_transform: null
+                        fixed_value: false
+                        offset: 0
+                        state_map: null
+                        align_state: left
+                        stack_group: null
+                        tap_action: null
+                      - entity: sensor.garden_controller_soil_moisture_6
+                        statistic_id: null
+                        name: Zucchini
+                        icon: null
+                        icon_color: null
+                        color: '#f39c12'
+                        y_axis: primary
+                        graph_type: line
+                        line_width: 2.5
+                        points_per_hour: null
+                        show_state: false
+                        show_state_last: false
+                        state_adaptive_color: false
+                        show_graph: true
+                        show_in_legend: false
+                        legend_stats:
+                          - min
+                          - avg
+                          - max
+                        show_points: false
+                        point_colors: null
+                        show_line: true
+                        show_fill: true
+                        show_range_band: false
+                        gradient: true
+                        smooth: true
+                        decimals: 1
+                        aggregate_func: last
+                        number_format: system
+                        trend_period_hours: 1
+                        show_trend_icon: false
+                        rise_fall_colors: null
+                        color_thresholds: null
+                        lower_bound: null
+                        upper_bound: null
+                        show_extrema: click
+                        show_average: false
+                        name_size: null
+                        icon_size: null
+                        state_size: null
+                        state_color: null
+                        trend_icon_size: null
+                        attribute: null
+                        value_factor: 0
+                        value_transform: null
+                        fixed_value: false
+                        offset: 0
+                        state_map: null
+                        align_state: left
+                        stack_group: null
+                        tap_action: null
+                      - entity: sensor.garden_controller_soil_moisture_2
+                        statistic_id: null
+                        name: Flower Bed
+                        icon: null
+                        icon_color: null
+                        color: '#9b59b6'
+                        y_axis: primary
+                        graph_type: line
+                        line_width: 2.5
+                        points_per_hour: null
+                        show_state: false
+                        show_state_last: false
+                        state_adaptive_color: false
+                        show_graph: true
+                        show_in_legend: false
+                        legend_stats:
+                          - min
+                          - avg
+                          - max
+                        show_points: false
+                        point_colors: null
+                        show_line: true
+                        show_fill: true
+                        show_range_band: false
+                        gradient: true
+                        smooth: true
+                        decimals: 1
+                        aggregate_func: last
+                        number_format: system
+                        trend_period_hours: 1
+                        show_trend_icon: false
+                        rise_fall_colors: null
+                        color_thresholds: null
+                        lower_bound: null
+                        upper_bound: null
+                        show_extrema: click
+                        show_average: false
+                        name_size: null
+                        icon_size: null
+                        state_size: null
+                        state_color: null
+                        trend_icon_size: null
+                        attribute: null
+                        value_factor: 0
+                        value_transform: null
+                        fixed_value: false
+                        offset: 0
+                        state_map: null
+                        align_state: left
+                        stack_group: null
+                        tap_action: null
+                      - entity: sensor.garden_controller_soil_moisture_3
+                        statistic_id: null
+                        name: Upper Bed
+                        icon: null
+                        icon_color: null
+                        color: '#1abc9c'
+                        y_axis: primary
+                        graph_type: line
+                        line_width: 2.5
+                        points_per_hour: null
+                        show_state: false
+                        show_state_last: false
+                        state_adaptive_color: false
+                        show_graph: true
+                        show_in_legend: false
+                        legend_stats:
+                          - min
+                          - avg
+                          - max
+                        show_points: false
+                        point_colors: null
+                        show_line: true
+                        show_fill: true
+                        show_range_band: false
+                        gradient: true
+                        smooth: true
+                        decimals: 1
+                        aggregate_func: last
+                        number_format: system
+                        trend_period_hours: 1
+                        show_trend_icon: false
+                        rise_fall_colors: null
+                        color_thresholds: null
+                        lower_bound: null
+                        upper_bound: null
+                        show_extrema: click
+                        show_average: false
+                        name_size: null
+                        icon_size: null
+                        state_size: null
+                        state_color: null
+                        trend_icon_size: null
+                        attribute: null
+                        value_factor: 0
+                        value_transform: null
+                        fixed_value: false
+                        offset: 0
+                        state_map: null
+                        align_state: left
+                        stack_group: null
+                        tap_action: null
+                    annotations: []
+                    state_map: null
+              - type: vertical-stack
+                cards:
+                  - square: false
+                    type: grid
+                    columns: 4
+                    cards:
+                      - show_name: true
+                        show_icon: true
+                        type: button
+                        entity: light.garden_lights_light
+                      - show_name: true
+                        show_icon: true
+                        type: button
+                        entity: light.garden_lights_light_2
+                      - show_name: true
+                        show_icon: true
+                        type: button
+                        entity: light.smart_patio_plug_light
+                      - show_name: true
+                        show_icon: true
+                        type: button
+                        entity: light.smart_patio_plug_light_2
+                    title: LIGHTING & CONTROLS
+                  - square: false
+                    type: grid
+                    columns: 4
+                    cards:
+                      - show_name: true
+                        show_icon: true
+                        type: button
+                        entity: switch.soffet_lights_socket_1
+                      - show_name: true
+                        show_icon: true
+                        type: button
+                        entity: switch.porch_light
+                      - show_name: true
+                        show_icon: true
+                        type: button
+                        entity: switch.flood_lights_2
+                      - show_name: true
+                        show_icon: true
+                        type: button
+                        entity: switch.light_switch_4
+                  - type: horizontal-stack
+                    cards:
+                      - type: vertical-stack
+                        cards:
+                          - type: tile
+                            entity: valve.garden_zone
+                            vertical: false
+                            features_position: bottom
+                        title: IRRIGATION ZONES
+                      - type: vertical-stack
+                        cards:
+                          - type: tile
+                            entity: update.unifi_device_update_f4_e2_c6_19_bf_a2
+                            vertical: false
+                            features_position: bottom
+                          - type: custom:statistics-graph-chart-card
+                            card_header: Up/Down Speed (Graphs)
+                            card_icon_position: left
+                            show_grid: true
+                            show_tooltip: true
+                            show_tooltip_total: true
+                            show_legend: false
+                            show_y_axis: true
+                            show_y2_axis: true
+                            show_y_axis_label: false
+                            show_x_axis: true
+                            show_x_ticks: false
+                            show_y_ticks: false
+                            logarithmic: false
+                            cache: true
+                            animate_graph: false
+                            stacked: false
+                            sparkline: false
+                            scroll_mode: scrollbar
+                            show_interval_picker: false
+                            interval_picker_position: left
+                            show_attribute_list: false
+                            attribute_list_position: left
+                            hours_to_show: 24
+                            points_per_hour: 2
+                            auto_scale_points: false
+                            height: 150
+                            show_full_period: false
+                            bar_spacing: 4
+                            datetime_format: system
+                            tooltip_sync: false
+                            energy_date_sync: false
+                            align_header: left
+                            state_layout: default
+                            group_by: interval
+                            chart_mode: timeline
+                            entities:
+                              - entity: sensor.ap_back_yard_tx
+                                statistic_id: null
+                                name: null
+                                icon: null
+                                icon_color: null
+                                color: '#ff4757'
+                                y_axis: primary
+                                graph_type: line
+                                line_width: 2.5
+                                points_per_hour: null
+                                show_state: false
+                                show_state_last: false
+                                state_adaptive_color: false
+                                show_graph: true
+                                show_in_legend: false
+                                legend_stats:
+                                  - min
+                                  - avg
+                                  - max
+                                show_points: false
+                                point_colors: null
+                                show_line: true
+                                show_fill: true
+                                show_range_band: false
+                                gradient: true
+                                smooth: true
+                                decimals: 1
+                                aggregate_func: avg
+                                number_format: system
+                                trend_period_hours: 1
+                                show_trend_icon: true
+                                rise_fall_colors: null
+                                color_thresholds: null
+                                lower_bound: null
+                                upper_bound: null
+                                show_extrema: click
+                                show_average: false
+                                name_size: null
+                                icon_size: null
+                                state_size: null
+                                state_color: null
+                                trend_icon_size: null
+                                attribute: null
+                                value_factor: 0
+                                value_transform: null
+                                fixed_value: false
+                                offset: 0
+                                state_map: null
+                                align_state: left
+                                stack_group: null
+                                tap_action: null
+                              - entity: sensor.ap_back_yard_rx
+                                statistic_id: null
+                                name: null
+                                icon: null
+                                icon_color: null
+                                color: '#378ADD'
+                                y_axis: primary
+                                graph_type: line
+                                line_width: 2.5
+                                points_per_hour: null
+                                show_state: false
+                                show_state_last: false
+                                state_adaptive_color: false
+                                show_graph: true
+                                show_in_legend: false
+                                legend_stats:
+                                  - min
+                                  - avg
+                                  - max
+                                show_points: false
+                                point_colors: null
+                                show_line: true
+                                show_fill: true
+                                show_range_band: false
+                                gradient: true
+                                smooth: true
+                                decimals: 1
+                                aggregate_func: avg
+                                number_format: system
+                                trend_period_hours: 1
+                                show_trend_icon: true
+                                rise_fall_colors: null
+                                color_thresholds: null
+                                lower_bound: null
+                                upper_bound: null
+                                show_extrema: click
+                                show_average: false
+                                name_size: null
+                                icon_size: null
+                                state_size: null
+                                state_color: null
+                                trend_icon_size: null
+                                attribute: null
+                                value_factor: 0
+                                value_transform: null
+                                fixed_value: false
+                                offset: 0
+                                state_map: null
+                                align_state: left
+                                stack_group: null
+                                tap_action: null
+                            annotations: []
+                            state_map: null
+                        title: INFRASTRUCTURE
+        column_span: 4
+    header: {}
