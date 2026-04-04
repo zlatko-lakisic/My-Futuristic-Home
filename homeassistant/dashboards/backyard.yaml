@@ -15,14 +15,44 @@ views:
               grid-template-rows: 1fr
               place-items: stretch
             cards:
-              - type: custom:advanced-camera-card
-                cameras:
-                  - camera_entity: camera.back_yard
-                live:
-                  preload: false
-                grid_options:
-                  columns: full
-                  rows: 4
+              - square: false
+                type: grid
+                cards:
+                  - type: custom:advanced-camera-card
+                    cameras:
+                      - camera_entity: camera.back_yard
+                    live:
+                      preload: false
+                    status_bar:
+                      position: top
+                      popup_seconds: 60
+                      style: overlay
+                      height: 30
+                    menu:
+                      style: hidden
+                      position: bottom
+                  - square: false
+                    type: grid
+                    cards:
+                      - type: tile
+                        entity: sensor.back_yard_person_count
+                        icon: mdi:account-multiple
+                        color: green
+                        vertical: false
+                        features_position: bottom
+                      - type: tile
+                        entity: sensor.back_yard_dog_count
+                        icon: mdi:dog-side
+                        color: amber
+                        vertical: false
+                        features_position: bottom
+                      - type: tile
+                        entity: sensor.back_yard_last_recognized_face
+                        icon: mdi:face-recognition
+                        color: deep-orange
+                        vertical: false
+                        features_position: bottom
+                columns: 1
               - type: vertical-stack
                 cards:
                   - square: false
@@ -33,21 +63,49 @@ views:
                           - camera_entity: camera.east_side
                         live:
                           preload: false
+                        dimensions:
+                          aspect_ratio_mode: static
+                          aspect_ratio: '4:3'
+                        status_bar:
+                          style: overlay
+                          position: bottom
+                          popup_seconds: 60
                       - type: custom:advanced-camera-card
                         cameras:
                           - camera_entity: camera.west_side
                         live:
                           preload: false
+                        dimensions:
+                          aspect_ratio_mode: static
+                          aspect_ratio: '4:3'
+                        status_bar:
+                          style: overlay
+                          position: bottom
+                          popup_seconds: 60
                       - type: custom:advanced-camera-card
                         cameras:
                           - camera_entity: camera.garden_south
                         live:
                           preload: false
+                        dimensions:
+                          aspect_ratio_mode: static
+                          aspect_ratio: '4:3'
+                        status_bar:
+                          style: overlay
+                          position: bottom
+                          popup_seconds: 60
                       - type: custom:advanced-camera-card
                         cameras:
                           - camera_entity: camera.garden_north
                         live:
                           preload: false
+                        dimensions:
+                          aspect_ratio_mode: static
+                          aspect_ratio: '4:3'
+                        status_bar:
+                          style: overlay
+                          position: bottom
+                          popup_seconds: 60
                     columns: 4
                   - square: false
                     type: grid
@@ -56,14 +114,20 @@ views:
                         entity: binary_sensor.east_side_door_door
                         name: East Gate
                         color: green
+                        vertical: true
+                        features_position: bottom
                       - type: tile
                         entity: binary_sensor.west_side_door_door
                         name: West Gate
                         color: green
+                        vertical: true
+                        features_position: bottom
                       - type: tile
                         entity: binary_sensor.fence_gate_door
                         name: Back Gate
                         color: red
+                        vertical: true
+                        features_position: bottom
                     columns: 3
             grid_options:
               columns: full
@@ -81,7 +145,10 @@ views:
                 layout_type: custom:vertical-layout
                 layout: {}
                 cards:
-                  - type: horizontal-stack
+                  - square: false
+                    type: grid
+                    columns: 2
+                    title: ENVIRONMENTS & SOIL
                     cards:
                       - type: gauge
                         entity: sensor.garden_controller_indoor_temperature
@@ -442,6 +509,8 @@ views:
                         show_icon: true
                         type: button
                         entity: light.garden_lights_light
+                        icon: ''
+                        show_state: false
                       - show_name: true
                         show_icon: true
                         type: button
@@ -479,10 +548,20 @@ views:
                     cards:
                       - type: vertical-stack
                         cards:
-                          - type: tile
-                            entity: valve.garden_zone
-                            vertical: false
-                            features_position: bottom
+                          - square: false
+                            type: grid
+                            columns: 4
+                            cards:
+                              - type: heading
+                                heading_style: subtitle
+                                heading: GARDEN
+                          - square: false
+                            type: grid
+                            columns: 2
+                            cards:
+                              - type: heading
+                                heading_style: subtitle
+                                heading: LAWN
                         title: IRRIGATION ZONES
                       - type: vertical-stack
                         cards:
@@ -519,6 +598,8 @@ views:
                             height: 150
                             show_full_period: false
                             bar_spacing: 4
+                            min_bound_range: 0
+                            min_bound_range_secondary: 0
                             datetime_format: system
                             tooltip_sync: false
                             energy_date_sync: false
