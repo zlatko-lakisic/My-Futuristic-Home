@@ -18,15 +18,6 @@ views:
               - type: custom:advanced-camera-card
                 cameras:
                   - camera_entity: camera.back_yard
-                view:
-                  default: image
-                  triggers:
-                    actions:
-                      trigger: none
-                      untrigger: none
-                image:
-                  mode: camera
-                  refresh_seconds: 0
                 live:
                   preload: false
                 grid_options:
@@ -40,57 +31,21 @@ views:
                       - type: custom:advanced-camera-card
                         cameras:
                           - camera_entity: camera.east_side
-                        view:
-                          default: image
-                          triggers:
-                            actions:
-                              trigger: none
-                              untrigger: none
-                        image:
-                          mode: camera
-                          refresh_seconds: 0
                         live:
                           preload: false
                       - type: custom:advanced-camera-card
                         cameras:
                           - camera_entity: camera.west_side
-                        view:
-                          default: image
-                          triggers:
-                            actions:
-                              trigger: none
-                              untrigger: none
-                        image:
-                          mode: camera
-                          refresh_seconds: 0
                         live:
                           preload: false
                       - type: custom:advanced-camera-card
                         cameras:
                           - camera_entity: camera.garden_south
-                        view:
-                          default: image
-                          triggers:
-                            actions:
-                              trigger: none
-                              untrigger: none
-                        image:
-                          mode: camera
-                          refresh_seconds: 0
                         live:
                           preload: false
                       - type: custom:advanced-camera-card
                         cameras:
                           - camera_entity: camera.garden_north
-                        view:
-                          default: image
-                          triggers:
-                            actions:
-                              trigger: none
-                              untrigger: none
-                        image:
-                          mode: camera
-                          refresh_seconds: 0
                         live:
                           preload: false
                     columns: 4
