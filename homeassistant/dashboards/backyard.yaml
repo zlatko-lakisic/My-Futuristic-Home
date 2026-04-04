@@ -29,8 +29,7 @@ views:
                       style: overlay
                       height: 30
                     menu:
-                      style: hidden
-                      position: bottom
+                      style: none
                   - square: false
                     type: grid
                     cards:
@@ -626,8 +625,10 @@ views:
                             height: 150
                             show_full_period: false
                             bar_spacing: 4
-                            min_bound_range: 0
-                            min_bound_range_secondary: 0
+                            lower_bound_secondary: '0'
+                            upper_bound_secondary: '100'
+                            lower_bound: '0'
+                            upper_bound: '100'
                             datetime_format: system
                             tooltip_sync: false
                             energy_date_sync: false
@@ -636,7 +637,7 @@ views:
                             group_by: interval
                             chart_mode: timeline
                             entities:
-                              - entity: sensor.ap_back_yard_tx
+                              - entity: sensor.ap_back_yard_cpu_utilization
                                 statistic_id: null
                                 name: null
                                 icon: null
@@ -687,7 +688,7 @@ views:
                                 align_state: left
                                 stack_group: null
                                 tap_action: null
-                              - entity: sensor.ap_back_yard_rx
+                              - entity: sensor.ap_back_yard_memory_utilization
                                 statistic_id: null
                                 name: null
                                 icon: null
