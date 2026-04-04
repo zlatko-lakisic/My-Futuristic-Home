@@ -548,20 +548,48 @@ views:
                     cards:
                       - type: vertical-stack
                         cards:
+                          - type: heading
+                            heading_style: subtitle
+                            heading: GARDEN
                           - square: false
                             type: grid
                             columns: 4
                             cards:
-                              - type: heading
-                                heading_style: subtitle
-                                heading: GARDEN
+                              - type: tile
+                                entity: switch.east_side_lawn_zone
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: switch.unnamed_zone_zone_3
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: switch.unnamed_zone_zone_4
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: switch.unnamed_zone_zone_5
+                                vertical: false
+                                features_position: bottom
+                          - type: heading
+                            heading_style: subtitle
+                            heading: LAWN
                           - square: false
                             type: grid
-                            columns: 2
                             cards:
-                              - type: heading
-                                heading_style: subtitle
-                                heading: LAWN
+                              - type: tile
+                                entity: switch.adna_s_flowers_zone
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: switch.adna_s_roses_zone
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: switch.unnamed_zone_zone
+                                vertical: false
+                                features_position: bottom
+                            columns: 3
                         title: IRRIGATION ZONES
                       - type: vertical-stack
                         cards:
