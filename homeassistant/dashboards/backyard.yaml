@@ -59,15 +59,17 @@ views:
                         show_state: false
                         show_label: false
                         tap_action:
+                          action: navigate
+                          navigation_path: /dashboard-backyard/backyard-frigate-people
+                        hold_action:
                           action: more-info
                         styles:
                           card:
                             - background-color: '#1c1c1c'
                             - border: 1px solid rgba(255, 255, 255, 0.1)
                             - border-radius: 14px
-                            - padding: 14px 16px
+                            - padding: 8px 10px
                             - box-shadow: none
-                            - min-height: 72px
                           grid:
                             - grid-template-areas: '"stat_tile"'
                             - grid-template-columns: 1fr
@@ -87,9 +89,9 @@ views:
                               if (Number.isNaN(n) || !Number.isFinite(n)) n = 0;
                               const label = (n === 1) ? '1 Person' : `${n} People`;
                               const iconColor = '#43a047';
-                              return `<div style="display:flex;flex-direction:row;align-items:center;gap:14px;width:100%;min-width:0;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);">
-                                <ha-icon icon="mdi:account-multiple" style="flex-shrink:0;color:${iconColor};--mdc-icon-size:40px;width:40px;height:40px;"></ha-icon>
-                                <div style="font-weight:700;font-size:0.9375rem;line-height:1.3;color:#fff;min-width:0;flex:1 1 auto;text-align:left;word-wrap:break-word;overflow-wrap:anywhere;">${label}</div>
+                              return `<div style="display:flex;flex-direction:row;align-items:center;gap:10px;width:100%;min-width:0;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);">
+                                <ha-icon icon="mdi:account-multiple" style="flex-shrink:0;color:${iconColor};--mdc-icon-size:30px;width:30px;height:30px;"></ha-icon>
+                                <div style="font-weight:700;font-size:0.875rem;line-height:1.25;color:#fff;min-width:0;flex:1 1 auto;text-align:left;word-wrap:break-word;overflow-wrap:anywhere;">${label}</div>
                               </div>`;
                             ]]]
                       - type: custom:button-card
@@ -99,15 +101,17 @@ views:
                         show_state: false
                         show_label: false
                         tap_action:
+                          action: navigate
+                          navigation_path: /dashboard-backyard/backyard-frigate-dogs
+                        hold_action:
                           action: more-info
                         styles:
                           card:
                             - background-color: '#1c1c1c'
                             - border: 1px solid rgba(255, 255, 255, 0.1)
                             - border-radius: 14px
-                            - padding: 14px 16px
+                            - padding: 8px 10px
                             - box-shadow: none
-                            - min-height: 72px
                           grid:
                             - grid-template-areas: '"stat_tile"'
                             - grid-template-columns: 1fr
@@ -127,9 +131,9 @@ views:
                               if (Number.isNaN(n) || !Number.isFinite(n)) n = 0;
                               const label = (n === 1) ? '1 Dog Detected' : `${n} Dogs Detected`;
                               const iconColor = '#fdd835';
-                              return `<div style="display:flex;flex-direction:row;align-items:center;gap:14px;width:100%;min-width:0;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);">
-                                <ha-icon icon="mdi:dog-side" style="flex-shrink:0;color:${iconColor};--mdc-icon-size:40px;width:40px;height:40px;"></ha-icon>
-                                <div style="font-weight:700;font-size:0.9375rem;line-height:1.3;color:#fff;min-width:0;flex:1 1 auto;text-align:left;word-wrap:break-word;overflow-wrap:anywhere;">${label}</div>
+                              return `<div style="display:flex;flex-direction:row;align-items:center;gap:10px;width:100%;min-width:0;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);">
+                                <ha-icon icon="mdi:dog-side" style="flex-shrink:0;color:${iconColor};--mdc-icon-size:30px;width:30px;height:30px;"></ha-icon>
+                                <div style="font-weight:700;font-size:0.875rem;line-height:1.25;color:#fff;min-width:0;flex:1 1 auto;text-align:left;word-wrap:break-word;overflow-wrap:anywhere;">${label}</div>
                               </div>`;
                             ]]]
                       - type: custom:button-card
@@ -139,15 +143,17 @@ views:
                         show_state: false
                         show_label: false
                         tap_action:
+                          action: navigate
+                          navigation_path: /dashboard-backyard/backyard-frigate-faces
+                        hold_action:
                           action: more-info
                         styles:
                           card:
                             - background-color: '#1c1c1c'
                             - border: 1px solid rgba(255, 255, 255, 0.1)
                             - border-radius: 14px
-                            - padding: 14px 16px
+                            - padding: 8px 10px
                             - box-shadow: none
-                            - min-height: 72px
                           grid:
                             - grid-template-areas: '"stat_tile"'
                             - grid-template-columns: 1fr
@@ -166,9 +172,9 @@ views:
                               const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
                               const label = faceBad ? 'Facial Match: Unknown' : `Facial Match: ${esc(raw)}`;
                               const iconColor = '#ff6e40';
-                              return `<div style="display:flex;flex-direction:row;align-items:center;gap:14px;width:100%;min-width:0;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);">
-                                <ha-icon icon="mdi:face-recognition" style="flex-shrink:0;color:${iconColor};--mdc-icon-size:40px;width:40px;height:40px;"></ha-icon>
-                                <div style="font-weight:700;font-size:0.9375rem;line-height:1.3;color:#fff;min-width:0;flex:1 1 auto;text-align:left;word-wrap:break-word;overflow-wrap:anywhere;">${label}</div>
+                              return `<div style="display:flex;flex-direction:row;align-items:center;gap:10px;width:100%;min-width:0;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);">
+                                <ha-icon icon="mdi:face-recognition" style="flex-shrink:0;color:${iconColor};--mdc-icon-size:30px;width:30px;height:30px;"></ha-icon>
+                                <div style="font-weight:700;font-size:0.875rem;line-height:1.25;color:#fff;min-width:0;flex:1 1 auto;text-align:left;word-wrap:break-word;overflow-wrap:anywhere;">${label}</div>
                               </div>`;
                             ]]]
                 columns: 1
@@ -1193,3 +1199,121 @@ views:
           method: name
           ignore_case: true
         show_empty: true
+
+  - title: Back Yard — People
+    path: backyard-frigate-people
+    icon: mdi:account-multiple
+    subview: true
+    back_path: /dashboard-backyard/backyard
+    cards:
+      - type: markdown
+        content: >
+          **Back Yard** live view and Frigate **person** events. Use the camera card menu (⋮) to open clips / snapshots /
+          timeline if the default view is live only. If `image.back_yard_person` is missing, confirm Frigate labels and
+          entity names under **Settings → Devices** for this camera.
+      - type: custom:advanced-camera-card
+        cameras:
+          - camera_entity: camera.back_yard
+            frigate:
+              camera_name: back_yard
+              labels:
+                - person
+            dimensions:
+              layout:
+                fit: cover
+                position:
+                  x: 50
+                  'y': 50
+        dimensions:
+          aspect_ratio_mode: static
+          aspect_ratio: '16/9'
+        live:
+          preload: false
+        menu:
+          style: outside
+          position: top
+      - type: entities
+        title: Latest person crop (Frigate image entity)
+        show_header_toggle: false
+        entities:
+          - entity: image.back_yard_person
+            name: Most recent person detection
+
+  - title: Back Yard — Dogs
+    path: backyard-frigate-dogs
+    icon: mdi:dog-side
+    subview: true
+    back_path: /dashboard-backyard/backyard
+    cards:
+      - type: markdown
+        content: >
+          **Back Yard** live view and Frigate **dog** events. Open the card menu for clips and snapshots. Ensure your
+          Frigate model tracks `dog` on this camera; otherwise adjust `labels` in this dashboard YAML.
+      - type: custom:advanced-camera-card
+        cameras:
+          - camera_entity: camera.back_yard
+            frigate:
+              camera_name: back_yard
+              labels:
+                - dog
+            dimensions:
+              layout:
+                fit: cover
+                position:
+                  x: 50
+                  'y': 50
+        dimensions:
+          aspect_ratio_mode: static
+          aspect_ratio: '16/9'
+        live:
+          preload: false
+        menu:
+          style: outside
+          position: top
+      - type: entities
+        title: Latest dog crop (Frigate image entity)
+        show_header_toggle: false
+        entities:
+          - entity: image.back_yard_dog
+            name: Most recent dog detection
+
+  - title: Back Yard — Faces
+    path: backyard-frigate-faces
+    icon: mdi:face-recognition
+    subview: true
+    back_path: /dashboard-backyard/backyard
+    cards:
+      - type: markdown
+        content: >
+          **Face recognition** depends on your stack: Frigate native **face** objects use the `face` label below. If you
+          use **Double Take** or only `person` detections, change `labels` in YAML (e.g. to `person`) or bind different
+          image entities in the list at the bottom.
+      - type: custom:advanced-camera-card
+        cameras:
+          - camera_entity: camera.back_yard
+            frigate:
+              camera_name: back_yard
+              labels:
+                - face
+            dimensions:
+              layout:
+                fit: cover
+                position:
+                  x: 50
+                  'y': 50
+        dimensions:
+          aspect_ratio_mode: static
+          aspect_ratio: '16/9'
+        live:
+          preload: false
+        menu:
+          style: outside
+          position: top
+      - type: entities
+        title: Face snapshot & last match
+        show_header_toggle: false
+        entities:
+          - entity: image.back_yard_face
+            name: Latest face crop (Frigate)
+          - entity: sensor.back_yard_last_recognized_face
+            name: Last recognized name
