@@ -21,6 +21,15 @@ views:
                   - type: custom:advanced-camera-card
                     cameras:
                       - camera_entity: camera.back_yard
+                        dimensions:
+                          layout:
+                            fit: cover
+                            position:
+                              x: 50
+                              'y': 50
+                    dimensions:
+                      aspect_ratio_mode: static
+                      aspect_ratio: '16:7'
                     live:
                       preload: false
                     status_bar:
@@ -32,24 +41,25 @@ views:
                       style: none
                   - square: false
                     type: grid
+                    columns: 3
                     cards:
                       - type: tile
                         entity: sensor.back_yard_person_count
                         icon: mdi:account-multiple
                         color: green
-                        vertical: false
+                        vertical: true
                         features_position: bottom
                       - type: tile
                         entity: sensor.back_yard_dog_count
                         icon: mdi:dog-side
                         color: amber
-                        vertical: false
+                        vertical: true
                         features_position: bottom
                       - type: tile
                         entity: sensor.back_yard_last_recognized_face
                         icon: mdi:face-recognition
                         color: deep-orange
-                        vertical: false
+                        vertical: true
                         features_position: bottom
                 columns: 1
               - type: vertical-stack
@@ -60,6 +70,12 @@ views:
                       - type: custom:advanced-camera-card
                         cameras:
                           - camera_entity: camera.east_side
+                            dimensions:
+                              layout:
+                                fit: cover
+                                position:
+                                  x: 50
+                                  'y': 50
                         live:
                           preload: false
                         dimensions:
@@ -72,6 +88,12 @@ views:
                       - type: custom:advanced-camera-card
                         cameras:
                           - camera_entity: camera.west_side
+                            dimensions:
+                              layout:
+                                fit: cover
+                                position:
+                                  x: 50
+                                  'y': 50
                         live:
                           preload: false
                         dimensions:
@@ -84,6 +106,12 @@ views:
                       - type: custom:advanced-camera-card
                         cameras:
                           - camera_entity: camera.garden_south
+                            dimensions:
+                              layout:
+                                fit: cover
+                                position:
+                                  x: 50
+                                  'y': 50
                         live:
                           preload: false
                         dimensions:
@@ -96,6 +124,12 @@ views:
                       - type: custom:advanced-camera-card
                         cameras:
                           - camera_entity: camera.garden_north
+                            dimensions:
+                              layout:
+                                fit: cover
+                                position:
+                                  x: 50
+                                  'y': 50
                         live:
                           preload: false
                         dimensions:
@@ -744,3 +778,6 @@ views:
                         title: INFRASTRUCTURE
         column_span: 4
     header: {}
+    icon: mdi:home
+    cards: []
+    max_columns: 4
