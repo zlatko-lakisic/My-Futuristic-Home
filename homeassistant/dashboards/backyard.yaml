@@ -812,6 +812,9 @@ views:
                             show_state: false
                             show_label: false
                             tap_action:
+                              action: navigate
+                              navigation_path: /dashboard-backyard/backyard-unifi-clients
+                            hold_action:
                               action: more-info
                             styles:
                               card:
@@ -1040,3 +1043,52 @@ views:
                                 state_map: null
                         title: INFRASTRUCTURE
         column_span: 4
+
+  - title: AP Back Yard - UniFi Clients
+    path: backyard-unifi-clients
+    icon: mdi:wifi
+    subview: true
+    back_path: /dashboard-backyard
+    cards:
+      - type: markdown
+        content: >
+          **Clients on AP Back Yard** — `device_tracker` rows whose UniFi `ap_mac` matches the MAC(s) on the same
+          **device** as `sensor.ap_back_yard_clients` (the AP’s own `device_tracker` / `mac` attribute).
+          If the list is empty, open **Developer tools → States**, pick any client on that AP, and confirm `ap_mac`
+          matches an attribute on one of the AP device’s entities.
+      - type: custom:auto-entities
+        card:
+          type: entities
+          title: AP Back Yard clients
+          show_header_toggle: false
+        filter:
+          template: |
+            {% set dev_id = device_id('sensor.ap_back_yard_clients') %}
+            {% set mac_norms = namespace(l=[]) %}
+            {% if dev_id is not none %}
+              {% for ent in device_entities(dev_id) %}
+                {% if ent.startswith('device_tracker.') %}
+                  {% set raw = state_attr(ent, 'mac') or state_attr(ent, 'mac_address') %}
+                  {% if raw %}
+                    {% set mac_norms.l = mac_norms.l + [raw | lower | replace(':', '') | replace('-', '')] %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            {% set out = namespace(ids=[]) %}
+            {% if mac_norms.l | length > 0 %}
+              {% for s in states.device_tracker %}
+                {% set ap = s.attributes.get('ap_mac') %}
+                {% if ap %}
+                  {% set apn = ap | lower | replace(':', '') | replace('-', '') %}
+                  {% if apn in mac_norms.l %}
+                    {% set out.ids = out.ids + [s.entity_id] %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            {{ out.ids }}
+        sort:
+          method: name
+          ignore_case: true
+        show_empty: true
