@@ -1,0 +1,959 @@
+# -----------------------------------------------------------------------------
+# Infrastructure dashboard — entities aligned to live Home Assistant (Mikrotik per-interface
+# / per-controller names, UniFi, Proxmox node + QEMU, OMV NAS1/NAS2, System Monitor, Frigate CPU).
+# Throughput graphs: Mikrotik kB/s on ether1 / ether2 / VLANs / ether3. UniFi has no
+# sensor.ap_bottom_floor_clients — middle AP tile uses CPU utilization.
+# -----------------------------------------------------------------------------
+
+views:
+  - title: Infrastructure
+    path: infrastructure
+    type: sections
+    max_columns: 4
+    dense_section_placement: true
+    icon: mdi:server-network
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading_style: title
+            heading: TOTAL INFRASTRUCTURE MONITORING
+
+          - type: heading
+            heading_style: subtitle
+            heading: CORE NETWORK STATUS
+
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 34% 1fr
+              grid-gap: 10px
+              place-items: stretch
+              mediaquery:
+                "(max-width: 1000px)":
+                  grid-template-columns: 100%
+            grid_options:
+              columns: full
+            cards:
+              - type: vertical-stack
+                cards:
+                  - type: custom:button-card
+                    entity: binary_sensor.mikrotik_home_ether1_connection
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    show_label: false
+                    triggers_update:
+                      - sensor.mikrotik_home_hap_ac_uptime
+                      - update.mikrotik_home_hap_ac_routeros_update
+                      - sensor.mikrotik_home_hap_ac_cpu_load
+                      - sensor.mikrotik_home_hap_ac_memory_usage
+                    tap_action:
+                      action: more-info
+                    styles:
+                      card:
+                        - background-color: '#1c1c1c'
+                        - border: 1px solid rgba(255, 255, 255, 0.1)
+                        - border-radius: 14px
+                        - padding: 12px
+                        - box-shadow: none
+                      grid:
+                        - grid-template-areas: '"gw"'
+                        - grid-template-columns: 1fr
+                      custom_fields:
+                        gw:
+                          - width: 100%
+                          - justify-self: stretch
+                    custom_fields:
+                      gw: |
+                        [[[
+                          const st = entity.state;
+                          const bad = ['unknown', 'unavailable'].includes(st);
+                          const online = st === 'on';
+                          const badgeBg = bad ? 'rgba(255,255,255,0.08)' : (online ? 'rgba(67,160,71,0.2)' : 'rgba(244,67,54,0.2)');
+                          const badgeFg = bad ? 'rgba(255,255,255,0.5)' : (online ? '#81c784' : '#ef9a9a');
+                          const badgeTxt = bad ? 'WAN status: —' : (online ? 'WAN link up' : 'WAN link down');
+                          const formatUptime = (iso) => {
+                            if (!iso || ['unknown', 'unavailable', 'none', ''].includes(String(iso).toLowerCase())) return '—';
+                            const t = new Date(iso).getTime();
+                            if (Number.isNaN(t)) return iso;
+                            let sec = Math.floor((Date.now() - t) / 1000);
+                            if (sec < 0) sec = 0;
+                            const d = Math.floor(sec / 86400);
+                            const h = Math.floor((sec % 86400) / 3600);
+                            const m = Math.floor((sec % 3600) / 60);
+                            if (d > 0) return `${d}d ${h}h`;
+                            if (h > 0) return `${h}h ${m}m`;
+                            return `${m}m`;
+                          };
+                          const up = formatUptime(hass.states['sensor.mikrotik_home_hap_ac_uptime']?.state);
+                          const upd = hass.states['update.mikrotik_home_hap_ac_routeros_update'];
+                          const fw = upd?.attributes?.installed_version ?? upd?.state ?? '—';
+                          const cpu = hass.states['sensor.mikrotik_home_hap_ac_cpu_load']?.state ?? '—';
+                          const mem = hass.states['sensor.mikrotik_home_hap_ac_memory_usage']?.state ?? '—';
+                          return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">
+                            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
+                              <ha-icon icon="mdi:router-wireless" style="flex-shrink:0;color:#ff9800;--mdc-icon-size:48px;width:48px;height:48px;"></ha-icon>
+                              <div style="min-width:0;flex:1;">
+                                <div style="font-weight:700;font-size:1rem;line-height:1.2;">MikroTik hAP ac</div>
+                                <div style="font-size:0.72rem;opacity:0.75;margin-top:4px;">Main gateway · 10.0.10.1</div>
+                                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+                                  <span style="font-size:0.72rem;font-weight:600;padding:4px 10px;border-radius:999px;background:${badgeBg};color:${badgeFg};">${badgeTxt}</span>
+                                  <span style="font-size:0.72rem;opacity:0.85;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,0.06);">F/W: ${fw}</span>
+                                  <span style="font-size:0.72rem;opacity:0.85;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,0.06);">Uptime: ${up}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem;opacity:0.9;">
+                              <div>CPU load: <strong style="color:#ffb74d;">${cpu}${String(cpu).includes('%')?'':'%'}</strong></div>
+                              <div>Memory: <strong style="color:#4fc3f7;">${mem}${String(mem).includes('%')?'':'%'}</strong></div>
+                            </div>
+                          </div>`;
+                        ]]]
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: 1fr 1fr
+                      grid-gap: 8px
+                    cards:
+                      - type: custom:modern-circular-gauge
+                        entity: sensor.mikrotik_home_hap_ac_cpu_load
+                        name: CPU Load
+                        gauge_type: standard
+                        needle: false
+                        smooth_segments: true
+                        min: 0
+                        max: 100
+                        show_icon: true
+                        icon: mdi:chip
+                        header_position: top
+                        show_header: true
+                        state_font_size: 22
+                        gauge_background_style:
+                          width: 12
+                          opacity: 0.5
+                        gauge_foreground_style:
+                          width: 10
+                          color:
+                            - 255
+                            - 152
+                            - 0
+                        segments:
+                          - from: 0
+                            color:
+                              - 76
+                              - 175
+                              - 80
+                          - from: 55
+                            color:
+                              - 255
+                              - 193
+                              - 7
+                          - from: 80
+                            color:
+                              - 244
+                              - 67
+                              - 54
+                        tap_action:
+                          action: more-info
+                      - type: custom:modern-circular-gauge
+                        entity: sensor.mikrotik_home_hap_ac_memory_usage
+                        name: Memory
+                        gauge_type: standard
+                        needle: false
+                        smooth_segments: true
+                        min: 0
+                        max: 100
+                        show_icon: true
+                        icon: mdi:memory
+                        header_position: top
+                        show_header: true
+                        state_font_size: 22
+                        gauge_background_style:
+                          width: 12
+                          opacity: 0.5
+                        gauge_foreground_style:
+                          width: 10
+                          color:
+                            - 79
+                            - 195
+                            - 247
+                        segments:
+                          - from: 0
+                            color:
+                              - 79
+                              - 195
+                              - 247
+                          - from: 50
+                            color:
+                              - 255
+                              - 193
+                              - 7
+                          - from: 80
+                            color:
+                              - 244
+                              - 67
+                              - 54
+                        tap_action:
+                          action: more-info
+
+              - type: vertical-stack
+                cards:
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(2, minmax(0, 1fr))
+                      grid-gap: 8px
+                      mediaquery:
+                        "(max-width: 520px)":
+                          grid-template-columns: 100%
+                    cards:
+                      - type: custom:button-card
+                        entity: sensor.mikrotik_mostar_rb951g_2hnd_cpu_load
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        triggers_update:
+                          - update.mikrotik_mostar_rb951g_2hnd_routeros_update
+                          - binary_sensor.mikrotik_mostar_ether1_connection
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 10px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"r"'
+                            - grid-template-columns: 1fr
+                          custom_fields:
+                            r:
+                              - width: 100%
+                        custom_fields:
+                          r: |
+                            [[[
+                              const v = Math.min(100, Math.max(0, parseFloat(entity.state) || 0));
+                              const upd = hass.states['update.mikrotik_mostar_rb951g_2hnd_routeros_update'];
+                              const lbl = upd?.attributes?.installed_version ?? '192.168.88.1';
+                              const wan = hass.states['binary_sensor.mikrotik_mostar_ether1_connection']?.state;
+                              const wanOk = wan === 'on';
+                              const dot = wanOk ? '<span style="color:#81c784;">●</span> ' : '<span style="color:#e57373;">●</span> ';
+                              return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                                <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px;">${dot}Mikrotik-Mostar</div>
+                                <div style="font-size:0.68rem;opacity:0.75;margin-bottom:6px;">RB951G · remote site</div>
+                                <div style="height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
+                                  <div style="width:${v}%;height:100%;background:linear-gradient(90deg,#29b6f6,#ff9800);"></div>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.72rem;opacity:0.8;"><span>CPU load</span><span>${lbl}</span></div>
+                              </div>`;
+                            ]]]
+                      - type: custom:button-card
+                        entity: binary_sensor.mikrotik_home_ether3_connection
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        triggers_update:
+                          - sensor.mikrotik_home_ether3_rx
+                          - sensor.mikrotik_home_ether3_tx
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 10px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"r"'
+                          custom_fields:
+                            r:
+                              - width: 100%
+                        custom_fields:
+                          r: |
+                            [[[
+                              const st = entity.state;
+                              const linkUp = st === 'on';
+                              const dot = linkUp ? '<span style="color:#81c784;">●</span> ' : '<span style="color:#e57373;">●</span> ';
+                              const attrs = entity.attributes || {};
+                              const rateStr = (attrs.rate != null ? String(attrs.rate) : '').toLowerCase();
+                              let capBps = 125000000;
+                              if (rateStr.includes('10g') || rateStr.includes('10000')) capBps = 1250000000;
+                              else if (rateStr.includes('100m') || rateStr.includes('100 m') || rateStr === '100mbps') capBps = 12500000;
+                              const rx = parseFloat(hass.states['sensor.mikrotik_home_ether3_rx']?.state) || 0;
+                              const tx = parseFloat(hass.states['sensor.mikrotik_home_ether3_tx']?.state) || 0;
+                              const sum = Math.max(0, rx + tx);
+                              const v = capBps > 0 ? Math.min(100, (sum / capBps) * 100) : 0;
+                              const mbps = (sum * 8) / 1000000;
+                              const lbl = `${mbps.toFixed(1)} Mbps`;
+                              return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                                <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px;">${dot}CSS326 · perimeter</div>
+                                <div style="font-size:0.68rem;opacity:0.75;margin-bottom:6px;">hAP ether3 → MSNSwitch</div>
+                                <div style="height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
+                                  <div style="width:${v}%;height:100%;background:linear-gradient(90deg,#66bb6a,#26c6da);"></div>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.72rem;opacity:0.8;"><span>Uplink vs line rate</span><span>${lbl}</span></div>
+                              </div>`;
+                            ]]]
+
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(3, minmax(0, 1fr))
+                      grid-gap: 8px
+                      mediaquery:
+                        "(max-width: 900px)":
+                          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr))
+                    cards:
+                      - type: custom:button-card
+                        entity: sensor.ap_back_yard_clients
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 10px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"r"'
+                          custom_fields:
+                            r:
+                              - width: 100%
+                        custom_fields:
+                          r: |
+                            [[[
+                              const n = entity.state;
+                              const iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
+                              return `<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                                  <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                                    <img src="${iconUrl}" width="40" height="40" alt="" style="object-fit:contain;flex-shrink:0;" loading="lazy" />
+                                    <div>
+                                      <div style="font-weight:600;font-size:0.85rem;">AP Back Yard</div>
+                                      <div style="font-size:0.72rem;opacity:0.75;margin-top:2px;">U7MSH · UniFi</div>
+                                    </div>
+                                  </div>
+                                  <div style="font-size:1.35rem;font-weight:700;">${n}</div>
+                                </div>
+                                <div style="font-size:0.72rem;opacity:0.75;margin-top:6px;text-align:right;">clients</div>
+                              </div>`;
+                            ]]]
+                      - type: custom:button-card
+                        entity: sensor.ap_bottom_floor_cpu_utilization
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 10px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"r"'
+                          custom_fields:
+                            r:
+                              - width: 100%
+                        custom_fields:
+                          r: |
+                            [[[
+                              const n = entity.state;
+                              const iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
+                              return `<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                                  <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                                    <img src="${iconUrl}" width="40" height="40" alt="" style="object-fit:contain;flex-shrink:0;" loading="lazy" />
+                                    <div>
+                                      <div style="font-weight:600;font-size:0.85rem;">AP Bottom Floor</div>
+                                      <div style="font-size:0.72rem;opacity:0.75;margin-top:2px;">U7NHD · UniFi</div>
+                                    </div>
+                                  </div>
+                                  <div style="font-size:1.35rem;font-weight:700;">${n}<span style="font-size:0.85rem;opacity:0.8">%</span></div>
+                                </div>
+                                <div style="font-size:0.72rem;opacity:0.75;margin-top:6px;text-align:right;">CPU util. (no clients entity)</div>
+                              </div>`;
+                            ]]]
+                      - type: custom:button-card
+                        entity: sensor.ap_top_floor_clients
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 10px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"r"'
+                          custom_fields:
+                            r:
+                              - width: 100%
+                        custom_fields:
+                          r: |
+                            [[[
+                              const n = entity.state;
+                              const iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
+                              return `<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                                  <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                                    <img src="${iconUrl}" width="40" height="40" alt="" style="object-fit:contain;flex-shrink:0;" loading="lazy" />
+                                    <div>
+                                      <div style="font-weight:600;font-size:0.85rem;">AP Top Floor</div>
+                                      <div style="font-size:0.72rem;opacity:0.75;margin-top:2px;">U7NHD · UniFi</div>
+                                    </div>
+                                  </div>
+                                  <div style="font-size:1.35rem;font-weight:700;">${n}</div>
+                                </div>
+                                <div style="font-size:0.72rem;opacity:0.75;margin-top:6px;text-align:right;">clients</div>
+                              </div>`;
+                            ]]]
+
+                  - type: heading
+                    heading_style: subtitle
+                    heading: Throughput (recent)
+
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
+                      grid-gap: 8px
+                    cards:
+                      - type: custom:statistics-graph-chart-card
+                        card_header: WAN (ISP)
+                        show_grid: false
+                        show_tooltip: true
+                        show_legend: false
+                        show_y_axis: false
+                        show_x_axis: true
+                        show_x_ticks: false
+                        show_y_ticks: false
+                        cache: true
+                        animate_graph: false
+                        hours_to_show: 6
+                        points_per_hour: 4
+                        height: 100
+                        chart_mode: timeline
+                        group_by: interval
+                        entities:
+                          - entity: sensor.mikrotik_home_ether1_rx
+                            name: kB/s
+                            color: '#ff9800'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 0
+                            aggregate_func: avg
+                            tap_action:
+                              action: more-info
+                      - type: custom:statistics-graph-chart-card
+                        card_header: LAN (Core)
+                        show_grid: false
+                        show_tooltip: true
+                        show_legend: false
+                        show_y_axis: false
+                        show_x_axis: true
+                        show_x_ticks: false
+                        show_y_ticks: false
+                        cache: true
+                        animate_graph: false
+                        hours_to_show: 6
+                        points_per_hour: 4
+                        height: 100
+                        chart_mode: timeline
+                        group_by: interval
+                        entities:
+                          - entity: sensor.mikrotik_home_ether2_rx
+                            name: kB/s
+                            color: '#ffa726'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 0
+                            aggregate_func: avg
+                            tap_action:
+                              action: more-info
+                      - type: custom:statistics-graph-chart-card
+                        card_header: Home WLAN
+                        show_grid: false
+                        show_tooltip: true
+                        show_legend: false
+                        show_y_axis: false
+                        show_x_axis: true
+                        show_x_ticks: false
+                        show_y_ticks: false
+                        cache: true
+                        animate_graph: false
+                        hours_to_show: 6
+                        points_per_hour: 4
+                        height: 100
+                        chart_mode: timeline
+                        group_by: interval
+                        entities:
+                          - entity: sensor.mikrotik_home_home_wifi_vlan_rx
+                            name: kB/s
+                            color: '#42a5f5'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 0
+                            aggregate_func: avg
+                            tap_action:
+                              action: more-info
+                      - type: custom:statistics-graph-chart-card
+                        card_header: IoT WLAN
+                        show_grid: false
+                        show_tooltip: true
+                        show_legend: false
+                        show_y_axis: false
+                        show_x_axis: true
+                        show_x_ticks: false
+                        show_y_ticks: false
+                        cache: true
+                        animate_graph: false
+                        hours_to_show: 6
+                        points_per_hour: 4
+                        height: 100
+                        chart_mode: timeline
+                        group_by: interval
+                        entities:
+                          - entity: sensor.mikrotik_home_iot_vlan_rx
+                            name: kB/s
+                            color: '#ff7043'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 0
+                            aggregate_func: avg
+                            tap_action:
+                              action: more-info
+                      - type: custom:statistics-graph-chart-card
+                        card_header: Perimeter
+                        show_grid: false
+                        show_tooltip: true
+                        show_legend: false
+                        show_y_axis: false
+                        show_x_axis: true
+                        show_x_ticks: false
+                        show_y_ticks: false
+                        cache: true
+                        animate_graph: false
+                        hours_to_show: 6
+                        points_per_hour: 4
+                        height: 100
+                        chart_mode: timeline
+                        group_by: interval
+                        entities:
+                          - entity: sensor.mikrotik_home_ether3_rx
+                            name: kB/s
+                            color: '#66bb6a'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 0
+                            aggregate_func: avg
+                            tap_action:
+                              action: more-info
+        column_span: 4
+
+      - type: grid
+        cards:
+          - type: heading
+            heading_style: subtitle
+            heading: SERVERS, PROXMOX & FRIGATE
+
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 1fr 1fr 1fr
+              grid-gap: 10px
+              mediaquery:
+                "(max-width: 1100px)":
+                  grid-template-columns: 100%
+            grid_options:
+              columns: full
+            cards:
+              - type: vertical-stack
+                cards:
+                  - type: custom:button-card
+                    entity: sensor.system_monitor_processor_use
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    show_label: false
+                    triggers_update:
+                      - sensor.system_monitor_disk_usage
+                    tap_action:
+                      action: more-info
+                    styles:
+                      card:
+                        - background-color: '#1c1c1c'
+                        - border: 1px solid rgba(255, 255, 255, 0.1)
+                        - border-radius: 14px
+                        - padding: 12px
+                        - box-shadow: none
+                      grid:
+                        - grid-template-areas: '"ha"'
+                      custom_fields:
+                        ha:
+                          - width: 100%
+                    custom_fields:
+                      ha: |
+                        [[[
+                          const bar = (label, pct, color) => {
+                            const v = Math.min(100, Math.max(0, parseFloat(pct) || 0));
+                            return `<div style="margin-bottom:10px;font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                              <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span>${label}</span><span>${v}%</span></div>
+                              <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">
+                                <div style="width:${v}%;height:100%;background:${color};"></div>
+                              </div>
+                            </div>`;
+                          };
+                          const cpu = hass.states['sensor.system_monitor_processor_use']?.state ?? '0';
+                          const disk = hass.states['sensor.system_monitor_disk_usage']?.state ?? '0';
+                          return `<div>
+                            <div style="font-weight:700;font-size:0.95rem;margin-bottom:10px;color:#fff;">Home Assistant host</div>
+                            ${bar('CPU', cpu, 'linear-gradient(90deg,#42a5f5,#1e88e5)')}
+                            ${bar('Disk usage /', disk, 'linear-gradient(90deg,#7e57c2,#5e35b1)')}
+                          </div>`;
+                        ]]]
+
+                  - type: heading
+                    heading_style: subtitle
+                    heading: Proxmox QEMU (CPU used)
+
+                  - type: custom:button-card
+                    entity: sensor.qemu_nginx_prod_100_cpu_used
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    show_label: false
+                    triggers_update:
+                      - sensor.qemu_mariadb_101_cpu_used
+                      - sensor.qemu_gitlab2_102_cpu_used
+                      - sensor.qemu_active_directory_104_cpu_used
+                    styles:
+                      card:
+                        - background-color: '#1c1c1c'
+                        - border: 1px solid rgba(255, 255, 255, 0.1)
+                        - border-radius: 14px
+                        - padding: 12px
+                        - box-shadow: none
+                      grid:
+                        - grid-template-areas: '"pve"'
+                      custom_fields:
+                        pve:
+                          - width: 100%
+                    custom_fields:
+                      pve: |
+                        [[[
+                          const rows = [
+                            ['nginx-prod (100)', hass.states['sensor.qemu_nginx_prod_100_cpu_used']?.state ?? '0', '#66bb6a'],
+                            ['mariadb (101)', hass.states['sensor.qemu_mariadb_101_cpu_used']?.state ?? '0', '#ffa726'],
+                            ['gitlab (102)', hass.states['sensor.qemu_gitlab2_102_cpu_used']?.state ?? '0', '#42a5f5'],
+                            ['kubernetes-test (104)', hass.states['sensor.qemu_active_directory_104_cpu_used']?.state ?? '0', '#ab47bc'],
+                          ];
+                          const bar = (name, raw, color) => {
+                            const v = Math.min(100, Math.max(0, parseFloat(raw) || 0));
+                            return `<div style="margin-bottom:8px;font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                              <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:3px;"><span>${name}</span><span>${v}%</span></div>
+                              <div style="height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;">
+                                <div style="width:${v}%;height:100%;background:${color};"></div>
+                              </div>
+                            </div>`;
+                          };
+                          return `<div>${rows.map(([a,b,c]) => bar(a,b,c)).join('')}</div>`;
+                        ]]]
+
+              - type: vertical-stack
+                cards:
+                  - type: custom:button-card
+                    entity: sensor.node_proxmox_cpu_used
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    show_label: false
+                    triggers_update:
+                      - sensor.node_proxmox_memory_used_percentage
+                      - sensor.node_proxmox_disk_used_percentage
+                      - sensor.node_proxmox_virtual_machines_running
+                    styles:
+                      card:
+                        - background-color: '#1c1c1c'
+                        - border: 1px solid rgba(255, 255, 255, 0.1)
+                        - border-radius: 14px
+                        - padding: 12px
+                        - box-shadow: none
+                      grid:
+                        - grid-template-areas: '"pvn"'
+                      custom_fields:
+                        pvn:
+                          - width: 100%
+                    custom_fields:
+                      pvn: |
+                        [[[
+                          const cpu = Math.min(100, Math.max(0, parseFloat(hass.states['sensor.node_proxmox_cpu_used']?.state) || 0));
+                          const ram = Math.min(100, Math.max(0, parseFloat(hass.states['sensor.node_proxmox_memory_used_percentage']?.state) || 0));
+                          const disk = Math.min(100, Math.max(0, parseFloat(hass.states['sensor.node_proxmox_disk_used_percentage']?.state) || 0));
+                          const vm = hass.states['sensor.node_proxmox_virtual_machines_running']?.state ?? '—';
+                          const bar = (label, v, grad) => `<div style="margin-bottom:12px;font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                            <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span>${label}</span><span>${v}%</span></div>
+                            <div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;overflow:hidden;">
+                              <div style="width:${v}%;height:100%;background:${grad};"></div>
+                            </div>
+                          </div>`;
+                          return `<div>
+                            <div style="font-weight:700;font-size:0.95rem;margin-bottom:10px;color:#fff;">Proxmox node</div>
+                            ${bar('CPU used', cpu, 'linear-gradient(90deg,#66bb6a,#2e7d32)')}
+                            ${bar('RAM used', ram, 'linear-gradient(90deg,#42a5f5,#1565c0)')}
+                            ${bar('Disk used', disk, 'linear-gradient(90deg,#ffa726,#ef6c00)')}
+                            <div style="font-size:0.82rem;font-weight:600;color:rgba(255,255,255,0.7);">VMs running: ${vm}</div>
+                          </div>`;
+                        ]]]
+
+              - type: vertical-stack
+                cards:
+                  - type: heading
+                    heading_style: subtitle
+                    heading: Frigate (driveway)
+
+                  - type: custom:button-card
+                    entity: sensor.driveway_detect_cpu_usage
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    show_label: false
+                    triggers_update:
+                      - sensor.driveway_capture_cpu_usage
+                      - sensor.driveway_ffmpeg_cpu_usage
+                    styles:
+                      card:
+                        - background-color: '#1c1c1c'
+                        - border: 1px solid rgba(255, 255, 255, 0.1)
+                        - border-radius: 14px
+                        - padding: 12px
+                        - box-shadow: none
+                      grid:
+                        - grid-template-areas: '"fr"'
+                      custom_fields:
+                        fr:
+                          - width: 100%
+                    custom_fields:
+                      fr: |
+                        [[[
+                          const row = (label, id) => {
+                            const v = Math.min(100, Math.max(0, parseFloat(hass.states[id]?.state) || 0));
+                            return `<div style="margin-bottom:10px;font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                              <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span>${label}</span><span>${v}%</span></div>
+                              <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">
+                                <div style="width:${v}%;height:100%;background:linear-gradient(90deg,#8d6e63,#5d4037);"></div>
+                              </div>
+                            </div>`;
+                          };
+                          return `<div>${row('Detect', 'sensor.driveway_detect_cpu_usage')}${row('Capture', 'sensor.driveway_capture_cpu_usage')}${row('FFmpeg', 'sensor.driveway_ffmpeg_cpu_usage')}</div>`;
+                        ]]]
+        column_span: 4
+
+      - type: grid
+        cards:
+          - type: heading
+            heading_style: subtitle
+            heading: STORAGE & SERVICES
+
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 1fr 1fr
+              grid-gap: 10px
+              mediaquery:
+                "(max-width: 900px)":
+                  grid-template-columns: 100%
+            grid_options:
+              columns: full
+            cards:
+              - type: vertical-stack
+                cards:
+                  - type: heading
+                    heading_style: subtitle
+                    heading: Network storage (OMV)
+                  - type: custom:button-card
+                    entity: sensor.nas1_system_cpu_load
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    show_label: false
+                    triggers_update:
+                      - binary_sensor.nas1_services_docker_service_2
+                      - binary_sensor.nas1_services_smb_cifs_service_2
+                      - binary_sensor.nas1_services_ssh_service_2
+                    styles:
+                      card:
+                        - background-color: '#1c1c1c'
+                        - border: 1px solid rgba(255, 255, 255, 0.1)
+                        - border-radius: 14px
+                        - padding: 12px
+                        - box-shadow: none
+                      grid:
+                        - grid-template-areas: '"nas"'
+                      custom_fields:
+                        nas:
+                          - width: 100%
+                    custom_fields:
+                      nas: |
+                        [[[
+                          const raw = hass.states['sensor.nas1_system_cpu_load']?.state;
+                          const cpu = ['unknown', 'unavailable', undefined, null].includes(raw) ? null : Math.min(100, Math.max(0, parseFloat(raw) || 0));
+                          const svc = (id) => hass.states[id]?.state === 'on';
+                          const docker = svc('binary_sensor.nas1_services_docker_service_2');
+                          const smb = svc('binary_sensor.nas1_services_smb_cifs_service_2');
+                          const ssh = svc('binary_sensor.nas1_services_ssh_service_2');
+                          const pill = (on, label) => `<span style="font-size:0.68rem;font-weight:600;padding:3px 8px;border-radius:6px;background:${on ? 'rgba(76,175,80,0.2)' : 'rgba(244,67,54,0.15)'};color:${on ? '#81c784' : '#e57373'};">${label}</span>`;
+                          const bar = cpu != null ? `<div style="margin-bottom:10px;font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                            <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px;"><span>CPU load</span><span>${cpu}%</span></div>
+                            <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">
+                              <div style="width:${cpu}%;height:100%;background:linear-gradient(90deg,#42a5f5,#1e88e5);"></div>
+                            </div>
+                          </div>` : `<div style="font-size:0.75rem;opacity:0.75;margin-bottom:10px;">CPU: — (integration unavailable)</div>`;
+                          return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                            <div style="font-weight:600;font-size:0.9rem;margin-bottom:8px;">NAS1 (OMV)</div>
+                            ${bar}
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;">${pill(docker, 'Docker')}${pill(smb, 'SMB')}${pill(ssh, 'SSH')}</div>
+                          </div>`;
+                        ]]]
+                  - type: custom:button-card
+                    entity: sensor.nas2_filesystem
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    show_label: false
+                    triggers_update:
+                      - sensor.nas2_filesystem_2
+                      - sensor.nas2_disk
+                      - sensor.nas2_disk_2
+                      - sensor.nas2_disk_3
+                      - sensor.nas2_disk_4
+                      - sensor.nas2_disk_5
+                    styles:
+                      card:
+                        - background-color: '#1c1c1c'
+                        - border: 1px solid rgba(255, 255, 255, 0.1)
+                        - border-radius: 14px
+                        - padding: 12px
+                        - box-shadow: none
+                      grid:
+                        - grid-template-areas: '"nas"'
+                      custom_fields:
+                        nas:
+                          - width: 100%
+                    custom_fields:
+                      nas: |
+                        [[[
+                          const fsMd0 = hass.states['sensor.nas2_filesystem'];
+                          const fsOs = hass.states['sensor.nas2_filesystem_2'];
+                          const a = Math.min(100, Math.max(0, parseFloat(fsMd0?.state) || 0));
+                          const b = Math.min(100, Math.max(0, parseFloat(fsOs?.state) || 0));
+                          const diskIds = ['sensor.nas2_disk','sensor.nas2_disk_2','sensor.nas2_disk_3','sensor.nas2_disk_4','sensor.nas2_disk_5'];
+                          let maxT = null;
+                          let smartBad = false;
+                          for (const id of diskIds) {
+                            const st = hass.states[id];
+                            if (!st || ['unknown','unavailable'].includes(st.state)) continue;
+                            const temp = parseFloat(st.state);
+                            if (!Number.isNaN(temp)) maxT = maxT === null ? temp : Math.max(maxT, temp);
+                            const r = st.attributes?.reallocated_sector_ct;
+                            if (r !== undefined && r !== null && String(r).toLowerCase() !== 'unknown') {
+                              const n = parseFloat(r);
+                              if (!Number.isNaN(n) && n > 0) smartBad = true;
+                            }
+                          }
+                          const t = maxT !== null ? `${maxT}°C max` : '—';
+                          const smTxt = smartBad ? 'SMART: Check' : 'SMART: OK';
+                          const smCol = smartBad ? '#e57373' : '#81c784';
+                          return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                            <div style="font-weight:600;font-size:0.9rem;margin-bottom:2px;">NAS2 (OMV)</div>
+                            <div style="font-size:0.68rem;opacity:0.75;margin-bottom:8px;">md0 + sde1 · nas2.mostardesigns.com</div>
+                            <div style="display:flex;height:12px;border-radius:6px;overflow:hidden;margin-bottom:8px;">
+                              <div style="width:${a}%;background:#29b6f6;"></div>
+                              <div style="width:${b}%;background:#26a69a;"></div>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-size:0.72rem;opacity:0.85;">
+                              <span style="color:${smCol};font-weight:600;">${smTxt}</span>
+                              <span>Temp: ${t}</span>
+                            </div>
+                          </div>`;
+                        ]]]
+
+              - type: vertical-stack
+                cards:
+                  - type: heading
+                    heading_style: subtitle
+                    heading: NAS2 Compose stack
+                  - type: custom:button-card
+                    entity: sensor.nas2_compose
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    show_label: false
+                    triggers_update:
+                      - sensor.nas2_compose_2
+                      - sensor.nas2_compose_4
+                      - sensor.nas2_compose_5
+                    styles:
+                      card:
+                        - background-color: '#1c1c1c'
+                        - border: 1px solid rgba(255, 255, 255, 0.1)
+                        - border-radius: 14px
+                        - padding: 12px
+                        - box-shadow: none
+                      grid:
+                        - grid-template-areas: '"dk"'
+                      custom_fields:
+                        dk:
+                          - width: 100%
+                    custom_fields:
+                      dk: |
+                        [[[
+                          const row = (icon, name, id, color) => {
+                            const ok = hass.states[id]?.state === 'running';
+                            const v = ok ? 100 : 0;
+                            return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                              <ha-icon icon="${icon}" style="flex-shrink:0;color:${color};--mdc-icon-size:22px;"></ha-icon>
+                              <div style="flex:1;min-width:0;">
+                                <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">
+                                  <div style="width:${v}%;height:100%;background:${color};"></div>
+                                </div>
+                              </div>
+                              <div style="flex-shrink:0;font-size:0.75rem;font-weight:600;opacity:0.9;width:88px;text-align:right;">${name}</div>
+                            </div>`;
+                          };
+                          return `<div>
+                            ${row('mdi:plex', 'Plex', 'sensor.nas2_compose', '#e5a00d')}
+                            ${row('mdi:download', 'Radarr', 'sensor.nas2_compose_2', '#66bb6a')}
+                            ${row('mdi:television-classic', 'Sonarr', 'sensor.nas2_compose_4', '#42a5f5')}
+                            ${row('mdi:network', 'qBittorrent', 'sensor.nas2_compose_5', '#ef5350')}
+                          </div>`;
+                        ]]]
+        column_span: 4
