@@ -191,20 +191,34 @@ views:
                         min: -10
                         max: 110
                         needle: true
-                        severity:
-                          green: 0
-                          yellow: 78
-                          red: 92
+                        segments:
+                          - from: -10
+                            color: '#1b5e20'
+                          - from: 32
+                            color: '#43a047'
+                          - from: 55
+                            color: '#fdd835'
+                          - from: 72
+                            color: '#fb8c00'
+                          - from: 88
+                            color: '#c62828'
                       - type: gauge
                         entity: sensor.garden_controller_indoor_humidity
                         name: Garden Humidity
                         min: 0
                         max: 100
                         needle: true
-                        severity:
-                          green: 0
-                          yellow: 55
-                          red: 75
+                        segments:
+                          - from: 0
+                            color: '#0d47a1'
+                          - from: 28
+                            color: '#1565c0'
+                          - from: 45
+                            color: '#1e88e5'
+                          - from: 62
+                            color: '#42a5f5'
+                          - from: 78
+                            color: '#ffb300'
                   - type: custom:statistics-graph-chart-card
                     card_header: SOIL MOISTURE
                     card_icon_position: left
@@ -553,45 +567,51 @@ views:
                     type: grid
                     columns: 4
                     cards:
-                      - show_name: true
-                        show_icon: true
-                        type: button
+                      - type: tile
                         entity: light.garden_lights_light
-                        icon: ''
-                        show_state: false
-                      - show_name: true
-                        show_icon: true
-                        type: button
+                        icon: mdi:lightbulb
+                        vertical: false
+                        features_position: bottom
+                      - type: tile
                         entity: light.garden_lights_light_2
-                      - show_name: true
-                        show_icon: true
-                        type: button
+                        icon: mdi:lightbulb
+                        vertical: false
+                        features_position: bottom
+                      - type: tile
                         entity: light.smart_patio_plug_light
-                      - show_name: true
-                        show_icon: true
-                        type: button
+                        icon: mdi:lightbulb
+                        vertical: false
+                        features_position: bottom
+                      - type: tile
                         entity: light.smart_patio_plug_light_2
+                        icon: mdi:lightbulb
+                        vertical: false
+                        features_position: bottom
                     title: LIGHTING & CONTROLS
                   - square: false
                     type: grid
                     columns: 4
                     cards:
-                      - show_name: true
-                        show_icon: true
-                        type: button
+                      - type: tile
                         entity: switch.soffet_lights_socket_1
-                      - show_name: true
-                        show_icon: true
-                        type: button
+                        icon: mdi:lightbulb
+                        vertical: false
+                        features_position: bottom
+                      - type: tile
                         entity: switch.porch_light
-                      - show_name: true
-                        show_icon: true
-                        type: button
+                        icon: mdi:lightbulb
+                        vertical: false
+                        features_position: bottom
+                      - type: tile
                         entity: switch.flood_lights_2
-                      - show_name: true
-                        show_icon: true
-                        type: button
+                        icon: mdi:lightbulb
+                        vertical: false
+                        features_position: bottom
+                      - type: tile
                         entity: switch.light_switch_4
+                        icon: mdi:lightbulb
+                        vertical: false
+                        features_position: bottom
                   - type: horizontal-stack
                     cards:
                       - type: vertical-stack
@@ -642,153 +662,198 @@ views:
                       - type: vertical-stack
                         cards:
                           - type: tile
-                            entity: update.unifi_device_update_f4_e2_c6_19_bf_a2
+                            entity: sensor.ap_back_yard_clients
+                            name: UniFi access point
+                            icon: mdi:access-point
                             vertical: false
                             features_position: bottom
-                          - type: custom:statistics-graph-chart-card
-                            card_header: Up/Down Speed (Graphs)
-                            card_icon_position: left
-                            show_grid: true
-                            show_tooltip: true
-                            show_tooltip_total: true
-                            show_legend: false
-                            show_y_axis: true
-                            show_y2_axis: true
-                            show_y_axis_label: false
-                            show_x_axis: true
-                            show_x_ticks: false
-                            show_y_ticks: false
-                            logarithmic: false
-                            cache: true
-                            animate_graph: false
-                            stacked: false
-                            sparkline: true
-                            scroll_mode: scrollbar
-                            show_interval_picker: false
-                            interval_picker_position: left
-                            show_attribute_list: false
-                            attribute_list_position: left
-                            hours_to_show: 24
-                            points_per_hour: 4
-                            auto_scale_points: true
-                            height: 168
-                            show_full_period: false
-                            bar_spacing: 4
-                            lower_bound_secondary: '0'
-                            upper_bound_secondary: '100'
-                            lower_bound: '0'
-                            upper_bound: '100'
-                            datetime_format: system
-                            tooltip_sync: false
-                            energy_date_sync: false
-                            align_header: left
-                            state_layout: default
-                            group_by: interval
-                            chart_mode: timeline
-                            entities:
-                              - entity: sensor.ap_back_yard_cpu_utilization
-                                statistic_id: null
-                                name: CPU
-                                icon: null
-                                icon_color: null
-                                color: '#ff9800'
-                                y_axis: primary
-                                graph_type: line
-                                line_width: 2.5
-                                points_per_hour: null
-                                show_state: false
-                                show_state_last: false
-                                state_adaptive_color: false
-                                show_graph: true
-                                show_in_legend: false
-                                legend_stats:
-                                  - min
-                                  - avg
-                                  - max
-                                show_points: false
-                                point_colors: null
-                                show_line: true
-                                show_fill: true
-                                show_range_band: false
-                                gradient: true
-                                smooth: true
-                                decimals: 1
-                                aggregate_func: avg
-                                number_format: system
-                                trend_period_hours: 1
-                                show_trend_icon: true
-                                rise_fall_colors: null
-                                color_thresholds: null
-                                lower_bound: null
-                                upper_bound: null
-                                show_extrema: click
-                                show_average: false
-                                name_size: null
-                                icon_size: null
-                                state_size: null
-                                state_color: null
-                                trend_icon_size: null
-                                attribute: null
-                                value_factor: 0
-                                value_transform: null
-                                fixed_value: false
-                                offset: 0
+                          - type: heading
+                            heading_style: subtitle
+                            heading: Up/Down Speed (Graphs)
+                          - type: horizontal-stack
+                            cards:
+                              - type: custom:statistics-graph-chart-card
+                                card_header: CPU
+                                card_icon_position: left
+                                show_grid: true
+                                show_tooltip: true
+                                show_tooltip_total: true
+                                show_legend: false
+                                show_y_axis: true
+                                show_y2_axis: false
+                                show_y_axis_label: false
+                                show_x_axis: true
+                                show_x_ticks: false
+                                show_y_ticks: false
+                                logarithmic: false
+                                cache: true
+                                animate_graph: false
+                                stacked: false
+                                sparkline: false
+                                scroll_mode: scrollbar
+                                show_interval_picker: false
+                                interval_picker_position: left
+                                show_attribute_list: false
+                                attribute_list_position: left
+                                hours_to_show: 24
+                                points_per_hour: 2
+                                auto_scale_points: false
+                                height: 140
+                                show_full_period: false
+                                bar_spacing: 4
+                                lower_bound: '0'
+                                datetime_format: system
+                                tooltip_sync: false
+                                energy_date_sync: false
+                                align_header: left
+                                state_layout: default
+                                group_by: interval
+                                chart_mode: timeline
+                                entities:
+                                  - entity: sensor.ap_back_yard_cpu_utilization
+                                    statistic_id: null
+                                    name: CPU
+                                    icon: null
+                                    icon_color: null
+                                    color: '#ff9800'
+                                    y_axis: primary
+                                    graph_type: line
+                                    line_width: 2.5
+                                    points_per_hour: null
+                                    show_state: false
+                                    show_state_last: false
+                                    state_adaptive_color: false
+                                    show_graph: true
+                                    show_in_legend: false
+                                    legend_stats:
+                                      - min
+                                      - avg
+                                      - max
+                                    show_points: true
+                                    point_colors: null
+                                    show_line: true
+                                    show_fill: true
+                                    show_range_band: false
+                                    gradient: true
+                                    smooth: true
+                                    decimals: 1
+                                    aggregate_func: avg
+                                    number_format: system
+                                    trend_period_hours: 1
+                                    show_trend_icon: true
+                                    rise_fall_colors: null
+                                    color_thresholds: null
+                                    lower_bound: null
+                                    upper_bound: null
+                                    show_extrema: click
+                                    show_average: false
+                                    name_size: null
+                                    icon_size: null
+                                    state_size: null
+                                    state_color: null
+                                    trend_icon_size: null
+                                    attribute: null
+                                    value_factor: 0
+                                    value_transform: null
+                                    fixed_value: false
+                                    offset: 0
+                                    state_map: null
+                                    align_state: left
+                                    stack_group: null
+                                    tap_action:
+                                      action: more-info
+                                annotations: []
                                 state_map: null
-                                align_state: left
-                                stack_group: null
-                                tap_action: null
-                              - entity: sensor.ap_back_yard_memory_utilization
-                                statistic_id: null
-                                name: Memory
-                                icon: null
-                                icon_color: null
-                                color: '#29b6f6'
-                                y_axis: primary
-                                graph_type: line
-                                line_width: 2.5
-                                points_per_hour: null
-                                show_state: false
-                                show_state_last: false
-                                state_adaptive_color: false
-                                show_graph: true
-                                show_in_legend: false
-                                legend_stats:
-                                  - min
-                                  - avg
-                                  - max
-                                show_points: false
-                                point_colors: null
-                                show_line: true
-                                show_fill: true
-                                show_range_band: false
-                                gradient: true
-                                smooth: true
-                                decimals: 1
-                                aggregate_func: avg
-                                number_format: system
-                                trend_period_hours: 1
-                                show_trend_icon: true
-                                rise_fall_colors: null
-                                color_thresholds: null
-                                lower_bound: null
-                                upper_bound: null
-                                show_extrema: click
-                                show_average: false
-                                name_size: null
-                                icon_size: null
-                                state_size: null
-                                state_color: null
-                                trend_icon_size: null
-                                attribute: null
-                                value_factor: 0
-                                value_transform: null
-                                fixed_value: false
-                                offset: 0
+                              - type: custom:statistics-graph-chart-card
+                                card_header: Memory
+                                card_icon_position: left
+                                show_grid: true
+                                show_tooltip: true
+                                show_tooltip_total: true
+                                show_legend: false
+                                show_y_axis: true
+                                show_y2_axis: false
+                                show_y_axis_label: false
+                                show_x_axis: true
+                                show_x_ticks: false
+                                show_y_ticks: false
+                                logarithmic: false
+                                cache: true
+                                animate_graph: false
+                                stacked: false
+                                sparkline: false
+                                scroll_mode: scrollbar
+                                show_interval_picker: false
+                                interval_picker_position: left
+                                show_attribute_list: false
+                                attribute_list_position: left
+                                hours_to_show: 24
+                                points_per_hour: 2
+                                auto_scale_points: false
+                                height: 140
+                                show_full_period: false
+                                bar_spacing: 4
+                                lower_bound: '0'
+                                datetime_format: system
+                                tooltip_sync: false
+                                energy_date_sync: false
+                                align_header: left
+                                state_layout: default
+                                group_by: interval
+                                chart_mode: timeline
+                                entities:
+                                  - entity: sensor.ap_back_yard_memory_utilization
+                                    statistic_id: null
+                                    name: Memory
+                                    icon: null
+                                    icon_color: null
+                                    color: '#29b6f6'
+                                    y_axis: primary
+                                    graph_type: line
+                                    line_width: 2.5
+                                    points_per_hour: null
+                                    show_state: false
+                                    show_state_last: false
+                                    state_adaptive_color: false
+                                    show_graph: true
+                                    show_in_legend: false
+                                    legend_stats:
+                                      - min
+                                      - avg
+                                      - max
+                                    show_points: true
+                                    point_colors: null
+                                    show_line: true
+                                    show_fill: true
+                                    show_range_band: false
+                                    gradient: true
+                                    smooth: true
+                                    decimals: 1
+                                    aggregate_func: avg
+                                    number_format: system
+                                    trend_period_hours: 1
+                                    show_trend_icon: true
+                                    rise_fall_colors: null
+                                    color_thresholds: null
+                                    lower_bound: null
+                                    upper_bound: null
+                                    show_extrema: click
+                                    show_average: false
+                                    name_size: null
+                                    icon_size: null
+                                    state_size: null
+                                    state_color: null
+                                    trend_icon_size: null
+                                    attribute: null
+                                    value_factor: 0
+                                    value_transform: null
+                                    fixed_value: false
+                                    offset: 0
+                                    state_map: null
+                                    align_state: left
+                                    stack_group: null
+                                    tap_action: null
+                                annotations: []
                                 state_map: null
-                                align_state: left
-                                stack_group: null
-                                tap_action: null
-                            annotations: []
-                            state_map: null
                         title: INFRASTRUCTURE
         column_span: 4
