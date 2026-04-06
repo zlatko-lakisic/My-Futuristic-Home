@@ -230,12 +230,17 @@ views:
                               - 198
                               - 40
                               - 40
-                        secondary:
-                          entity: >-
-                            {% set d =
-                            states('sensor.garden_controller_dew_point') %} {%
-                            if d not in ['unknown', 'unavailable', 'none'] %}
-                            DEWPOINT: {{ d }}°F {% endif %}
+                        secondary: >-
+                          {% set d = states('sensor.garden_controller_dew_point') %}
+                          {% if d in ['unknown', 'unavailable', 'none', ''] %}
+                            {% set d = state_attr('sensor.garden_controller_indoor_temperature', 'dewpoint') %}
+                          {% endif %}
+                          {% if d is none or d == '' %}
+                            {% set d = state_attr('sensor.garden_controller_indoor_temperature', 'dew_point') %}
+                          {% endif %}
+                          {% if d is not none and d != '' %}
+                          DEWPOINT: {{ d }}°F
+                          {% endif %}
                         tap_action:
                           action: more-info
                         adaptive_state_color: false
@@ -289,12 +294,11 @@ views:
                               - 255
                               - 179
                               - 0
-                        secondary:
-                          entity: >-
-                            {% set p =
-                            states('sensor.garden_controller_absolute_pressure')
-                            %} {% if p not in ['unknown', 'unavailable', 'none']
-                            %} ABS PRESSURE: {{ p }} hPa {% endif %}
+                        secondary: >-
+                          {% set p = states('sensor.garden_controller_absolute_pressure') %}
+                          {% if p not in ['unknown', 'unavailable', 'none', ''] %}
+                          ABS PRESSURE: {{ p }} hPa
+                          {% endif %}
                         tap_action:
                           action: more-info
                   - type: custom:statistics-graph-chart-card
