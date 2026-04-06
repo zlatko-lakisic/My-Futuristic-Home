@@ -231,14 +231,8 @@ views:
                               - 40
                               - 40
                         secondary: >-
-                          {% set d = states('sensor.garden_controller_dew_point') %}
-                          {% if d in ['unknown', 'unavailable', 'none', ''] %}
-                            {% set d = state_attr('sensor.garden_controller_indoor_temperature', 'dewpoint') %}
-                          {% endif %}
-                          {% if d is none or d == '' %}
-                            {% set d = state_attr('sensor.garden_controller_indoor_temperature', 'dew_point') %}
-                          {% endif %}
-                          {% if d is not none and d != '' %}
+                          {% set d = states('sensor.garden_controller_indoor_dewpoint') %}
+                          {% if d not in ['unknown', 'unavailable', 'none', ''] %}
                           DEWPOINT: {{ d }}°F
                           {% endif %}
                         tap_action:
