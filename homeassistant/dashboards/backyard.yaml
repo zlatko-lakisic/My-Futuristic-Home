@@ -52,24 +52,125 @@ views:
                       grid-gap: 8px
                       place-items: stretch
                     cards:
-                      - type: tile
+                      - type: custom:button-card
                         entity: sensor.back_yard_person_count
-                        icon: mdi:account-multiple
-                        color: green
-                        vertical: true
-                        features_position: bottom
-                      - type: tile
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 14px 16px
+                            - box-shadow: none
+                            - min-height: 72px
+                          grid:
+                            - grid-template-areas: '"stat_tile"'
+                            - grid-template-columns: 1fr
+                          custom_fields:
+                            stat_tile:
+                              - width: 100%
+                              - min-width: 0
+                              - justify-self: stretch
+                        custom_fields:
+                          stat_tile: |
+                            [[[
+                              const st = hass.states[entity.entity_id];
+                              const raw = st.state;
+                              const low = String(raw).toLowerCase();
+                              let n = Number(raw);
+                              if (['unknown', 'unavailable'].includes(low) || raw === '') n = 0;
+                              if (Number.isNaN(n) || !Number.isFinite(n)) n = 0;
+                              const label = (n === 1) ? '1 Person' : `${n} People`;
+                              const iconColor = '#43a047';
+                              return `<div style="display:flex;flex-direction:row;align-items:center;gap:14px;width:100%;min-width:0;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);">
+                                <ha-icon icon="mdi:account-multiple" style="flex-shrink:0;color:${iconColor};--mdc-icon-size:40px;width:40px;height:40px;"></ha-icon>
+                                <div style="font-weight:700;font-size:0.9375rem;line-height:1.3;color:#fff;min-width:0;flex:1 1 auto;text-align:left;word-wrap:break-word;overflow-wrap:anywhere;">${label}</div>
+                              </div>`;
+                            ]]]
+                      - type: custom:button-card
                         entity: sensor.back_yard_dog_count
-                        icon: mdi:dog-side
-                        color: amber
-                        vertical: true
-                        features_position: bottom
-                      - type: tile
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 14px 16px
+                            - box-shadow: none
+                            - min-height: 72px
+                          grid:
+                            - grid-template-areas: '"stat_tile"'
+                            - grid-template-columns: 1fr
+                          custom_fields:
+                            stat_tile:
+                              - width: 100%
+                              - min-width: 0
+                              - justify-self: stretch
+                        custom_fields:
+                          stat_tile: |
+                            [[[
+                              const st = hass.states[entity.entity_id];
+                              const raw = st.state;
+                              const low = String(raw).toLowerCase();
+                              let n = Number(raw);
+                              if (['unknown', 'unavailable'].includes(low) || raw === '') n = 0;
+                              if (Number.isNaN(n) || !Number.isFinite(n)) n = 0;
+                              const label = (n === 1) ? '1 Dog Detected' : `${n} Dogs Detected`;
+                              const iconColor = '#fdd835';
+                              return `<div style="display:flex;flex-direction:row;align-items:center;gap:14px;width:100%;min-width:0;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);">
+                                <ha-icon icon="mdi:dog-side" style="flex-shrink:0;color:${iconColor};--mdc-icon-size:40px;width:40px;height:40px;"></ha-icon>
+                                <div style="font-weight:700;font-size:0.9375rem;line-height:1.3;color:#fff;min-width:0;flex:1 1 auto;text-align:left;word-wrap:break-word;overflow-wrap:anywhere;">${label}</div>
+                              </div>`;
+                            ]]]
+                      - type: custom:button-card
                         entity: sensor.back_yard_last_recognized_face
-                        icon: mdi:face-recognition
-                        color: deep-orange
-                        vertical: true
-                        features_position: bottom
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 14px 16px
+                            - box-shadow: none
+                            - min-height: 72px
+                          grid:
+                            - grid-template-areas: '"stat_tile"'
+                            - grid-template-columns: 1fr
+                          custom_fields:
+                            stat_tile:
+                              - width: 100%
+                              - min-width: 0
+                              - justify-self: stretch
+                        custom_fields:
+                          stat_tile: |
+                            [[[
+                              const st = hass.states[entity.entity_id];
+                              const raw = st.state;
+                              const low = String(raw).toLowerCase();
+                              const faceBad = ['unknown', 'unavailable', 'none', ''].includes(low);
+                              const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                              const label = faceBad ? 'Facial Match: Unknown' : `Facial Match: ${esc(raw)}`;
+                              const iconColor = '#ff6e40';
+                              return `<div style="display:flex;flex-direction:row;align-items:center;gap:14px;width:100%;min-width:0;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);">
+                                <ha-icon icon="mdi:face-recognition" style="flex-shrink:0;color:${iconColor};--mdc-icon-size:40px;width:40px;height:40px;"></ha-icon>
+                                <div style="font-weight:700;font-size:0.9375rem;line-height:1.3;color:#fff;min-width:0;flex:1 1 auto;text-align:left;word-wrap:break-word;overflow-wrap:anywhere;">${label}</div>
+                              </div>`;
+                            ]]]
                 columns: 1
               - type: vertical-stack
                 cards:
