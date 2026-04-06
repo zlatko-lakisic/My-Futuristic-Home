@@ -2,6 +2,8 @@ views:
   - title: Backyard Overview
     path: backyard
     type: sections
+    max_columns: 4
+    icon: mdi:home
     sections:
       - type: grid
         cards:
@@ -185,11 +187,24 @@ views:
                     cards:
                       - type: gauge
                         entity: sensor.garden_controller_indoor_temperature
-                        min: 0
-                        max: 100
-                        needle: false
+                        name: Garden Temperature
+                        min: -10
+                        max: 110
+                        needle: true
+                        severity:
+                          green: 0
+                          yellow: 78
+                          red: 92
                       - type: gauge
                         entity: sensor.garden_controller_indoor_humidity
+                        name: Garden Humidity
+                        min: 0
+                        max: 100
+                        needle: true
+                        severity:
+                          green: 0
+                          yellow: 55
+                          red: 75
                   - type: custom:statistics-graph-chart-card
                     card_header: SOIL MOISTURE
                     card_icon_position: left
@@ -647,16 +662,16 @@ views:
                             cache: true
                             animate_graph: false
                             stacked: false
-                            sparkline: false
+                            sparkline: true
                             scroll_mode: scrollbar
                             show_interval_picker: false
                             interval_picker_position: left
                             show_attribute_list: false
                             attribute_list_position: left
                             hours_to_show: 24
-                            points_per_hour: 2
-                            auto_scale_points: false
-                            height: 150
+                            points_per_hour: 4
+                            auto_scale_points: true
+                            height: 168
                             show_full_period: false
                             bar_spacing: 4
                             lower_bound_secondary: '0'
@@ -673,10 +688,10 @@ views:
                             entities:
                               - entity: sensor.ap_back_yard_cpu_utilization
                                 statistic_id: null
-                                name: null
+                                name: CPU
                                 icon: null
                                 icon_color: null
-                                color: '#ff4757'
+                                color: '#ff9800'
                                 y_axis: primary
                                 graph_type: line
                                 line_width: 2.5
@@ -724,10 +739,10 @@ views:
                                 tap_action: null
                               - entity: sensor.ap_back_yard_memory_utilization
                                 statistic_id: null
-                                name: null
+                                name: Memory
                                 icon: null
                                 icon_color: null
-                                color: '#378ADD'
+                                color: '#29b6f6'
                                 y_axis: primary
                                 graph_type: line
                                 line_width: 2.5
@@ -777,7 +792,3 @@ views:
                             state_map: null
                         title: INFRASTRUCTURE
         column_span: 4
-    header: {}
-    icon: mdi:home
-    cards: []
-    max_columns: 4
