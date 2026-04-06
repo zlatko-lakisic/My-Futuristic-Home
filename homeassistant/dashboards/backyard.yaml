@@ -661,12 +661,44 @@ views:
                         title: IRRIGATION ZONES
                       - type: vertical-stack
                         cards:
-                          - type: tile
+                          # UniFi AP icon: cyberconsecurity/Unifi WiFi/PNG (UAP-AC-LITE). Requires HACS button-card.
+                          - type: custom:button-card
                             entity: sensor.ap_back_yard_clients
-                            name: UniFi access point
-                            icon: mdi:access-point
-                            vertical: false
-                            features_position: bottom
+                            show_icon: false
+                            show_name: false
+                            show_state: false
+                            show_label: false
+                            tap_action:
+                              action: more-info
+                            styles:
+                              card:
+                                - padding: 16px
+                                - border-radius: 12px
+                              grid:
+                                - grid-template-areas: '"ap_row"'
+                                - grid-template-columns: 1fr
+                              custom_fields:
+                                ap_row:
+                                  - width: 100%
+                                  - max-width: 100%
+                                  - justify-self: stretch
+                            custom_fields:
+                              ap_row: |
+                                [[[
+                                  const n = entity.state;
+                                  const iconUrl =
+                                    'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
+                                  return `<div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:100%;box-sizing:border-box;gap:12px;font-family:var(--ha-font-family,sans-serif);">
+                                    <div style="display:flex;align-items:center;gap:14px;min-width:0;flex:0 1 auto;">
+                                      <img src="${iconUrl}" width="44" height="44" alt="" style="object-fit:contain;flex-shrink:0;display:block;" loading="lazy" />
+                                      <div style="text-align:left;line-height:1.25;">
+                                        <div style="font-size:1rem;font-weight:600;color:var(--primary-text-color);">Unifi Access Point</div>
+                                        <div style="font-size:0.875rem;color:var(--secondary-text-color);margin-top:4px;">Clients:</div>
+                                      </div>
+                                    </div>
+                                    <div style="flex-shrink:0;font-size:1.85rem;font-weight:600;color:var(--primary-text-color);line-height:1;margin-left:12px;">${n}</div>
+                                  </div>`;
+                                ]]]
                           - type: heading
                             heading_style: subtitle
                             heading: Up/Down Speed (Graphs)
