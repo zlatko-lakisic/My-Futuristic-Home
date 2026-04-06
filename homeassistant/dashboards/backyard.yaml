@@ -266,24 +266,132 @@ views:
                       grid-gap: 8px
                       place-items: stretch
                     cards:
-                      - type: tile
+                      - type: custom:button-card
                         entity: binary_sensor.east_side_door_door
-                        name: East Gate
-                        color: green
-                        vertical: true
-                        features_position: bottom
-                      - type: tile
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 10px 8px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"gate_cell"'
+                            - grid-template-columns: 1fr
+                          custom_fields:
+                            gate_cell:
+                              - width: 100%
+                              - justify-self: stretch
+                        custom_fields:
+                          gate_cell: |
+                            [[[
+                              const st = hass.states[entity.entity_id];
+                              const s = st.state;
+                              const closed = (s === 'off');
+                              const bad = ['unknown', 'unavailable'].includes(s);
+                              const statusText = bad ? s : (closed ? 'Closed' : 'Open');
+                              const statusColor = bad ? 'rgba(255,255,255,0.5)' : (closed ? '#4caf50' : '#f44336');
+                              const warn = (!closed && !bad)
+                                ? '<ha-icon icon="mdi:alert" style="flex-shrink:0;color:#f44336;--mdc-icon-size:18px;width:18px;height:18px;"></ha-icon>'
+                                : '';
+                              return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;font-family:var(--ha-font-family,sans-serif);">
+                                <div style="font-weight:700;font-size:0.9rem;line-height:1.2;color:#fff;text-align:center;">East Gate</div>
+                                <div style="display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:0.85rem;line-height:1.2;color:${statusColor};text-transform:capitalize;">
+                                  ${warn}
+                                  <span>${statusText}</span>
+                                </div>
+                              </div>`;
+                            ]]]
+                      - type: custom:button-card
                         entity: binary_sensor.west_side_door_door
-                        name: West Gate
-                        color: green
-                        vertical: true
-                        features_position: bottom
-                      - type: tile
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 10px 8px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"gate_cell"'
+                            - grid-template-columns: 1fr
+                          custom_fields:
+                            gate_cell:
+                              - width: 100%
+                              - justify-self: stretch
+                        custom_fields:
+                          gate_cell: |
+                            [[[
+                              const st = hass.states[entity.entity_id];
+                              const s = st.state;
+                              const closed = (s === 'off');
+                              const bad = ['unknown', 'unavailable'].includes(s);
+                              const statusText = bad ? s : (closed ? 'Closed' : 'Open');
+                              const statusColor = bad ? 'rgba(255,255,255,0.5)' : (closed ? '#4caf50' : '#f44336');
+                              const warn = (!closed && !bad)
+                                ? '<ha-icon icon="mdi:alert" style="flex-shrink:0;color:#f44336;--mdc-icon-size:18px;width:18px;height:18px;"></ha-icon>'
+                                : '';
+                              return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;font-family:var(--ha-font-family,sans-serif);">
+                                <div style="font-weight:700;font-size:0.9rem;line-height:1.2;color:#fff;text-align:center;">West Gate</div>
+                                <div style="display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:0.85rem;line-height:1.2;color:${statusColor};text-transform:capitalize;">
+                                  ${warn}
+                                  <span>${statusText}</span>
+                                </div>
+                              </div>`;
+                            ]]]
+                      - type: custom:button-card
                         entity: binary_sensor.fence_gate_door
-                        name: Back Gate
-                        color: red
-                        vertical: true
-                        features_position: bottom
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 10px 8px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"gate_cell"'
+                            - grid-template-columns: 1fr
+                          custom_fields:
+                            gate_cell:
+                              - width: 100%
+                              - justify-self: stretch
+                        custom_fields:
+                          gate_cell: |
+                            [[[
+                              const st = hass.states[entity.entity_id];
+                              const s = st.state;
+                              const closed = (s === 'off');
+                              const bad = ['unknown', 'unavailable'].includes(s);
+                              const statusText = bad ? s : (closed ? 'Closed' : 'Open');
+                              const statusColor = bad ? 'rgba(255,255,255,0.5)' : (closed ? '#4caf50' : '#f44336');
+                              const warn = (!closed && !bad)
+                                ? '<ha-icon icon="mdi:alert" style="flex-shrink:0;color:#f44336;--mdc-icon-size:18px;width:18px;height:18px;"></ha-icon>'
+                                : '';
+                              return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;font-family:var(--ha-font-family,sans-serif);">
+                                <div style="font-weight:700;font-size:0.9rem;line-height:1.2;color:#fff;text-align:center;">Back Gate</div>
+                                <div style="display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:0.85rem;line-height:1.2;color:${statusColor};text-transform:capitalize;">
+                                  ${warn}
+                                  <span>${statusText}</span>
+                                </div>
+                              </div>`;
+                            ]]]
             grid_options:
               columns: full
         column_span: 4
