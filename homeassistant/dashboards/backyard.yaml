@@ -185,40 +185,118 @@ views:
                     columns: 2
                     title: ENVIRONMENTS & SOIL
                     cards:
-                      - type: gauge
+                      - type: custom:modern-circular-gauge
                         entity: sensor.garden_controller_indoor_temperature
-                        name: Garden Temperature
+                        gauge_type: standard
+                        needle: true
+                        smooth_segments: true
                         min: -10
                         max: 110
-                        needle: true
+                        show_icon: true
+                        icon: mdi:thermometer
+                        header_position: top
+                        show_header: false
+                        state_font_size: 30
+                        gauge_background_style:
+                          width: 10
+                          opacity: 0.7
+                        gauge_foreground_style:
+                          width: 8
+                          color: adaptive
+                        adaptive_icon_color: true
                         segments:
                           - from: -10
-                            color: '#1b5e20'
+                            color:
+                              - 27
+                              - 94
+                              - 32
                           - from: 32
-                            color: '#43a047'
+                            color:
+                              - 67
+                              - 160
+                              - 71
                           - from: 55
-                            color: '#fdd835'
+                            color:
+                              - 253
+                              - 216
+                              - 53
                           - from: 72
-                            color: '#fb8c00'
+                            color:
+                              - 251
+                              - 140
+                              - 0
                           - from: 88
-                            color: '#c62828'
-                      - type: gauge
+                            color:
+                              - 198
+                              - 40
+                              - 40
+                        secondary:
+                          entity: >-
+                            {% set d =
+                            states('sensor.garden_controller_dew_point') %} {%
+                            if d not in ['unknown', 'unavailable', 'none'] %}
+                            DEWPOINT: {{ d }}°F {% endif %}
+                        tap_action:
+                          action: more-info
+                        adaptive_state_color: false
+                        adaptive_label_color: false
+                        inverted_mode: false
+                        name: TEMP
+                        show_entity_picture: false
+                      - type: custom:modern-circular-gauge
                         entity: sensor.garden_controller_indoor_humidity
-                        name: Garden Humidity
+                        name: HUMIDITY
+                        gauge_type: standard
+                        needle: true
+                        smooth_segments: true
                         min: 0
                         max: 100
-                        needle: true
+                        show_icon: true
+                        icon: mdi:water-percent
+                        header_position: top
+                        show_header: false
+                        state_font_size: 30
+                        gauge_background_style:
+                          width: 10
+                          opacity: 0.7
+                        gauge_foreground_style:
+                          width: 8
+                          color: adaptive
+                        adaptive_icon_color: true
                         segments:
                           - from: 0
-                            color: '#0d47a1'
+                            color:
+                              - 13
+                              - 71
+                              - 161
                           - from: 28
-                            color: '#1565c0'
+                            color:
+                              - 21
+                              - 101
+                              - 192
                           - from: 45
-                            color: '#1e88e5'
+                            color:
+                              - 30
+                              - 136
+                              - 229
                           - from: 62
-                            color: '#42a5f5'
+                            color:
+                              - 66
+                              - 165
+                              - 245
                           - from: 78
-                            color: '#ffb300'
+                            color:
+                              - 255
+                              - 179
+                              - 0
+                        secondary:
+                          entity: >-
+                            {% set p =
+                            states('sensor.garden_controller_absolute_pressure')
+                            %} {% if p not in ['unknown', 'unavailable', 'none']
+                            %} ABS PRESSURE: {{ p }} hPa {% endif %}
+                        tap_action:
+                          action: more-info
                   - type: custom:statistics-graph-chart-card
                     card_header: SOIL MOISTURE
                     card_icon_position: left
@@ -661,7 +739,6 @@ views:
                         title: IRRIGATION ZONES
                       - type: vertical-stack
                         cards:
-                          # UniFi AP icon: cyberconsecurity/Unifi WiFi/PNG (UAP-AC-LITE). Requires HACS button-card.
                           - type: custom:button-card
                             entity: sensor.ap_back_yard_clients
                             show_icon: false
@@ -701,7 +778,7 @@ views:
                                 ]]]
                           - type: heading
                             heading_style: subtitle
-                            heading: Up/Down Speed (Graphs)
+                            heading: CPU/Memory Usage
                           - type: horizontal-stack
                             cards:
                               - type: custom:statistics-graph-chart-card
