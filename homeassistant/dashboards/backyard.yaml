@@ -3,6 +3,7 @@ views:
     path: backyard
     type: sections
     max_columns: 4
+    dense_section_placement: true
     icon: mdi:home
     sections:
       - type: grid
@@ -16,6 +17,9 @@ views:
               grid-template-columns: 30% 70%
               grid-template-rows: 1fr
               place-items: stretch
+              mediaquery:
+                "(max-width: 900px)":
+                  grid-template-columns: 100%
             cards:
               - square: false
                 type: grid
@@ -41,9 +45,12 @@ views:
                       height: 30
                     menu:
                       style: none
-                  - square: false
-                    type: grid
-                    columns: 3
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr))
+                      grid-gap: 8px
+                      place-items: stretch
                     cards:
                       - type: tile
                         entity: sensor.back_yard_person_count
@@ -66,8 +73,12 @@ views:
                 columns: 1
               - type: vertical-stack
                 cards:
-                  - square: false
-                    type: grid
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))
+                      grid-gap: 8px
+                      place-items: stretch
                     cards:
                       - type: custom:advanced-camera-card
                         cameras:
@@ -141,9 +152,12 @@ views:
                           style: overlay
                           position: bottom
                           popup_seconds: 60
-                    columns: 4
-                  - square: false
-                    type: grid
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
+                      grid-gap: 8px
+                      place-items: stretch
                     cards:
                       - type: tile
                         entity: binary_sensor.east_side_door_door
@@ -163,7 +177,6 @@ views:
                         color: red
                         vertical: true
                         features_position: bottom
-                    columns: 3
             grid_options:
               columns: full
         column_span: 4
@@ -173,6 +186,9 @@ views:
             layout_type: custom:grid-layout
             layout:
               grid-template-columns: 30% 70%
+              mediaquery:
+                "(max-width: 900px)":
+                  grid-template-columns: 100%
             grid_options:
               columns: full
             cards:
@@ -180,11 +196,18 @@ views:
                 layout_type: custom:vertical-layout
                 layout: {}
                 cards:
-                  - square: false
-                    type: grid
-                    columns: 2
-                    title: ENVIRONMENTS & SOIL
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))
+                      grid-gap: 8px
+                      place-items: stretch
                     cards:
+                      - type: heading
+                        heading_style: subtitle
+                        heading: ENVIRONMENTS & SOIL
+                        view_layout:
+                          grid-column: 1 / -1
                       - type: custom:modern-circular-gauge
                         entity: sensor.garden_controller_indoor_temperature
                         gauge_type: standard
@@ -639,10 +662,18 @@ views:
                     state_map: null
               - type: vertical-stack
                 cards:
-                  - square: false
-                    type: grid
-                    columns: 4
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))
+                      grid-gap: 8px
+                      place-items: stretch
                     cards:
+                      - type: heading
+                        heading_style: subtitle
+                        heading: LIGHTING & CONTROLS
+                        view_layout:
+                          grid-column: 1 / -1
                       - type: tile
                         entity: light.garden_lights_light
                         icon: mdi:lightbulb
@@ -663,10 +694,12 @@ views:
                         icon: mdi:lightbulb
                         vertical: false
                         features_position: bottom
-                    title: LIGHTING & CONTROLS
-                  - square: false
-                    type: grid
-                    columns: 4
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))
+                      grid-gap: 8px
+                      place-items: stretch
                     cards:
                       - type: tile
                         entity: switch.soffet_lights_socket_1
@@ -688,16 +721,27 @@ views:
                         icon: mdi:lightbulb
                         vertical: false
                         features_position: bottom
-                  - type: horizontal-stack
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: 1fr 1fr
+                      grid-gap: 8px
+                      align-items: start
+                      mediaquery:
+                        "(max-width: 900px)":
+                          grid-template-columns: 100%
                     cards:
                       - type: vertical-stack
                         cards:
                           - type: heading
                             heading_style: subtitle
                             heading: GARDEN
-                          - square: false
-                            type: grid
-                            columns: 4
+                          - type: custom:layout-card
+                            layout_type: custom:grid-layout
+                            layout:
+                              grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
+                              grid-gap: 8px
+                              place-items: stretch
                             cards:
                               - type: tile
                                 entity: switch.east_side_lawn_zone
@@ -718,8 +762,12 @@ views:
                           - type: heading
                             heading_style: subtitle
                             heading: LAWN
-                          - square: false
-                            type: grid
+                          - type: custom:layout-card
+                            layout_type: custom:grid-layout
+                            layout:
+                              grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
+                              grid-gap: 8px
+                              place-items: stretch
                             cards:
                               - type: tile
                                 entity: switch.adna_s_flowers_zone
@@ -733,7 +781,6 @@ views:
                                 entity: switch.unnamed_zone_zone
                                 vertical: false
                                 features_position: bottom
-                            columns: 3
                         title: IRRIGATION ZONES
                       - type: vertical-stack
                         cards:
@@ -777,7 +824,15 @@ views:
                           - type: heading
                             heading_style: subtitle
                             heading: CPU/Memory Usage
-                          - type: horizontal-stack
+                          - type: custom:layout-card
+                            layout_type: custom:grid-layout
+                            layout:
+                              grid-template-columns: 1fr 1fr
+                              grid-gap: 8px
+                              align-items: start
+                              mediaquery:
+                                "(max-width: 900px)":
+                                  grid-template-columns: 100%
                             cards:
                               - type: custom:statistics-graph-chart-card
                                 card_header: CPU
