@@ -199,9 +199,14 @@ views:
                   - type: custom:layout-card
                     layout_type: custom:grid-layout
                     layout:
-                      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))
+                      grid-template-columns: repeat(2, minmax(0, 1fr))
                       grid-gap: 8px
+                      justify-items: stretch
+                      align-items: stretch
                       place-items: stretch
+                      mediaquery:
+                        "(max-width: 600px)":
+                          grid-template-columns: 100%
                     cards:
                       - type: heading
                         heading_style: subtitle
@@ -665,9 +670,13 @@ views:
                   - type: custom:layout-card
                     layout_type: custom:grid-layout
                     layout:
-                      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))
+                      grid-template-columns: repeat(4, minmax(0, 1fr))
                       grid-gap: 8px
+                      justify-items: stretch
                       place-items: stretch
+                      mediaquery:
+                        "(max-width: 900px)":
+                          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))
                     cards:
                       - type: heading
                         heading_style: subtitle
@@ -697,9 +706,13 @@ views:
                   - type: custom:layout-card
                     layout_type: custom:grid-layout
                     layout:
-                      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))
+                      grid-template-columns: repeat(4, minmax(0, 1fr))
                       grid-gap: 8px
+                      justify-items: stretch
                       place-items: stretch
+                      mediaquery:
+                        "(max-width: 900px)":
+                          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))
                     cards:
                       - type: tile
                         entity: switch.soffet_lights_socket_1
@@ -739,9 +752,13 @@ views:
                           - type: custom:layout-card
                             layout_type: custom:grid-layout
                             layout:
-                              grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
+                              grid-template-columns: repeat(4, minmax(0, 1fr))
                               grid-gap: 8px
+                              justify-items: stretch
                               place-items: stretch
+                              mediaquery:
+                                "(max-width: 900px)":
+                                  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
                             cards:
                               - type: tile
                                 entity: switch.east_side_lawn_zone
@@ -765,9 +782,13 @@ views:
                           - type: custom:layout-card
                             layout_type: custom:grid-layout
                             layout:
-                              grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
+                              grid-template-columns: repeat(3, minmax(0, 1fr))
                               grid-gap: 8px
+                              justify-items: stretch
                               place-items: stretch
+                              mediaquery:
+                                "(max-width: 900px)":
+                                  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
                             cards:
                               - type: tile
                                 entity: switch.adna_s_flowers_zone
