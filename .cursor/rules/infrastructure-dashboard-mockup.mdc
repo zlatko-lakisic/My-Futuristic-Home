@@ -1,0 +1,21 @@
+---
+description: Infrastructure Lovelace dashboard — visual mockup and layout target
+globs: homeassistant/dashboards/infrastructure.yaml
+alwaysApply: false
+---
+
+# Infrastructure dashboard mockup
+
+**Reference image (canonical):** `assets/infrastructure-dashboard-mockup.png`
+
+When editing `homeassistant/dashboards/infrastructure.yaml`, treat that PNG as the design target: dark navy theme, rounded section cards, accent colors (green healthy, orange/yellow active or high load, blue for memory/secondary).
+
+## Layout (three horizontal bands)
+
+1. **Core network status** — Main gateway (MikroTik hAP ax³) with status badges, CPU/memory gauges; CCR2004 + SwitchOS throughput bars; UniFi APs with client counts; traffic strip (WAN, LAN, Home WLAN, IoT WLAN, Perimeter) with sparkline-style throughput cards.
+
+2. **Physical servers & NVR cluster** — HA host (ODROID) CPU/RAM/disk bars; Proxmox list with per-VM/container status bars; NVR disk/recording + GPU gauges (NVIDIA load/VRAM) and transcoding/recording status text.
+
+3. **Storage & services** — OMV NAS rows with multi-segment pool bars, SMART and temperature; container services (Traefik, Portainer, Frigate, Pi-hole, etc.) with Docker-style rows and horizontal status/resource bars.
+
+Match hierarchy, grouping, and visual density to the mockup; reuse existing dashboard patterns in this repo where they already exist.
