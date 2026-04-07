@@ -1,12 +1,5 @@
-# -----------------------------------------------------------------------------
-# Infrastructure dashboard — layout mirrors the mockup: 30/70 network hero, three-column
-# compute row (HA+QEMU | NVR-style Frigate bars | dual gauges + Proxmox footer). NVIDIA
-# gauges use Proxmox host CPU/RAM until a GPU metrics entity exists in HA.
-# Storage section includes Portainer (Monitor Docker) + 24h charts and NAS2 Compose.
-# -----------------------------------------------------------------------------
-
 views:
-  - title: Infrastructure
+  - title: TOTAL INFRASTRUCTURE MONITORING
     path: infrastructure
     type: sections
     max_columns: 4
@@ -17,12 +10,7 @@ views:
         cards:
           - type: heading
             heading_style: title
-            heading: TOTAL INFRASTRUCTURE MONITORING
-
-          - type: heading
-            heading_style: subtitle
             heading: CORE NETWORK STATUS
-
           - type: custom:layout-card
             layout_type: custom:grid-layout
             layout:
@@ -31,193 +19,21 @@ views:
               grid-gap: 10px
               place-items: stretch
               mediaquery:
-                "(max-width: 1000px)":
+                '(max-width: 1000px)':
                   grid-template-columns: 100%
             grid_options:
               columns: full
             cards:
               - type: vertical-stack
                 cards:
-                  - type: custom:button-card
-                    entity: binary_sensor.mikrotik_home_ether1_connection
-                    show_icon: false
-                    show_name: false
-                    show_state: false
-                    show_label: false
-                    triggers_update:
-                      - sensor.mikrotik_home_hap_ac_uptime
-                      - update.mikrotik_home_hap_ac_routeros_update
-                      - sensor.mikrotik_home_hap_ac_cpu_load
-                      - sensor.mikrotik_home_hap_ac_memory_usage
-                    tap_action:
-                      action: more-info
-                    styles:
-                      card:
-                        - background-color: '#1c1c1c'
-                        - border: 1px solid rgba(255, 255, 255, 0.1)
-                        - border-radius: 14px
-                        - padding: 12px
-                        - box-shadow: none
-                      grid:
-                        - grid-template-areas: '"gw"'
-                        - grid-template-columns: 1fr
-                      custom_fields:
-                        gw:
-                          - width: 100%
-                          - justify-self: stretch
-                    custom_fields:
-                      gw: |
-                        [[[
-                          const st = entity.state;
-                          const bad = ['unknown', 'unavailable'].includes(st);
-                          const online = st === 'on';
-                          const badgeBg = bad ? 'rgba(255,255,255,0.08)' : (online ? 'rgba(67,160,71,0.2)' : 'rgba(244,67,54,0.2)');
-                          const badgeFg = bad ? 'rgba(255,255,255,0.5)' : (online ? '#81c784' : '#ef9a9a');
-                          const badgeTxt = bad ? 'WAN status: —' : (online ? 'WAN link up' : 'WAN link down');
-                          const formatUptime = (iso) => {
-                            if (!iso || ['unknown', 'unavailable', 'none', ''].includes(String(iso).toLowerCase())) return '—';
-                            const t = new Date(iso).getTime();
-                            if (Number.isNaN(t)) return iso;
-                            let sec = Math.floor((Date.now() - t) / 1000);
-                            if (sec < 0) sec = 0;
-                            const d = Math.floor(sec / 86400);
-                            const h = Math.floor((sec % 86400) / 3600);
-                            const m = Math.floor((sec % 3600) / 60);
-                            if (d > 0) return `${d}d ${h}h`;
-                            if (h > 0) return `${h}h ${m}m`;
-                            return `${m}m`;
-                          };
-                          const up = formatUptime(hass.states['sensor.mikrotik_home_hap_ac_uptime']?.state);
-                          const upd = hass.states['update.mikrotik_home_hap_ac_routeros_update'];
-                          const fw = upd?.attributes?.installed_version ?? upd?.state ?? '—';
-                          const cpu = hass.states['sensor.mikrotik_home_hap_ac_cpu_load']?.state ?? '—';
-                          const mem = hass.states['sensor.mikrotik_home_hap_ac_memory_usage']?.state ?? '—';
-                          return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">
-                            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
-                              <ha-icon icon="mdi:router-wireless" style="flex-shrink:0;color:#ff9800;--mdc-icon-size:48px;width:48px;height:48px;"></ha-icon>
-                              <div style="min-width:0;flex:1;">
-                                <div style="font-weight:700;font-size:1rem;line-height:1.2;">MikroTik hAP ac</div>
-                                <div style="font-size:0.72rem;opacity:0.75;margin-top:4px;">Main gateway · 10.0.10.1</div>
-                                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
-                                  <span style="font-size:0.72rem;font-weight:600;padding:4px 10px;border-radius:999px;background:${badgeBg};color:${badgeFg};">${badgeTxt}</span>
-                                  <span style="font-size:0.72rem;opacity:0.85;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,0.06);">F/W: ${fw}</span>
-                                  <span style="font-size:0.72rem;opacity:0.85;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,0.06);">Uptime: ${up}</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem;opacity:0.9;">
-                              <div>CPU load: <strong style="color:#ffb74d;">${cpu}${String(cpu).includes('%')?'':'%'}</strong></div>
-                              <div>Memory: <strong style="color:#4fc3f7;">${mem}${String(mem).includes('%')?'':'%'}</strong></div>
-                            </div>
-                          </div>`;
-                        ]]]
-                  - type: custom:layout-card
-                    layout_type: custom:grid-layout
-                    layout:
-                      grid-template-columns: 1fr 1fr
-                      grid-gap: 8px
-                    cards:
-                      - type: custom:modern-circular-gauge
-                        entity: sensor.mikrotik_home_hap_ac_cpu_load
-                        name: CPU Load
-                        gauge_type: standard
-                        needle: false
-                        smooth_segments: true
-                        min: 0
-                        max: 100
-                        show_icon: true
-                        icon: mdi:chip
-                        header_position: top
-                        show_header: true
-                        state_font_size: 22
-                        gauge_background_style:
-                          width: 12
-                          opacity: 0.5
-                        gauge_foreground_style:
-                          width: 10
-                          color:
-                            - 255
-                            - 152
-                            - 0
-                        segments:
-                          - from: 0
-                            color:
-                              - 76
-                              - 175
-                              - 80
-                          - from: 55
-                            color:
-                              - 255
-                              - 193
-                              - 7
-                          - from: 80
-                            color:
-                              - 244
-                              - 67
-                              - 54
-                        tap_action:
-                          action: more-info
-                      - type: custom:modern-circular-gauge
-                        entity: sensor.mikrotik_home_hap_ac_memory_usage
-                        name: Memory
-                        gauge_type: standard
-                        needle: false
-                        smooth_segments: true
-                        min: 0
-                        max: 100
-                        show_icon: true
-                        icon: mdi:memory
-                        header_position: top
-                        show_header: true
-                        state_font_size: 22
-                        gauge_background_style:
-                          width: 12
-                          opacity: 0.5
-                        gauge_foreground_style:
-                          width: 10
-                          color:
-                            - 79
-                            - 195
-                            - 247
-                        segments:
-                          - from: 0
-                            color:
-                              - 79
-                              - 195
-                              - 247
-                          - from: 50
-                            color:
-                              - 255
-                              - 193
-                              - 7
-                          - from: 80
-                            color:
-                              - 244
-                              - 67
-                              - 54
-                        tap_action:
-                          action: more-info
-
-              - type: vertical-stack
-                cards:
-                  - type: custom:layout-card
-                    layout_type: custom:grid-layout
-                    layout:
-                      grid-template-columns: repeat(2, minmax(0, 1fr))
-                      grid-gap: 8px
-                      mediaquery:
-                        "(max-width: 520px)":
-                          grid-template-columns: 100%
+                  - type: horizontal-stack
                     cards:
                       - type: custom:button-card
-                        entity: sensor.mikrotik_mostar_rb951g_2hnd_cpu_load
+                        entity: binary_sensor.mikrotik_home_ether1_connection
                         show_icon: false
                         show_name: false
                         show_state: false
                         show_label: false
-                        triggers_update:
-                          - update.mikrotik_mostar_rb951g_2hnd_routeros_update
-                          - binary_sensor.mikrotik_mostar_ether1_connection
                         tap_action:
                           action: more-info
                         styles:
@@ -225,7 +41,9 @@ views:
                             - background-color: '#1c1c1c'
                             - border: 1px solid rgba(255, 255, 255, 0.1)
                             - border-radius: 14px
-                            - padding: 10px
+                            - padding: 12px
+                            - box-sizing: border-box
+                            - height: 132px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -236,20 +54,183 @@ views:
                         custom_fields:
                           r: |
                             [[[
-                              const v = Math.min(100, Math.max(0, parseFloat(entity.state) || 0));
-                              const upd = hass.states['update.mikrotik_mostar_rb951g_2hnd_routeros_update'];
-                              const lbl = upd?.attributes?.installed_version ?? '192.168.88.1';
-                              const wan = hass.states['binary_sensor.mikrotik_mostar_ether1_connection']?.state;
-                              const wanOk = wan === 'on';
-                              const dot = wanOk ? '<span style="color:#81c784;">●</span> ' : '<span style="color:#e57373;">●</span> ';
-                              return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;">
-                                <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px;">${dot}Mikrotik-Mostar</div>
-                                <div style="font-size:0.68rem;opacity:0.75;margin-bottom:6px;">RB951G · remote site</div>
-                                <div style="height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
-                                  <div style="width:${v}%;height:100%;background:linear-gradient(90deg,#29b6f6,#ff9800);"></div>
+                              const routerImg = '/local/mikrotik-hap-router.png';
+                              return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;gap:6px;height:100%;">
+                                <div>
+                                  <div style="font-weight:700;font-size:0.9rem;line-height:1.15;">MikroTik Basement</div>
+                                  <div style="font-size:0.68rem;opacity:0.75;margin-top:2px;">Main gateway</div>
                                 </div>
-                                <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.72rem;opacity:0.8;"><span>CPU load</span><span>${lbl}</span></div>
+                                <div style="width:100%;display:flex;justify-content:center;align-items:flex-end;flex:1;">
+                                  <img src="${routerImg}" alt="MikroTik hAP" style="width:118px;height:auto;object-fit:contain;" loading="lazy" />
+                                </div>
                               </div>`;
+                            ]]]
+                      - type: custom:button-card
+                        entity: binary_sensor.mikrotik_home_ether1_connection
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        triggers_update:
+                          - update.mikrotik_home_hap_ac_routeros_update
+                          - sensor.mikrotik_home_hap_ac_uptime
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 12px
+                            - box-sizing: border-box
+                            - height: 132px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"r"'
+                            - grid-template-columns: 1fr
+                          custom_fields:
+                            r:
+                              - width: 100%
+                        custom_fields:
+                          r: |
+                            [[[
+                              const st = entity.state;
+                              const bad = ['unknown', 'unavailable'].includes(st);
+                              const online = st === 'on';
+                              const upd = hass.states['update.mikrotik_home_hap_ac_routeros_update'];
+                              const fw = upd?.attributes?.installed_version ?? upd?.state ?? '—';
+                              const formatUptime = (iso) => {
+                                if (!iso || ['unknown', 'unavailable', 'none', ''].includes(String(iso).toLowerCase())) return '—';
+                                const t = new Date(iso).getTime();
+                                if (Number.isNaN(t)) return iso;
+                                let sec = Math.floor((Date.now() - t) / 1000);
+                                if (sec < 0) sec = 0;
+                                const d = Math.floor(sec / 86400);
+                                const h = Math.floor((sec % 86400) / 3600);
+                                const m = Math.floor((sec % 3600) / 60);
+                                if (d > 0) return `${d}d ${h}h`;
+                                if (h > 0) return `${h}h ${m}m`;
+                                return `${m}m`;
+                              };
+                              const up = formatUptime(hass.states['sensor.mikrotik_home_hap_ac_uptime']?.state);
+                              const onlinePill = bad
+                                ? 'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);'
+                                : (online
+                                  ? 'background:rgba(46,125,50,0.55);color:#c8e6c9;'
+                                  : 'background:rgba(198,40,40,0.45);color:#ffcdd2;');
+                              const onlineText = bad ? 'Gateway —' : (online ? 'Gateway Online' : 'Gateway Offline');
+                              const pill = 'display:flex;align-items:center;justify-content:center;min-height:28px;padding:4px 10px;border-radius:999px;font-size:0.72rem;font-weight:700;border:1px solid rgba(255,255,255,0.08);';
+                              return `<div style="font-family:var(--ha-font-family,sans-serif);display:flex;flex-direction:column;gap:8px;justify-content:center;height:100%;">
+                                <span style="${pill}${onlinePill}">${onlineText}</span>
+                                <span style="${pill}background:#2d2d2d;color:#eeeeee;">F/W: ${fw}</span>
+                                <span style="${pill}background:#2d2d2d;color:#eeeeee;">Uptime: ${up}</span>
+                              </div>`;
+                            ]]]
+                  - type: horizontal-stack
+                    cards:
+                      - type: custom:modern-circular-gauge
+                        entity: sensor.mikrotik_home_hap_ac_cpu_load
+                        secondary: {}
+                      - type: custom:modern-circular-gauge
+                        entity: sensor.mikrotik_home_hap_ac_memory_usage
+                        secondary: {}
+              - type: vertical-stack
+                cards:
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(5, minmax(0, 1fr))
+                      grid-gap: 8px
+                      mediaquery:
+                        '(max-width: 1600px)':
+                          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))
+                        '(max-width: 520px)':
+                          grid-template-columns: 100%
+                    cards:
+                      - type: custom:button-card
+                        entity: sensor.mikrotik_mostar_rb951g_2hnd_cpu_load
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        triggers_update:
+                          - binary_sensor.mikrotik_mostar_ether1_connection
+                          - sensor.mikrotik_mostar_rb951g_2hnd_memory_usage
+                          - sensor.mikrotik_mostar_ether1_rx
+                          - sensor.mikrotik_mostar_ether1_tx
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#121212'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 10px
+                            - box-sizing: border-box
+                            - height: 132px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"r"'
+                          custom_fields:
+                            r:
+                              - width: 100%
+                        custom_fields:
+                          r: |
+                            [[[
+                              var wan = hass.states['binary_sensor.mikrotik_mostar_ether1_connection'];
+                              var st = wan ? wan.state : 'unavailable';
+                              var bad = st === 'unknown' || st === 'unavailable';
+                              var online = st === 'on';
+                              var dot = bad ? '<span style="color:#9e9e9e;">●</span>' : (online ? '<span style="color:#81c784;">●</span>' : '<span style="color:#e57373;">●</span>');
+                              var lineLbl = bad ? '—' : (online ? 'Online' : 'Offline');
+                              var cpuSt = hass.states['sensor.mikrotik_mostar_rb951g_2hnd_cpu_load'];
+                              var memSt = hass.states['sensor.mikrotik_mostar_rb951g_2hnd_memory_usage'];
+                              var cpu = cpuSt ? parseFloat(cpuSt.state) : NaN;
+                              var mem = memSt ? parseFloat(memSt.state) : NaN;
+                              if (isNaN(cpu)) cpu = 0;
+                              if (isNaN(mem)) mem = 0;
+                              cpu = Math.min(100, Math.max(0, cpu));
+                              mem = Math.min(100, Math.max(0, mem));
+                              var rxSt = hass.states['sensor.mikrotik_mostar_ether1_rx'];
+                              var txSt = hass.states['sensor.mikrotik_mostar_ether1_tx'];
+                              var rx = (rxSt && rxSt.state) ? parseFloat(rxSt.state) : 0;
+                              var tx = (txSt && txSt.state) ? parseFloat(txSt.state) : 0;
+                              if (isNaN(rx)) rx = 0;
+                              if (isNaN(tx)) tx = 0;
+                              var sum = Math.max(0, rx + tx);
+                              var capBps = 125000000;
+                              var thrPct = capBps > 0 ? Math.min(100, (sum / capBps) * 100) : 0;
+                              var mbps = (sum * 8) / 1000;
+                              var kbLabel = sum.toFixed(1) + ' kB/s';
+                              function bars(pct, color) {
+                                var n = Math.round(pct / 25);
+                                if (n < 0) n = 0;
+                                if (n > 4) n = 4;
+                                var html = '<div style="display:flex;align-items:flex-end;gap:3px;height:22px;">';
+                                var i, h, on, bg;
+                                for (i = 0; i < 4; i++) {
+                                  h = 6 + i * 4;
+                                  on = i < n;
+                                  bg = on ? color : 'rgba(255,255,255,0.12)';
+                                  html += '<div style="width:4px;height:' + h + 'px;background:' + bg + ';border-radius:1px;"></div>';
+                                }
+                                return html + '</div>';
+                              }
+                              return '<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;">' +
+                                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+                                '<div style="min-width:0;"><div style="font-weight:700;font-size:0.82rem;">' + dot + ' Mikrotik-Mostar</div>' +
+                                '<div style="font-size:0.68rem;opacity:0.72;margin-top:4px;">RB951G · remote · ' + lineLbl + '</div></div>' +
+                                '<div style="flex-shrink:0;text-align:right;font-size:0.62rem;opacity:0.65;line-height:1.25;">1 Gbps<br/>100 Mbps</div></div>' +
+                                '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;font-size:0.68rem;">' +
+                                '<span style="opacity:0.7;width:52px;flex-shrink:0;">CPU</span>' + bars(cpu, '#ffb74d') +
+                                '<span style="margin-left:auto;font-weight:700;min-width:36px;text-align:right;">' + Math.round(cpu) + '%</span></div>' +
+                                '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;font-size:0.68rem;">' +
+                                '<span style="opacity:0.7;width:52px;flex-shrink:0;">Memory</span>' + bars(mem, '#4fc3f7') +
+                                '<span style="margin-left:auto;font-weight:700;min-width:36px;text-align:right;">' + Math.round(mem) + '%</span></div>' +
+                                '<div style="margin-top:8px;"><div style="display:flex;justify-content:space-between;font-size:0.65rem;opacity:0.72;margin-bottom:3px;"><span>Throughput</span><span>' + kbLabel + ' · ' + mbps.toFixed(1) + ' Mb/s</span></div>' +
+                                '<div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">' +
+                                '<div style="width:' + thrPct + '%;height:100%;background:linear-gradient(90deg,#66bb6a,#26c6da);"></div></div>' +
+                                '<div style="font-size:0.6rem;opacity:0.5;margin-top:3px;text-align:right;">vs line rate (WAN)</div></div></div>';
                             ]]]
                       - type: custom:button-card
                         entity: binary_sensor.mikrotik_home_ether3_connection
@@ -264,10 +245,12 @@ views:
                           action: more-info
                         styles:
                           card:
-                            - background-color: '#1c1c1c'
+                            - background-color: '#121212'
                             - border: 1px solid rgba(255, 255, 255, 0.1)
                             - border-radius: 14px
                             - padding: 10px
+                            - box-sizing: border-box
+                            - height: 132px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -277,45 +260,66 @@ views:
                         custom_fields:
                           r: |
                             [[[
-                              const st = entity.state;
-                              const linkUp = st === 'on';
-                              const dot = linkUp ? '<span style="color:#81c784;">●</span> ' : '<span style="color:#e57373;">●</span> ';
-                              const attrs = entity.attributes || {};
-                              const rateStr = (attrs.rate != null ? String(attrs.rate) : '').toLowerCase();
-                              let capBps = 125000000;
-                              if (rateStr.includes('10g') || rateStr.includes('10000')) capBps = 1250000000;
-                              else if (rateStr.includes('100m') || rateStr.includes('100 m') || rateStr === '100mbps') capBps = 12500000;
-                              const rx = parseFloat(hass.states['sensor.mikrotik_home_ether3_rx']?.state) || 0;
-                              const tx = parseFloat(hass.states['sensor.mikrotik_home_ether3_tx']?.state) || 0;
-                              const sum = Math.max(0, rx + tx);
-                              const v = capBps > 0 ? Math.min(100, (sum / capBps) * 100) : 0;
-                              const mbps = (sum * 8) / 1000;
-                              const lbl = `${mbps.toFixed(1)} Mbps`;
-                              return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;">
-                                <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px;">${dot}CSS326 · perimeter</div>
-                                <div style="font-size:0.68rem;opacity:0.75;margin-bottom:6px;">hAP ether3 → MSNSwitch</div>
-                                <div style="height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
-                                  <div style="width:${v}%;height:100%;background:linear-gradient(90deg,#66bb6a,#26c6da);"></div>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.72rem;opacity:0.8;"><span>Uplink vs line rate</span><span>${lbl}</span></div>
-                              </div>`;
+                              var st = entity.state;
+                              var bad = st === 'unknown' || st === 'unavailable';
+                              var linkUp = st === 'on';
+                              var dot = bad ? '<span style="color:#9e9e9e;">●</span>' : (linkUp ? '<span style="color:#81c784;">●</span>' : '<span style="color:#e57373;">●</span>');
+                              var lineLbl = bad ? '—' : (linkUp ? 'Online' : 'Offline');
+                              var ent = entity;
+                              var rateStr = '';
+                              if (ent && ent.attributes && ent.attributes.rate != null) rateStr = String(ent.attributes.rate).toLowerCase();
+                              var capBps = 125000000;
+                              if (rateStr.indexOf('10g') >= 0 || rateStr.indexOf('10000') >= 0) capBps = 1250000000;
+                              else if (rateStr.indexOf('100m') >= 0 || rateStr === '100mbps') capBps = 12500000;
+                              var rxSt = hass.states['sensor.mikrotik_home_ether3_rx'];
+                              var txSt = hass.states['sensor.mikrotik_home_ether3_tx'];
+                              var rx = (rxSt && rxSt.state) ? parseFloat(rxSt.state) : 0;
+                              var tx = (txSt && txSt.state) ? parseFloat(txSt.state) : 0;
+                              if (isNaN(rx)) rx = 0;
+                              if (isNaN(tx)) tx = 0;
+                              var sum = Math.max(0, rx + tx);
+                              var v = capBps > 0 ? Math.min(100, (sum / capBps) * 100) : 0;
+                              var mbps = (sum * 8) / 1000;
+                              var kbLabel = sum.toFixed(1) + ' kB/s';
+                              var rxShow = (rxSt && rxSt.state != null) ? String(rxSt.state) : '0';
+                              var txShow = (txSt && txSt.state != null) ? String(txSt.state) : '0';
+                              function bars(pct, color) {
+                                var n = Math.round(pct / 25);
+                                if (n < 0) n = 0;
+                                if (n > 4) n = 4;
+                                var html = '<div style="display:flex;align-items:flex-end;gap:3px;height:22px;">';
+                                var i, h, on, bg;
+                                for (i = 0; i < 4; i++) {
+                                  h = 6 + i * 4;
+                                  on = i < n;
+                                  bg = on ? color : 'rgba(255,255,255,0.12)';
+                                  html += '<div style="width:4px;height:' + h + 'px;background:' + bg + ';border-radius:1px;"></div>';
+                                }
+                                return html + '</div>';
+                              }
+                              return '<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;">' +
+                                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+                                '<div style="min-width:0;"><div style="font-weight:700;font-size:0.82rem;">' + dot + ' CSS326 · perimeter</div>' +
+                                '<div style="font-size:0.68rem;opacity:0.72;margin-top:4px;">SwitchOS · hAP ether3 \u2192 MSNSwitch · ' + lineLbl + '</div></div>' +
+                                '<div style="flex-shrink:0;text-align:right;font-size:0.62rem;opacity:0.65;line-height:1.25;">10 Gbps<br/>1 Gbps</div></div>' +
+                                '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;font-size:0.68rem;">' +
+                                '<span style="opacity:0.7;width:52px;flex-shrink:0;">Link</span>' + bars(v, '#aed581') +
+                                '<span style="margin-left:auto;font-weight:700;min-width:36px;text-align:right;">' + Math.round(v) + '%</span></div>' +
+                                '<div style="margin-top:8px;"><div style="display:flex;justify-content:space-between;font-size:0.65rem;opacity:0.72;margin-bottom:3px;"><span>Throughput</span><span>RX ' +
+                                rxShow + ' · TX ' + txShow + '</span></div>' +
+                                '<div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">' +
+                                '<div style="width:' + v + '%;height:100%;background:linear-gradient(90deg,#42a5f5,#7e57c2);"></div></div>' +
+                                '<div style="font-size:0.6rem;opacity:0.5;margin-top:3px;text-align:right;">' + kbLabel + ' combined · ' + mbps.toFixed(1) + ' Mb/s</div></div></div>';
                             ]]]
-
-                  - type: custom:layout-card
-                    layout_type: custom:grid-layout
-                    layout:
-                      grid-template-columns: repeat(3, minmax(0, 1fr))
-                      grid-gap: 8px
-                      mediaquery:
-                        "(max-width: 900px)":
-                          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr))
-                    cards:
                       - type: custom:button-card
                         entity: sensor.ap_back_yard_clients
                         show_icon: false
                         show_name: false
                         show_state: false
                         show_label: false
+                        triggers_update:
+                          - sensor.ap_back_yard_cpu_utilization
+                          - sensor.ap_back_yard_memory_utilization
                         tap_action:
                           action: more-info
                         styles:
@@ -324,6 +328,8 @@ views:
                             - border: 1px solid rgba(255, 255, 255, 0.1)
                             - border-radius: 14px
                             - padding: 10px
+                            - box-sizing: border-box
+                            - height: 132px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -333,28 +339,38 @@ views:
                         custom_fields:
                           r: |
                             [[[
-                              const n = entity.state;
-                              const iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
-                              return `<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">
-                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                                  <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-                                    <img src="${iconUrl}" width="40" height="40" alt="" style="object-fit:contain;flex-shrink:0;" loading="lazy" />
-                                    <div>
-                                      <div style="font-weight:600;font-size:0.85rem;">AP Back Yard</div>
-                                      <div style="font-size:0.72rem;opacity:0.75;margin-top:2px;">U7MSH · UniFi</div>
-                                    </div>
-                                  </div>
-                                  <div style="font-size:1.35rem;font-weight:700;">${n}</div>
-                                </div>
-                                <div style="font-size:0.72rem;opacity:0.75;margin-top:6px;text-align:right;">clients</div>
-                              </div>`;
+                              var cli = (entity && entity.state != null) ? String(entity.state) : '—';
+                              var cpuSt = hass.states['sensor.ap_back_yard_cpu_utilization'];
+                              var memSt = hass.states['sensor.ap_back_yard_memory_utilization'];
+                              var cpu = (cpuSt && cpuSt.state != null && cpuSt.state !== 'unknown' && cpuSt.state !== 'unavailable') ? String(cpuSt.state) : '—';
+                              var mem = (memSt && memSt.state != null && memSt.state !== 'unknown' && memSt.state !== 'unavailable') ? String(memSt.state) : '—';
+                              function pct(v) {
+                                if (v === '—') return '—';
+                                var s = String(v);
+                                if (s.indexOf('%') >= 0) return s;
+                                return s + '%';
+                              }
+                              var iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-M.png';
+                              return '<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">' +
+                                '<div style="display:flex;align-items:flex-start;gap:8px;">' +
+                                '<img src="' + iconUrl + '" width="36" height="36" alt="" style="object-fit:contain;flex-shrink:0;" />' +
+                                '<div style="min-width:0;flex:1;">' +
+                                '<div style="font-weight:600;font-size:0.8rem;">AP Back Yard</div>' +
+                                '<div style="font-size:0.65rem;opacity:0.72;margin-top:2px;">U7MSH · UniFi</div>' +
+                                '<div style="margin-top:6px;display:grid;grid-template-columns:auto 1fr;font-size:0.65rem;row-gap:3px;column-gap:8px;">' +
+                                '<span style="opacity:0.7;">CPU</span><span style="text-align:right;font-weight:700;color:#ffcc80;">' + pct(cpu) + '</span>' +
+                                '<span style="opacity:0.7;">Mem</span><span style="text-align:right;font-weight:700;color:#81d4fa;">' + pct(mem) + '</span>' +
+                                '<span style="opacity:0.7;">Clients</span><span style="text-align:right;font-weight:700;">' + cli + '</span></div></div></div></div>';
                             ]]]
                       - type: custom:button-card
-                        entity: sensor.ap_bottom_floor_cpu_utilization
+                        entity: sensor.ap_bottom_floor_clients
                         show_icon: false
                         show_name: false
                         show_state: false
                         show_label: false
+                        triggers_update:
+                          - sensor.ap_bottom_floor_cpu_utilization
+                          - sensor.ap_bottom_floor_memory_utilization
                         tap_action:
                           action: more-info
                         styles:
@@ -363,6 +379,8 @@ views:
                             - border: 1px solid rgba(255, 255, 255, 0.1)
                             - border-radius: 14px
                             - padding: 10px
+                            - box-sizing: border-box
+                            - height: 132px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -372,21 +390,28 @@ views:
                         custom_fields:
                           r: |
                             [[[
-                              const n = entity.state;
-                              const iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
-                              return `<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">
-                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                                  <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-                                    <img src="${iconUrl}" width="40" height="40" alt="" style="object-fit:contain;flex-shrink:0;" loading="lazy" />
-                                    <div>
-                                      <div style="font-weight:600;font-size:0.85rem;">AP Bottom Floor</div>
-                                      <div style="font-size:0.72rem;opacity:0.75;margin-top:2px;">U7NHD · UniFi</div>
-                                    </div>
-                                  </div>
-                                  <div style="font-size:1.35rem;font-weight:700;">${n}<span style="font-size:0.85rem;opacity:0.8">%</span></div>
-                                </div>
-                                <div style="font-size:0.72rem;opacity:0.75;margin-top:6px;text-align:right;">CPU util. (no clients entity)</div>
-                              </div>`;
+                              var cli = (entity && entity.state != null) ? String(entity.state) : '—';
+                              var cpuSt = hass.states['sensor.ap_bottom_floor_cpu_utilization'];
+                              var memSt = hass.states['sensor.ap_bottom_floor_memory_utilization'];
+                              var cpu = (cpuSt && cpuSt.state != null && cpuSt.state !== 'unknown' && cpuSt.state !== 'unavailable') ? String(cpuSt.state) : '—';
+                              var mem = (memSt && memSt.state != null && memSt.state !== 'unknown' && memSt.state !== 'unavailable') ? String(memSt.state) : '—';
+                              function pct(v) {
+                                if (v === '—') return '—';
+                                var s = String(v);
+                                if (s.indexOf('%') >= 0) return s;
+                                return s + '%';
+                              }
+                              var iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
+                              return '<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">' +
+                                '<div style="display:flex;align-items:flex-start;gap:8px;">' +
+                                '<img src="' + iconUrl + '" width="36" height="36" alt="" style="object-fit:contain;flex-shrink:0;" />' +
+                                '<div style="min-width:0;flex:1;">' +
+                                '<div style="font-weight:600;font-size:0.8rem;">AP Bottom Floor</div>' +
+                                '<div style="font-size:0.65rem;opacity:0.72;margin-top:2px;">U7NHD · UniFi</div>' +
+                                '<div style="margin-top:6px;display:grid;grid-template-columns:auto 1fr;font-size:0.65rem;row-gap:3px;column-gap:8px;">' +
+                                '<span style="opacity:0.7;">CPU</span><span style="text-align:right;font-weight:700;color:#ffcc80;">' + pct(cpu) + '</span>' +
+                                '<span style="opacity:0.7;">Mem</span><span style="text-align:right;font-weight:700;color:#81d4fa;">' + pct(mem) + '</span>' +
+                                '<span style="opacity:0.7;">Clients</span><span style="text-align:right;font-weight:700;">' + cli + '</span></div></div></div></div>';
                             ]]]
                       - type: custom:button-card
                         entity: sensor.ap_top_floor_clients
@@ -394,6 +419,9 @@ views:
                         show_name: false
                         show_state: false
                         show_label: false
+                        triggers_update:
+                          - sensor.ap_top_floor_cpu_utilization
+                          - sensor.ap_top_floor_memory_utilization
                         tap_action:
                           action: more-info
                         styles:
@@ -402,6 +430,8 @@ views:
                             - border: 1px solid rgba(255, 255, 255, 0.1)
                             - border-radius: 14px
                             - padding: 10px
+                            - box-sizing: border-box
+                            - height: 132px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -411,27 +441,29 @@ views:
                         custom_fields:
                           r: |
                             [[[
-                              const n = entity.state;
-                              const iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
-                              return `<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">
-                                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                                  <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-                                    <img src="${iconUrl}" width="40" height="40" alt="" style="object-fit:contain;flex-shrink:0;" loading="lazy" />
-                                    <div>
-                                      <div style="font-weight:600;font-size:0.85rem;">AP Top Floor</div>
-                                      <div style="font-size:0.72rem;opacity:0.75;margin-top:2px;">U7NHD · UniFi</div>
-                                    </div>
-                                  </div>
-                                  <div style="font-size:1.35rem;font-weight:700;">${n}</div>
-                                </div>
-                                <div style="font-size:0.72rem;opacity:0.75;margin-top:6px;text-align:right;">clients</div>
-                              </div>`;
+                              var cli = (entity && entity.state != null) ? String(entity.state) : '—';
+                              var cpuSt = hass.states['sensor.ap_top_floor_cpu_utilization'];
+                              var memSt = hass.states['sensor.ap_top_floor_memory_utilization'];
+                              var cpu = (cpuSt && cpuSt.state != null && cpuSt.state !== 'unknown' && cpuSt.state !== 'unavailable') ? String(cpuSt.state) : '—';
+                              var mem = (memSt && memSt.state != null && memSt.state !== 'unknown' && memSt.state !== 'unavailable') ? String(memSt.state) : '—';
+                              function pct(v) {
+                                if (v === '—') return '—';
+                                var s = String(v);
+                                if (s.indexOf('%') >= 0) return s;
+                                return s + '%';
+                              }
+                              var iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
+                              return '<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">' +
+                                '<div style="display:flex;align-items:flex-start;gap:8px;">' +
+                                '<img src="' + iconUrl + '" width="36" height="36" alt="" style="object-fit:contain;flex-shrink:0;" />' +
+                                '<div style="min-width:0;flex:1;">' +
+                                '<div style="font-weight:600;font-size:0.8rem;">AP Top Floor</div>' +
+                                '<div style="font-size:0.65rem;opacity:0.72;margin-top:2px;">U7NHD · UniFi</div>' +
+                                '<div style="margin-top:6px;display:grid;grid-template-columns:auto 1fr;font-size:0.65rem;row-gap:3px;column-gap:8px;">' +
+                                '<span style="opacity:0.7;">CPU</span><span style="text-align:right;font-weight:700;color:#ffcc80;">' + pct(cpu) + '</span>' +
+                                '<span style="opacity:0.7;">Mem</span><span style="text-align:right;font-weight:700;color:#81d4fa;">' + pct(mem) + '</span>' +
+                                '<span style="opacity:0.7;">Clients</span><span style="text-align:right;font-weight:700;">' + cli + '</span></div></div></div></div>';
                             ]]]
-
-                  - type: heading
-                    heading_style: subtitle
-                    heading: Throughput (recent)
-
                   - type: custom:layout-card
                     layout_type: custom:grid-layout
                     layout:
@@ -579,13 +611,11 @@ views:
                             tap_action:
                               action: more-info
         column_span: 4
-
       - type: grid
         cards:
           - type: heading
             heading_style: title
             heading: PHYSICAL SERVERS & NVR CLUSTER
-
           - type: custom:layout-card
             layout_type: custom:grid-layout
             layout:
@@ -593,7 +623,7 @@ views:
               grid-gap: 10px
               place-items: stretch
               mediaquery:
-                "(max-width: 1100px)":
+                '(max-width: 1100px)':
                   grid-template-columns: 100%
             grid_options:
               columns: full
@@ -603,7 +633,6 @@ views:
                   - type: heading
                     heading_style: subtitle
                     heading: Home Assistant & VMs
-
                   - type: custom:button-card
                     entity: sensor.system_monitor_processor_use
                     show_icon: false
@@ -646,11 +675,9 @@ views:
                             ${bar('Disk usage /', disk, 'linear-gradient(90deg,#7e57c2,#5e35b1)')}
                           </div>`;
                         ]]]
-
                   - type: heading
                     heading_style: subtitle
                     heading: Proxmox QEMU (CPU used)
-
                   - type: custom:button-card
                     entity: sensor.qemu_nginx_prod_100_cpu_used
                     show_icon: false
@@ -693,13 +720,11 @@ views:
                           };
                           return `<div>${rows.map(([a,b,c]) => bar(a,b,c)).join('')}</div>`;
                         ]]]
-
               - type: vertical-stack
                 cards:
                   - type: heading
                     heading_style: subtitle
                     heading: NVR Server (primary)
-
                   - type: custom:button-card
                     entity: sensor.driveway_detect_cpu_usage
                     show_icon: false
@@ -745,13 +770,11 @@ views:
                             <div style="font-size:0.82rem;font-weight:600;color:${fg};">● ${ft}</div>
                           </div>`;
                         ]]]
-
               - type: vertical-stack
                 cards:
                   - type: heading
                     heading_style: subtitle
                     heading: GPU (NVIDIA)
-
                   - type: custom:layout-card
                     layout_type: custom:grid-layout
                     layout:
@@ -869,17 +892,14 @@ views:
                           </div>`;
                         ]]]
         column_span: 4
-
       - type: grid
         cards:
           - type: heading
             heading_style: title
             heading: STORAGE & SERVICES
-
           - type: heading
             heading_style: subtitle
             heading: OMV storage, Portainer, and NAS2 Compose
-
           - type: custom:layout-card
             layout_type: custom:grid-layout
             layout:
@@ -887,7 +907,7 @@ views:
               grid-gap: 10px
               place-items: stretch
               mediaquery:
-                "(max-width: 900px)":
+                '(max-width: 900px)':
                   grid-template-columns: 100%
             grid_options:
               columns: full
@@ -1003,13 +1023,11 @@ views:
                             </div>
                           </div>`;
                         ]]]
-
               - type: vertical-stack
                 cards:
                   - type: heading
                     heading_style: subtitle
                     heading: Portainer · Docker UI
-
                   - type: custom:button-card
                     entity: binary_sensor.portainer_status
                     show_icon: false
@@ -1071,14 +1089,13 @@ views:
                             </div>
                           </div>`;
                         ]]]
-
                   - type: custom:layout-card
                     layout_type: custom:grid-layout
                     layout:
                       grid-template-columns: 1fr 1fr
                       grid-gap: 8px
                       mediaquery:
-                        "(max-width: 700px)":
+                        '(max-width: 700px)':
                           grid-template-columns: 100%
                     cards:
                       - type: custom:statistics-graph-chart-card
@@ -1137,7 +1154,6 @@ views:
                             aggregate_func: avg
                             tap_action:
                               action: more-info
-
                   - type: heading
                     heading_style: subtitle
                     heading: NAS2 Compose stack
