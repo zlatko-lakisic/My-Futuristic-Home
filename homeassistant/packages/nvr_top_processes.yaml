@@ -1,0 +1,36 @@
+# Top 10 processes on the NVR (Glances processlist API) for the infrastructure dashboard.
+#
+# Enable packages (once) in configuration.yaml:
+#   homeassistant:
+#     packages: !include_dir_named packages
+#
+# Edit `resource` below to a URL Home Assistant can reach:
+#   - Glances default port: 61208
+#   - API paths: /api/3/processlist or /api/4/processlist (depends on Glances version)
+#
+# If the sensor stays unavailable, test the URL from the HA host (curl) and fix firewall/DNS.
+
+rest:
+  - resource: "http://10.0.10.16:61208/api/4/processlist"
+    scan_interval: 60
+    timeout: 25
+    verify_ssl: false
+    sensor:
+      - name: NVR Glances top processes
+        unique_id: nvr_glances_top_processes
+        icon: mdi:format-list-numbered
+        value_template: "{{ value_json | count if value_json is iterable and value_json is not string else 0 }}"
+        json_attributes_template: >
+          {% if value_json is not iterable or value_json is string %}
+          {"processes": []}
+          {% else %}
+          {% set ns = namespace(rows=[]) %}
+          {% for x in value_json %}
+            {% set c = x.cpu_percent | default(0) | float(0) %}
+            {% set m = x.memory_percent | default(0) | float(0) %}
+            {% set n = (x.name | default('?') | string)[:40] %}
+            {% set _ = ns.rows.append({'name': n, 'cpu_percent': c, 'memory_percent': m}) %}
+          {% endfor %}
+          {% set sorted = ns.rows | sort(attribute='cpu_percent', reverse=true) %}
+          {{ {'processes': sorted[:10]} | tojson }}
+          {% endif %}
