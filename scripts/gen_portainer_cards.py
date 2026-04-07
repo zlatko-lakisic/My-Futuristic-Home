@@ -1,4 +1,13 @@
-"""Emit YAML fragment for infrastructure dashboard Portainer container cards."""
+"""Emit YAML fragment for Portainer container cards (legacy / reference).
+
+The infrastructure dashboard builds the same grid dynamically with
+``custom:auto-entities`` (see ``patch_infrastructure_containers.py``).
+
+- ``ICONS`` and ``COLORS`` include every slug in ``SLUGS`` (defaults: ``mdi:docker``,
+  ``#90caf9``) so tiles match the old per-card styling.
+- After editing maps, run ``python patch_infrastructure_containers.py sync-maps``
+  from ``scripts/`` to refresh the embedded JSON in ``infrastructure.yaml``.
+"""
 from __future__ import annotations
 
 import sys
@@ -94,7 +103,8 @@ TITLES = {
     "akaunting_db": "Akaunting DB",
 }
 
-ICONS = {
+# Per-container icon/color overrides (everything else uses the defaults below).
+_ICONS_BY_SLUG: dict[str, str] = {
     "plex": "mdi:plex",
     "radarr": "mdi:download",
     "sonarr": "mdi:television-classic",
@@ -128,9 +138,28 @@ ICONS = {
     "compreface_api": "mdi:api",
     "compreface_core": "mdi:chip",
     "compreface_postgres_db": "mdi:database",
+    "akaunting_db": "mdi:database",
+    "fail2ban_traefik": "mdi:shield-lock",
+    "nvr_telegraf_mqtt_1": "mdi:chart-bell-curve",
+    "telegraf_traefik_logs": "mdi:text-box-search",
+    "nextcloud_aio_mastercontainer": "mdi:docker",
+    "nextcloud_aio_calcardbackup": "mdi:backup-restore",
+    "nextcloud_aio_clamav": "mdi:shield-bug",
+    "nextcloud_aio_collabora": "mdi:file-document-edit",
+    "nextcloud_aio_database": "mdi:database",
+    "nextcloud_aio_fail2ban": "mdi:lock-alert",
+    "nextcloud_aio_imaginary": "mdi:image-filter-hdr",
+    "nextcloud_aio_notify_push": "mdi:bell-ring",
+    "nextcloud_aio_redis": "mdi:memory",
+    "nextcloud_aio_talk": "mdi:video",
+    "nextcloud_aio_talk_recording": "mdi:record-rec",
+    "nextcloud_aio_watchtower": "mdi:update",
+    "nextcloud_aio_whiteboard": "mdi:drawing",
+    "traefik_mdns_repeater_1": "mdi:access-point-network",
+    "traefik_warpgate_init_1": "mdi:script-text",
 }
 
-COLORS = {
+_COLORS_BY_SLUG: dict[str, str] = {
     "plex": "#e5a00d",
     "radarr": "#66bb6a",
     "sonarr": "#42a5f5",
@@ -146,7 +175,50 @@ COLORS = {
     "influx_db2": "#e91e63",
     "traefik": "#7986cb",
     "pihole": "#4caf50",
+    "akaunting": "#90caf9",
+    "frigate_plate_recognizer": "#90caf9",
+    "unifi_network_application": "#5594f0",
+    "unifi_db": "#00a0df",
+    "kong_gateway": "#90caf9",
+    "mailserver": "#90caf9",
+    "roundcube": "#90caf9",
+    "crowdsec": "#90caf9",
+    "double_take": "#90caf9",
+    "warpgate": "#90caf9",
+    "codeproject_ai_server": "#81c784",
+    "akaunting_db": "#64b5f6",
+    "fail2ban_traefik": "#c62828",
+    "nvr_telegraf_mqtt_1": "#00838f",
+    "telegraf_traefik_logs": "#00bcd4",
+    "compreface_admin": "#7e57c2",
+    "compreface_api": "#5c6bc0",
+    "compreface_core": "#8d6e63",
+    "compreface_postgres_db": "#336791",
+    "compreface_ui": "#00897b",
+    "nextcloud_aio_mastercontainer": "#0082c9",
+    "nextcloud_aio_apache": "#3949ab",
+    "nextcloud_aio_nextcloud": "#0082c9",
+    "nextcloud_aio_calcardbackup": "#7cb342",
+    "nextcloud_aio_clamav": "#26a69a",
+    "nextcloud_aio_collabora": "#5e35b1",
+    "nextcloud_aio_database": "#336791",
+    "nextcloud_aio_fail2ban": "#d32f2f",
+    "nextcloud_aio_imaginary": "#7e57c2",
+    "nextcloud_aio_notify_push": "#29b6f6",
+    "nextcloud_aio_redis": "#d32f2f",
+    "nextcloud_aio_talk": "#5c6bc0",
+    "nextcloud_aio_talk_recording": "#512da8",
+    "nextcloud_aio_watchtower": "#607d8b",
+    "nextcloud_aio_whiteboard": "#ff8f00",
+    "traefik_mdns_repeater_1": "#9575cd",
+    "traefik_warpgate_init_1": "#455a64",
 }
+
+_DEFAULT_ICON = "mdi:docker"
+_DEFAULT_COLOR = "#90caf9"
+
+ICONS = {slug: _ICONS_BY_SLUG.get(slug, _DEFAULT_ICON) for slug in SLUGS}
+COLORS = {slug: _COLORS_BY_SLUG.get(slug, _DEFAULT_COLOR) for slug in SLUGS}
 
 
 def title_for(slug: str) -> str:
