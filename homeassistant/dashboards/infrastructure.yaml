@@ -43,7 +43,7 @@ views:
                             - border-radius: 14px
                             - padding: 12px
                             - box-sizing: border-box
-                            - height: 132px
+                            - height: 140px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -83,7 +83,7 @@ views:
                             - border-radius: 14px
                             - padding: 12px
                             - box-sizing: border-box
-                            - height: 132px
+                            - height: 140px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -167,7 +167,7 @@ views:
                             - border-radius: 14px
                             - padding: 10px
                             - box-sizing: border-box
-                            - height: 132px
+                            - height: 140px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -199,38 +199,30 @@ views:
                               if (isNaN(tx)) tx = 0;
                               var sum = Math.max(0, rx + tx);
                               var capBps = 125000000;
-                              var thrPct = capBps > 0 ? Math.min(100, (sum / capBps) * 100) : 0;
-                              var mbps = (sum * 8) / 1000;
-                              var kbLabel = sum.toFixed(1) + ' kB/s';
-                              function bars(pct, color) {
-                                var n = Math.round(pct / 25);
-                                if (n < 0) n = 0;
-                                if (n > 4) n = 4;
-                                var html = '<div style="display:flex;align-items:flex-end;gap:3px;height:22px;">';
-                                var i, h, on, bg;
-                                for (i = 0; i < 4; i++) {
-                                  h = 6 + i * 4;
-                                  on = i < n;
-                                  bg = on ? color : 'rgba(255,255,255,0.12)';
-                                  html += '<div style="width:4px;height:' + h + 'px;background:' + bg + ';border-radius:1px;"></div>';
-                                }
-                                return html + '</div>';
+                              var rxPct = capBps > 0 ? Math.min(100, (Math.max(0, rx) / capBps) * 100) : 0;
+                              var txPct = capBps > 0 ? Math.min(100, (Math.max(0, tx) / capBps) * 100) : 0;
+                              var sumMbps = (sum * 8) / 1000;
+                              var rxK = Math.max(0, rx).toFixed(1);
+                              var txK = Math.max(0, tx).toFixed(1);
+                              function hRow(lbl, pct, fill, valStr) {
+                                var p = Math.min(100, Math.max(0, pct));
+                                return '<div style="margin-top:5px;display:flex;align-items:center;gap:6px;font-size:0.6rem;">' +
+                                  '<span style="opacity:0.72;width:46px;flex-shrink:0;">' + lbl + '</span>' +
+                                  '<div style="flex:1;min-width:0;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">' +
+                                  '<div style="width:' + p + '%;height:100%;background:' + fill + ';border-radius:3px;"></div></div>' +
+                                  '<span style="font-weight:700;min-width:36px;text-align:right;flex-shrink:0;">' + valStr + '</span></div>';
                               }
                               return '<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;">' +
-                                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
-                                '<div style="min-width:0;"><div style="font-weight:700;font-size:0.82rem;">' + dot + ' Mikrotik-Mostar</div>' +
-                                '<div style="font-size:0.68rem;opacity:0.72;margin-top:4px;">RB951G · remote · ' + lineLbl + '</div></div>' +
-                                '<div style="flex-shrink:0;text-align:right;font-size:0.62rem;opacity:0.65;line-height:1.25;">1 Gbps<br/>100 Mbps</div></div>' +
-                                '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;font-size:0.68rem;">' +
-                                '<span style="opacity:0.7;width:52px;flex-shrink:0;">CPU</span>' + bars(cpu, '#ffb74d') +
-                                '<span style="margin-left:auto;font-weight:700;min-width:36px;text-align:right;">' + Math.round(cpu) + '%</span></div>' +
-                                '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;font-size:0.68rem;">' +
-                                '<span style="opacity:0.7;width:52px;flex-shrink:0;">Memory</span>' + bars(mem, '#4fc3f7') +
-                                '<span style="margin-left:auto;font-weight:700;min-width:36px;text-align:right;">' + Math.round(mem) + '%</span></div>' +
-                                '<div style="margin-top:8px;"><div style="display:flex;justify-content:space-between;font-size:0.65rem;opacity:0.72;margin-bottom:3px;"><span>Throughput</span><span>' + kbLabel + ' · ' + mbps.toFixed(1) + ' Mb/s</span></div>' +
-                                '<div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">' +
-                                '<div style="width:' + thrPct + '%;height:100%;background:linear-gradient(90deg,#66bb6a,#26c6da);"></div></div>' +
-                                '<div style="font-size:0.6rem;opacity:0.5;margin-top:3px;text-align:right;">vs line rate (WAN)</div></div></div>';
+                                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">' +
+                                '<div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:0.82rem;">' + dot + ' Mikrotik-Mostar</div>' +
+                                '<div style="font-size:0.65rem;opacity:0.72;margin-top:3px;line-height:1.25;">RB951G · remote · ' + lineLbl + '</div></div>' +
+                                '<div style="flex-shrink:0;text-align:right;font-size:0.58rem;opacity:0.65;line-height:1.2;">1 Gbps<br/>100 Mbps</div></div>' +
+                                hRow('CPU', cpu, 'linear-gradient(90deg,#ffb74d,#ff9800)', Math.round(cpu) + '%') +
+                                hRow('Memory', mem, 'linear-gradient(90deg,#4fc3f7,#29b6f6)', Math.round(mem) + '%') +
+                                '<div style="margin-top:6px;font-size:0.58rem;opacity:0.72;">Throughput</div>' +
+                                hRow('Download', rxPct, 'linear-gradient(90deg,#66bb6a,#26c6da)', rxK + ' kB/s') +
+                                hRow('Upload', txPct, 'linear-gradient(90deg,#ab47bc,#7e57c2)', txK + ' kB/s') +
+                                '<div style="font-size:0.55rem;opacity:0.5;margin-top:2px;">Total ' + sumMbps.toFixed(1) + ' Mb/s · vs line rate (WAN)</div></div>';
                             ]]]
                       - type: custom:button-card
                         entity: binary_sensor.mikrotik_home_ether3_connection
@@ -250,7 +242,7 @@ views:
                             - border-radius: 14px
                             - padding: 10px
                             - box-sizing: border-box
-                            - height: 132px
+                            - height: 140px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -279,37 +271,30 @@ views:
                               if (isNaN(tx)) tx = 0;
                               var sum = Math.max(0, rx + tx);
                               var v = capBps > 0 ? Math.min(100, (sum / capBps) * 100) : 0;
+                              var rxPct = capBps > 0 ? Math.min(100, (Math.max(0, rx) / capBps) * 100) : 0;
+                              var txPct = capBps > 0 ? Math.min(100, (Math.max(0, tx) / capBps) * 100) : 0;
                               var mbps = (sum * 8) / 1000;
                               var kbLabel = sum.toFixed(1) + ' kB/s';
                               var rxShow = (rxSt && rxSt.state != null) ? String(rxSt.state) : '0';
                               var txShow = (txSt && txSt.state != null) ? String(txSt.state) : '0';
-                              function bars(pct, color) {
-                                var n = Math.round(pct / 25);
-                                if (n < 0) n = 0;
-                                if (n > 4) n = 4;
-                                var html = '<div style="display:flex;align-items:flex-end;gap:3px;height:22px;">';
-                                var i, h, on, bg;
-                                for (i = 0; i < 4; i++) {
-                                  h = 6 + i * 4;
-                                  on = i < n;
-                                  bg = on ? color : 'rgba(255,255,255,0.12)';
-                                  html += '<div style="width:4px;height:' + h + 'px;background:' + bg + ';border-radius:1px;"></div>';
-                                }
-                                return html + '</div>';
+                              function hRow(lbl, pct, fill, valStr) {
+                                var p = Math.min(100, Math.max(0, pct));
+                                return '<div style="margin-top:5px;display:flex;align-items:center;gap:6px;font-size:0.6rem;">' +
+                                  '<span style="opacity:0.72;width:46px;flex-shrink:0;">' + lbl + '</span>' +
+                                  '<div style="flex:1;min-width:0;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">' +
+                                  '<div style="width:' + p + '%;height:100%;background:' + fill + ';border-radius:3px;"></div></div>' +
+                                  '<span style="font-weight:700;min-width:36px;text-align:right;flex-shrink:0;">' + valStr + '</span></div>';
                               }
                               return '<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;">' +
-                                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
-                                '<div style="min-width:0;"><div style="font-weight:700;font-size:0.82rem;">' + dot + ' CSS326 · perimeter</div>' +
-                                '<div style="font-size:0.68rem;opacity:0.72;margin-top:4px;">SwitchOS · hAP ether3 \u2192 MSNSwitch · ' + lineLbl + '</div></div>' +
-                                '<div style="flex-shrink:0;text-align:right;font-size:0.62rem;opacity:0.65;line-height:1.25;">10 Gbps<br/>1 Gbps</div></div>' +
-                                '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;font-size:0.68rem;">' +
-                                '<span style="opacity:0.7;width:52px;flex-shrink:0;">Link</span>' + bars(v, '#aed581') +
-                                '<span style="margin-left:auto;font-weight:700;min-width:36px;text-align:right;">' + Math.round(v) + '%</span></div>' +
-                                '<div style="margin-top:8px;"><div style="display:flex;justify-content:space-between;font-size:0.65rem;opacity:0.72;margin-bottom:3px;"><span>Throughput</span><span>RX ' +
-                                rxShow + ' · TX ' + txShow + '</span></div>' +
-                                '<div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">' +
-                                '<div style="width:' + v + '%;height:100%;background:linear-gradient(90deg,#42a5f5,#7e57c2);"></div></div>' +
-                                '<div style="font-size:0.6rem;opacity:0.5;margin-top:3px;text-align:right;">' + kbLabel + ' combined · ' + mbps.toFixed(1) + ' Mb/s</div></div></div>';
+                                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">' +
+                                '<div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:0.82rem;">' + dot + ' CSS326 · perimeter</div>' +
+                                '<div style="font-size:0.62rem;opacity:0.72;margin-top:3px;line-height:1.25;">SwitchOS · ether3 \u2192 MSNSwitch · ' + lineLbl + '</div></div>' +
+                                '<div style="flex-shrink:0;text-align:right;font-size:0.58rem;opacity:0.65;line-height:1.2;">10 Gbps<br/>1 Gbps</div></div>' +
+                                hRow('Link', v, 'linear-gradient(90deg,#aed581,#66bb6a)', Math.round(v) + '%') +
+                                '<div style="margin-top:6px;font-size:0.58rem;opacity:0.72;">Throughput</div>' +
+                                hRow('Download', rxPct, 'linear-gradient(90deg,#42a5f5,#26c6da)', rxShow + ' kB/s') +
+                                hRow('Upload', txPct, 'linear-gradient(90deg,#ab47bc,#7e57c2)', txShow + ' kB/s') +
+                                '<div style="font-size:0.55rem;opacity:0.5;margin-top:2px;text-align:right;">' + kbLabel + ' · ' + mbps.toFixed(1) + ' Mb/s</div></div>';
                             ]]]
                       - type: custom:button-card
                         entity: sensor.ap_back_yard_clients
@@ -329,7 +314,7 @@ views:
                             - border-radius: 14px
                             - padding: 10px
                             - box-sizing: border-box
-                            - height: 132px
+                            - height: 140px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -339,28 +324,49 @@ views:
                         custom_fields:
                           r: |
                             [[[
-                              var cli = (entity && entity.state != null) ? String(entity.state) : '—';
                               var cpuSt = hass.states['sensor.ap_back_yard_cpu_utilization'];
                               var memSt = hass.states['sensor.ap_back_yard_memory_utilization'];
                               var cpu = (cpuSt && cpuSt.state != null && cpuSt.state !== 'unknown' && cpuSt.state !== 'unavailable') ? String(cpuSt.state) : '—';
                               var mem = (memSt && memSt.state != null && memSt.state !== 'unknown' && memSt.state !== 'unavailable') ? String(memSt.state) : '—';
-                              function pct(v) {
-                                if (v === '—') return '—';
-                                var s = String(v);
-                                if (s.indexOf('%') >= 0) return s;
-                                return s + '%';
+                              var cliRaw = (entity && entity.state != null && entity.state !== 'unknown' && entity.state !== 'unavailable') ? String(entity.state) : null;
+                              function parsePct(s) {
+                                if (s === '—') return { w: 0, t: '—' };
+                                var n = parseFloat(String(s).replace('%', ''));
+                                if (isNaN(n)) return { w: 0, t: '—' };
+                                n = Math.min(100, Math.max(0, n));
+                                return { w: n, t: Math.round(n) + '%' };
                               }
+                              function parseClients(s) {
+                                if (s == null) return { w: 0, t: '—' };
+                                var n = parseFloat(String(s));
+                                if (isNaN(n)) return { w: 0, t: '—' };
+                                n = Math.max(0, n);
+                                var w = Math.min(100, n);
+                                return { w: w, t: String(Math.round(n)) };
+                              }
+                              function hRow(lbl, pct, fill, valStr) {
+                                var p = Math.min(100, Math.max(0, pct));
+                                return '<div style="margin-top:3px;display:flex;align-items:center;gap:6px;font-size:0.58rem;">' +
+                                  '<span style="opacity:0.72;width:50px;flex-shrink:0;">' + lbl + '</span>' +
+                                  '<div style="flex:1;min-width:0;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">' +
+                                  '<div style="width:' + p + '%;height:100%;background:' + fill + ';border-radius:3px;"></div></div>' +
+                                  '<span style="font-weight:700;min-width:32px;text-align:right;flex-shrink:0;">' + valStr + '</span></div>';
+                              }
+                              var cCpu = parsePct(cpu);
+                              var cMem = parsePct(mem);
+                              var cCli = parseClients(cliRaw);
                               var iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-M.png';
                               return '<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">' +
                                 '<div style="display:flex;align-items:flex-start;gap:8px;">' +
-                                '<img src="' + iconUrl + '" width="36" height="36" alt="" style="object-fit:contain;flex-shrink:0;" />' +
+                                '<img src="' + iconUrl + '" width="34" height="34" alt="" style="object-fit:contain;flex-shrink:0;" />' +
                                 '<div style="min-width:0;flex:1;">' +
-                                '<div style="font-weight:600;font-size:0.8rem;">AP Back Yard</div>' +
-                                '<div style="font-size:0.65rem;opacity:0.72;margin-top:2px;">U7MSH · UniFi</div>' +
-                                '<div style="margin-top:6px;display:grid;grid-template-columns:auto 1fr;font-size:0.65rem;row-gap:3px;column-gap:8px;">' +
-                                '<span style="opacity:0.7;">CPU</span><span style="text-align:right;font-weight:700;color:#ffcc80;">' + pct(cpu) + '</span>' +
-                                '<span style="opacity:0.7;">Mem</span><span style="text-align:right;font-weight:700;color:#81d4fa;">' + pct(mem) + '</span>' +
-                                '<span style="opacity:0.7;">Clients</span><span style="text-align:right;font-weight:700;">' + cli + '</span></div></div></div></div>';
+                                '<div style="font-weight:600;font-size:0.78rem;">AP Back Yard</div>' +
+                                '<div style="font-size:0.62rem;opacity:0.72;margin-top:2px;">U7MSH · UniFi</div></div></div>' +
+                                '<div style="margin-top:6px;">' +
+                                hRow('CPU', cCpu.w, 'linear-gradient(90deg,#ffb74d,#ff9800)', cCpu.t) +
+                                hRow('Mem', cMem.w, 'linear-gradient(90deg,#4fc3f7,#29b6f6)', cMem.t) +
+                                hRow('Clients', cCli.w, 'linear-gradient(90deg,#ba68c8,#9c27b0)', cCli.t) +
+                                '</div></div>';
                             ]]]
                       - type: custom:button-card
                         entity: sensor.ap_bottom_floor_clients
@@ -380,7 +386,7 @@ views:
                             - border-radius: 14px
                             - padding: 10px
                             - box-sizing: border-box
-                            - height: 132px
+                            - height: 140px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -390,28 +396,49 @@ views:
                         custom_fields:
                           r: |
                             [[[
-                              var cli = (entity && entity.state != null) ? String(entity.state) : '—';
                               var cpuSt = hass.states['sensor.ap_bottom_floor_cpu_utilization'];
                               var memSt = hass.states['sensor.ap_bottom_floor_memory_utilization'];
                               var cpu = (cpuSt && cpuSt.state != null && cpuSt.state !== 'unknown' && cpuSt.state !== 'unavailable') ? String(cpuSt.state) : '—';
                               var mem = (memSt && memSt.state != null && memSt.state !== 'unknown' && memSt.state !== 'unavailable') ? String(memSt.state) : '—';
-                              function pct(v) {
-                                if (v === '—') return '—';
-                                var s = String(v);
-                                if (s.indexOf('%') >= 0) return s;
-                                return s + '%';
+                              var cliRaw = (entity && entity.state != null && entity.state !== 'unknown' && entity.state !== 'unavailable') ? String(entity.state) : null;
+                              function parsePct(s) {
+                                if (s === '—') return { w: 0, t: '—' };
+                                var n = parseFloat(String(s).replace('%', ''));
+                                if (isNaN(n)) return { w: 0, t: '—' };
+                                n = Math.min(100, Math.max(0, n));
+                                return { w: n, t: Math.round(n) + '%' };
                               }
+                              function parseClients(s) {
+                                if (s == null) return { w: 0, t: '—' };
+                                var n = parseFloat(String(s));
+                                if (isNaN(n)) return { w: 0, t: '—' };
+                                n = Math.max(0, n);
+                                var w = Math.min(100, n);
+                                return { w: w, t: String(Math.round(n)) };
+                              }
+                              function hRow(lbl, pct, fill, valStr) {
+                                var p = Math.min(100, Math.max(0, pct));
+                                return '<div style="margin-top:3px;display:flex;align-items:center;gap:6px;font-size:0.58rem;">' +
+                                  '<span style="opacity:0.72;width:50px;flex-shrink:0;">' + lbl + '</span>' +
+                                  '<div style="flex:1;min-width:0;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">' +
+                                  '<div style="width:' + p + '%;height:100%;background:' + fill + ';border-radius:3px;"></div></div>' +
+                                  '<span style="font-weight:700;min-width:32px;text-align:right;flex-shrink:0;">' + valStr + '</span></div>';
+                              }
+                              var cCpu = parsePct(cpu);
+                              var cMem = parsePct(mem);
+                              var cCli = parseClients(cliRaw);
                               var iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
                               return '<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">' +
                                 '<div style="display:flex;align-items:flex-start;gap:8px;">' +
-                                '<img src="' + iconUrl + '" width="36" height="36" alt="" style="object-fit:contain;flex-shrink:0;" />' +
+                                '<img src="' + iconUrl + '" width="34" height="34" alt="" style="object-fit:contain;flex-shrink:0;" />' +
                                 '<div style="min-width:0;flex:1;">' +
-                                '<div style="font-weight:600;font-size:0.8rem;">AP Bottom Floor</div>' +
-                                '<div style="font-size:0.65rem;opacity:0.72;margin-top:2px;">U7NHD · UniFi</div>' +
-                                '<div style="margin-top:6px;display:grid;grid-template-columns:auto 1fr;font-size:0.65rem;row-gap:3px;column-gap:8px;">' +
-                                '<span style="opacity:0.7;">CPU</span><span style="text-align:right;font-weight:700;color:#ffcc80;">' + pct(cpu) + '</span>' +
-                                '<span style="opacity:0.7;">Mem</span><span style="text-align:right;font-weight:700;color:#81d4fa;">' + pct(mem) + '</span>' +
-                                '<span style="opacity:0.7;">Clients</span><span style="text-align:right;font-weight:700;">' + cli + '</span></div></div></div></div>';
+                                '<div style="font-weight:600;font-size:0.78rem;">AP Bottom Floor</div>' +
+                                '<div style="font-size:0.62rem;opacity:0.72;margin-top:2px;">U7NHD · UniFi</div></div></div>' +
+                                '<div style="margin-top:6px;">' +
+                                hRow('CPU', cCpu.w, 'linear-gradient(90deg,#ffb74d,#ff9800)', cCpu.t) +
+                                hRow('Mem', cMem.w, 'linear-gradient(90deg,#4fc3f7,#29b6f6)', cMem.t) +
+                                hRow('Clients', cCli.w, 'linear-gradient(90deg,#ba68c8,#9c27b0)', cCli.t) +
+                                '</div></div>';
                             ]]]
                       - type: custom:button-card
                         entity: sensor.ap_top_floor_clients
@@ -431,7 +458,7 @@ views:
                             - border-radius: 14px
                             - padding: 10px
                             - box-sizing: border-box
-                            - height: 132px
+                            - height: 140px
                             - box-shadow: none
                           grid:
                             - grid-template-areas: '"r"'
@@ -441,28 +468,49 @@ views:
                         custom_fields:
                           r: |
                             [[[
-                              var cli = (entity && entity.state != null) ? String(entity.state) : '—';
                               var cpuSt = hass.states['sensor.ap_top_floor_cpu_utilization'];
                               var memSt = hass.states['sensor.ap_top_floor_memory_utilization'];
                               var cpu = (cpuSt && cpuSt.state != null && cpuSt.state !== 'unknown' && cpuSt.state !== 'unavailable') ? String(cpuSt.state) : '—';
                               var mem = (memSt && memSt.state != null && memSt.state !== 'unknown' && memSt.state !== 'unavailable') ? String(memSt.state) : '—';
-                              function pct(v) {
-                                if (v === '—') return '—';
-                                var s = String(v);
-                                if (s.indexOf('%') >= 0) return s;
-                                return s + '%';
+                              var cliRaw = (entity && entity.state != null && entity.state !== 'unknown' && entity.state !== 'unavailable') ? String(entity.state) : null;
+                              function parsePct(s) {
+                                if (s === '—') return { w: 0, t: '—' };
+                                var n = parseFloat(String(s).replace('%', ''));
+                                if (isNaN(n)) return { w: 0, t: '—' };
+                                n = Math.min(100, Math.max(0, n));
+                                return { w: n, t: Math.round(n) + '%' };
                               }
+                              function parseClients(s) {
+                                if (s == null) return { w: 0, t: '—' };
+                                var n = parseFloat(String(s));
+                                if (isNaN(n)) return { w: 0, t: '—' };
+                                n = Math.max(0, n);
+                                var w = Math.min(100, n);
+                                return { w: w, t: String(Math.round(n)) };
+                              }
+                              function hRow(lbl, pct, fill, valStr) {
+                                var p = Math.min(100, Math.max(0, pct));
+                                return '<div style="margin-top:3px;display:flex;align-items:center;gap:6px;font-size:0.58rem;">' +
+                                  '<span style="opacity:0.72;width:50px;flex-shrink:0;">' + lbl + '</span>' +
+                                  '<div style="flex:1;min-width:0;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">' +
+                                  '<div style="width:' + p + '%;height:100%;background:' + fill + ';border-radius:3px;"></div></div>' +
+                                  '<span style="font-weight:700;min-width:32px;text-align:right;flex-shrink:0;">' + valStr + '</span></div>';
+                              }
+                              var cCpu = parsePct(cpu);
+                              var cMem = parsePct(mem);
+                              var cCli = parseClients(cliRaw);
                               var iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
                               return '<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">' +
                                 '<div style="display:flex;align-items:flex-start;gap:8px;">' +
-                                '<img src="' + iconUrl + '" width="36" height="36" alt="" style="object-fit:contain;flex-shrink:0;" />' +
+                                '<img src="' + iconUrl + '" width="34" height="34" alt="" style="object-fit:contain;flex-shrink:0;" />' +
                                 '<div style="min-width:0;flex:1;">' +
-                                '<div style="font-weight:600;font-size:0.8rem;">AP Top Floor</div>' +
-                                '<div style="font-size:0.65rem;opacity:0.72;margin-top:2px;">U7NHD · UniFi</div>' +
-                                '<div style="margin-top:6px;display:grid;grid-template-columns:auto 1fr;font-size:0.65rem;row-gap:3px;column-gap:8px;">' +
-                                '<span style="opacity:0.7;">CPU</span><span style="text-align:right;font-weight:700;color:#ffcc80;">' + pct(cpu) + '</span>' +
-                                '<span style="opacity:0.7;">Mem</span><span style="text-align:right;font-weight:700;color:#81d4fa;">' + pct(mem) + '</span>' +
-                                '<span style="opacity:0.7;">Clients</span><span style="text-align:right;font-weight:700;">' + cli + '</span></div></div></div></div>';
+                                '<div style="font-weight:600;font-size:0.78rem;">AP Top Floor</div>' +
+                                '<div style="font-size:0.62rem;opacity:0.72;margin-top:2px;">U7NHD · UniFi</div></div></div>' +
+                                '<div style="margin-top:6px;">' +
+                                hRow('CPU', cCpu.w, 'linear-gradient(90deg,#ffb74d,#ff9800)', cCpu.t) +
+                                hRow('Mem', cMem.w, 'linear-gradient(90deg,#4fc3f7,#29b6f6)', cMem.t) +
+                                hRow('Clients', cCli.w, 'linear-gradient(90deg,#ba68c8,#9c27b0)', cCli.t) +
+                                '</div></div>';
                             ]]]
                   - type: custom:layout-card
                     layout_type: custom:grid-layout
@@ -488,8 +536,17 @@ views:
                         group_by: interval
                         entities:
                           - entity: sensor.mikrotik_home_ether1_rx
-                            name: kB/s
+                            name: Download
                             color: '#ff9800'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 0
+                            aggregate_func: avg
+                          - entity: sensor.mikrotik_home_ether1_tx
+                            name: Upload
+                            color: '#ab47bc'
                             graph_type: line
                             line_width: 2
                             show_fill: true
@@ -516,8 +573,17 @@ views:
                         group_by: interval
                         entities:
                           - entity: sensor.mikrotik_home_ether2_rx
-                            name: kB/s
+                            name: Download
                             color: '#ffa726'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 0
+                            aggregate_func: avg
+                          - entity: sensor.mikrotik_home_ether2_tx
+                            name: Upload
+                            color: '#ab47bc'
                             graph_type: line
                             line_width: 2
                             show_fill: true
@@ -544,8 +610,17 @@ views:
                         group_by: interval
                         entities:
                           - entity: sensor.mikrotik_home_home_wifi_vlan_rx
-                            name: kB/s
+                            name: Download
                             color: '#42a5f5'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 0
+                            aggregate_func: avg
+                          - entity: sensor.mikrotik_home_home_wifi_vlan_tx
+                            name: Upload
+                            color: '#ab47bc'
                             graph_type: line
                             line_width: 2
                             show_fill: true
@@ -572,8 +647,17 @@ views:
                         group_by: interval
                         entities:
                           - entity: sensor.mikrotik_home_iot_vlan_rx
-                            name: kB/s
+                            name: Download
                             color: '#ff7043'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 0
+                            aggregate_func: avg
+                          - entity: sensor.mikrotik_home_iot_vlan_tx
+                            name: Upload
+                            color: '#ab47bc'
                             graph_type: line
                             line_width: 2
                             show_fill: true
@@ -600,13 +684,22 @@ views:
                         group_by: interval
                         entities:
                           - entity: sensor.mikrotik_home_ether3_rx
-                            name: kB/s
+                            name: Download
                             color: '#66bb6a'
                             graph_type: line
                             line_width: 2
                             show_fill: true
                             smooth: true
-                            decimals: 0
+                            decimals: 2
+                            aggregate_func: avg
+                          - entity: sensor.mikrotik_home_ether3_tx
+                            name: Upload
+                            color: '#ab47bc'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 2
                             aggregate_func: avg
                             tap_action:
                               action: more-info
