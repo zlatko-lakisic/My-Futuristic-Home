@@ -1,0 +1,97 @@
+# Template sensors for AXIS camera dashboard modern-circular-gauge cards.
+# — Pipeline CPU: max(capture, detect, ffmpeg) % from Frigate
+# — Frigate FPS: camera_fps if > 0 else detection_fps
+#
+# Include via packages (e.g. homeassistant: packages: axis_frigate_gauge_sensors: !include ...)
+
+template:
+  - sensor:
+      - name: Back yard pipeline CPU
+        unique_id: axis_back_yard_pipeline_cpu_g
+        unit_of_measurement: "%"
+        state: >
+          {% set a = states('sensor.back_yard_capture_cpu_usage') | float(0) %}
+          {% set b = states('sensor.back_yard_detect_cpu_usage') | float(0) %}
+          {% set c = states('sensor.back_yard_ffmpeg_cpu_usage') | float(0) %}
+          {{ ([a, b, c] | max) | round(1) }}
+
+      - name: Back yard Frigate FPS
+        unique_id: axis_back_yard_frigate_fps_g
+        unit_of_measurement: fps
+        state_class: measurement
+        state: >
+          {% set c = states('sensor.back_yard_camera_fps') | float(0) %}
+          {% set d = states('sensor.back_yard_detection_fps') | float(0) %}
+          {{ (c if c > 0 else d) | round(1) }}
+
+      - name: Garden north pipeline CPU
+        unique_id: axis_garden_north_pipeline_cpu_g
+        unit_of_measurement: "%"
+        state: >
+          {% set a = states('sensor.garden_north_capture_cpu_usage') | float(0) %}
+          {% set b = states('sensor.garden_north_detect_cpu_usage') | float(0) %}
+          {% set c = states('sensor.garden_north_ffmpeg_cpu_usage') | float(0) %}
+          {{ ([a, b, c] | max) | round(1) }}
+
+      - name: Garden north Frigate FPS
+        unique_id: axis_garden_north_frigate_fps_g
+        unit_of_measurement: fps
+        state_class: measurement
+        state: >
+          {% set c = states('sensor.garden_north_camera_fps') | float(0) %}
+          {% set d = states('sensor.garden_north_detection_fps') | float(0) %}
+          {{ (c if c > 0 else d) | round(1) }}
+
+      - name: West side pipeline CPU
+        unique_id: axis_west_side_pipeline_cpu_g
+        unit_of_measurement: "%"
+        state: >
+          {% set a = states('sensor.west_side_capture_cpu_usage') | float(0) %}
+          {% set b = states('sensor.west_side_detect_cpu_usage') | float(0) %}
+          {% set c = states('sensor.west_side_ffmpeg_cpu_usage') | float(0) %}
+          {{ ([a, b, c] | max) | round(1) }}
+
+      - name: West side Frigate FPS
+        unique_id: axis_west_side_frigate_fps_g
+        unit_of_measurement: fps
+        state_class: measurement
+        state: >
+          {% set c = states('sensor.west_side_camera_fps') | float(0) %}
+          {% set d = states('sensor.west_side_detection_fps') | float(0) %}
+          {{ (c if c > 0 else d) | round(1) }}
+
+      - name: Driveway pipeline CPU
+        unique_id: axis_driveway_pipeline_cpu_g
+        unit_of_measurement: "%"
+        state: >
+          {% set a = states('sensor.driveway_capture_cpu_usage') | float(0) %}
+          {% set b = states('sensor.driveway_detect_cpu_usage') | float(0) %}
+          {% set c = states('sensor.driveway_ffmpeg_cpu_usage') | float(0) %}
+          {{ ([a, b, c] | max) | round(1) }}
+
+      - name: Driveway Frigate FPS
+        unique_id: axis_driveway_frigate_fps_g
+        unit_of_measurement: fps
+        state_class: measurement
+        state: >
+          {% set c = states('sensor.driveway_camera_fps') | float(0) %}
+          {% set d = states('sensor.driveway_detection_fps') | float(0) %}
+          {{ (c if c > 0 else d) | round(1) }}
+
+      - name: Garden south pipeline CPU
+        unique_id: axis_garden_south_pipeline_cpu_g
+        unit_of_measurement: "%"
+        state: >
+          {% set a = states('sensor.garden_south_capture_cpu_usage') | float(0) %}
+          {% set b = states('sensor.garden_south_detect_cpu_usage') | float(0) %}
+          {% set c = states('sensor.garden_south_ffmpeg_cpu_usage') | float(0) %}
+          {{ ([a, b, c] | max) | round(1) }}
+
+      - name: Garden south Frigate FPS
+        unique_id: axis_garden_south_frigate_fps_g
+        unit_of_measurement: fps
+        state_class: measurement
+        state: >
+          {% set c = states('sensor.garden_south_camera_fps') | float(0) %}
+          {% set d = states('sensor.garden_south_detection_fps') | float(0) %}
+          {{ (c if c > 0 else d) | round(1) }}
