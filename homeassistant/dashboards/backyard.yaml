@@ -4,7 +4,7 @@ views:
     type: sections
     max_columns: 4
     dense_section_placement: true
-    icon: mdi:home
+    icon: mdi:grass
     sections:
       - type: grid
         cards:
@@ -431,7 +431,7 @@ views:
                       - type: custom:modern-circular-gauge
                         entity: sensor.garden_controller_indoor_temperature
                         gauge_type: standard
-                        needle: true
+                        needle: false
                         smooth_segments: true
                         min: -10
                         max: 110
@@ -489,7 +489,7 @@ views:
                         entity: sensor.garden_controller_indoor_humidity
                         name: HUMIDITY
                         gauge_type: standard
-                        needle: true
+                        needle: false
                         smooth_segments: true
                         min: 0
                         max: 100
