@@ -26,34 +26,37 @@ views:
             icon: mdi:speedometer
             heading: Session & transfer speed
 
+          # Same grid pattern as Infrastructure → Mikrotik (2 compact gauge cols + throughput-style charts).
           - type: custom:layout-card
             layout_type: custom:grid-layout
             layout:
-              grid-template-columns: repeat(4, minmax(220px, 1fr))
-              grid-gap: 12px
+              grid-template-columns: minmax(132px, 0.9fr) minmax(132px, 0.9fr) minmax(0, 1fr) minmax(0, 1fr)
+              grid-gap: 10px
               place-items: stretch
+              align-items: stretch
               mediaquery:
-                '(max-width: 1300px)':
-                  grid-template-columns: repeat(2, minmax(220px, 1fr))
-                '(max-width: 700px)':
-                  grid-template-columns: 1fr
+                '(max-width: 1200px)':
+                  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))
+                '(max-width: 560px)':
+                  grid-template-columns: 100%
             grid_options:
               columns: full
             cards:
               - type: custom:modern-circular-gauge
                 entity: sensor.qbittorrent_download_speed_kib
-                name: DL
+                name: CPU
                 gauge_type: standard
                 needle: false
+                smooth_segments: true
                 min: 0
                 max: 51200
                 show_icon: true
                 icon: mdi:download
+                header_position: top
                 show_header: false
                 state_font_size: 22
-                decimals: 0
-                smooth_segments: true
-                gauge_radius: 34
+                gauge_radius: 40
+                decimals: 1
                 gauge_background_style:
                   width: 10
                   opacity: 0.7
@@ -61,34 +64,50 @@ views:
                   width: 8
                   color: adaptive
                 adaptive_icon_color: true
-                tap_action:
-                  action: more-info
                 segments:
                   - from: 0
-                    color: [33, 150, 243]
+                    color:
+                      - 33
+                      - 150
+                      - 243
                   - from: 12288
-                    color: [3, 169, 244]
+                    color:
+                      - 3
+                      - 169
+                      - 244
                   - from: 25600
-                    color: [0, 188, 212]
+                    color:
+                      - 0
+                      - 188
+                      - 212
                   - from: 40960
-                    color: [128, 222, 234]
+                    color:
+                      - 128
+                      - 222
+                      - 234
                   - from: 51200
-                    color: [179, 229, 252]
+                    color:
+                      - 179
+                      - 229
+                      - 252
                 secondary: {}
+                tap_action:
+                  action: more-info
               - type: custom:modern-circular-gauge
                 entity: sensor.qbittorrent_upload_speed_kib
-                name: UL
+                name: Upload
                 gauge_type: standard
                 needle: false
+                smooth_segments: true
                 min: 0
                 max: 51200
                 show_icon: true
                 icon: mdi:upload
+                header_position: top
                 show_header: false
                 state_font_size: 22
-                decimals: 0
-                smooth_segments: true
-                gauge_radius: 34
+                gauge_radius: 40
+                decimals: 1
                 gauge_background_style:
                   width: 10
                   opacity: 0.7
@@ -96,22 +115,37 @@ views:
                   width: 8
                   color: adaptive
                 adaptive_icon_color: true
-                tap_action:
-                  action: more-info
                 segments:
                   - from: 0
-                    color: [102, 187, 106]
+                    color:
+                      - 102
+                      - 187
+                      - 106
                   - from: 12288
-                    color: [67, 160, 71]
+                    color:
+                      - 67
+                      - 160
+                      - 71
                   - from: 25600
-                    color: [56, 142, 60]
+                    color:
+                      - 56
+                      - 142
+                      - 60
                   - from: 40960
-                    color: [165, 214, 167]
+                    color:
+                      - 165
+                      - 214
+                      - 167
                   - from: 51200
-                    color: [200, 230, 201]
+                    color:
+                      - 200
+                      - 230
+                      - 201
                 secondary: {}
+                tap_action:
+                  action: more-info
               - type: custom:statistics-graph-chart-card
-                card_header: Transfer speed (24h, KiB/s)
+                card_header: Transfer speed (6h, KiB/s)
                 show_grid: false
                 show_tooltip: true
                 show_legend: false
@@ -121,34 +155,34 @@ views:
                 show_y_ticks: false
                 cache: true
                 animate_graph: false
-                hours_to_show: 24
-                points_per_hour: 6
-                height: 90
+                hours_to_show: 6
+                points_per_hour: 4
+                height: 112
                 chart_mode: timeline
                 group_by: interval
                 entities:
                   - entity: sensor.qbittorrent_download_speed_kib
                     name: Download
-                    color: '#4fc3f7'
+                    color: '#ff9800'
                     graph_type: line
                     line_width: 2
                     show_fill: true
                     smooth: true
-                    decimals: 3
-                    aggregate_func: max
+                    decimals: 2
+                    aggregate_func: avg
                   - entity: sensor.qbittorrent_upload_speed_kib
                     name: Upload
-                    color: '#81c784'
+                    color: '#ab47bc'
                     graph_type: line
                     line_width: 2
                     show_fill: true
                     smooth: true
-                    decimals: 3
-                    aggregate_func: max
-                tap_action:
-                  action: more-info
+                    decimals: 2
+                    aggregate_func: avg
+                    tap_action:
+                      action: more-info
               - type: custom:statistics-graph-chart-card
-                card_header: Torrent states (24h)
+                card_header: Torrent states (6h)
                 show_grid: false
                 show_tooltip: true
                 show_legend: false
@@ -158,15 +192,15 @@ views:
                 show_y_ticks: false
                 cache: true
                 animate_graph: false
-                hours_to_show: 24
-                points_per_hour: 2
-                height: 90
+                hours_to_show: 6
+                points_per_hour: 4
+                height: 112
                 chart_mode: timeline
                 group_by: interval
                 entities:
                   - entity: sensor.qbittorrent_active_torrents
                     name: Active
-                    color: '#aed581'
+                    color: '#42a5f5'
                     graph_type: line
                     line_width: 2
                     show_fill: true
@@ -175,7 +209,7 @@ views:
                     aggregate_func: max
                   - entity: sensor.qbittorrent_paused_torrents
                     name: Paused
-                    color: '#ffb74d'
+                    color: '#ff9800'
                     graph_type: line
                     line_width: 2
                     show_fill: true
@@ -184,24 +218,29 @@ views:
                     aggregate_func: max
                   - entity: sensor.qbittorrent_errored_torrents
                     name: Errored
-                    color: '#e57373'
+                    color: '#ab47bc'
                     graph_type: line
                     line_width: 2
                     show_fill: false
                     smooth: true
                     decimals: 0
                     aggregate_func: max
-                tap_action:
-                  action: more-info
-
           - type: heading
             heading_style: subtitle
             icon: mdi:counter
             heading: Torrent counts
 
-          - type: grid
-            columns: 3
-            square: false
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: repeat(3, minmax(0, 1fr))
+              grid-gap: 12px
+              place-items: stretch
+              mediaquery:
+                '(max-width: 768px)':
+                  grid-template-columns: 1fr
+            grid_options:
+              columns: full
             cards:
               - type: tile
                 entity: sensor.qbittorrent_active_torrents
