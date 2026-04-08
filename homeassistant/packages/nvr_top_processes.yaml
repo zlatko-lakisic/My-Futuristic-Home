@@ -7,6 +7,7 @@
 # Files on the HA host (same folder):
 #   - nvr_top_processes.yaml (this file)
 #   - nvr_glances_top_processes.py (fetch + sort; edit URL inside if needed)
+#   - nvr_glances_ip.py (IPv4 for enp3s0 / enp4s0 / br-9229c4b7924f; edit BASE if Glances host differs)
 #
 # Include from configuration.yaml:
 #   homeassistant:
@@ -31,3 +32,15 @@ sensor:
     json_attributes:
       - processes
       - processes_json
+
+  - platform: command_line
+    name: NVR Glances NIC IPv4
+    unique_id: nvr_glances_nic_ipv4_map
+    icon: mdi:ip-network
+    scan_interval: 120
+    command: /usr/local/bin/python3 /config/packages/nvr_glances_ip.py
+    value_template: "{{ value_json.enp3s0 | default('—') }}"
+    json_attributes:
+      - enp3s0
+      - enp4s0
+      - br_9229c4b7924f
