@@ -1,0 +1,57 @@
+# qBittorrent speeds in KiB/s (kilobinary bytes per second) for dashboards.
+# Reads sensor.qbittorrent_{download,upload}_speed and converts from MiB/s, MB/s, etc.
+#
+# homeassistant.packages:
+#   qbittorrent_speed_k: !include packages/qbittorrent_speed_k.yaml
+
+template:
+  - sensor:
+      - name: qBittorrent download speed KiB
+        unique_id: qbittorrent_download_speed_k_rate
+        state_class: measurement
+        device_class: data_rate
+        unit_of_measurement: "KiB/s"
+        state: >
+          {% set s = states('sensor.qbittorrent_download_speed') %}
+          {% if s in ['unknown', 'unavailable', 'none', ''] %}
+            {{ s }}
+          {% else %}
+            {% set v = s | float(0) %}
+            {% set u = (state_attr('sensor.qbittorrent_download_speed', 'unit_of_measurement') or '') | lower %}
+            {% if 'mib' in u %}
+              {{ (v * 1024) | round(2) }}
+            {% elif 'mb' in u and 'mib' not in u %}
+              {{ ((v * 1000000) / 1024) | round(2) }}
+            {% elif 'kib' in u %}
+              {{ v | round(2) }}
+            {% elif 'kb' in u and 'kib' not in u %}
+              {{ ((v * 1000) / 1024) | round(2) }}
+            {% else %}
+              {{ (v * 1024) | round(2) }}
+            {% endif %}
+          {% endif %}
+
+      - name: qBittorrent upload speed KiB
+        unique_id: qbittorrent_upload_speed_k_rate
+        state_class: measurement
+        device_class: data_rate
+        unit_of_measurement: "KiB/s"
+        state: >
+          {% set s = states('sensor.qbittorrent_upload_speed') %}
+          {% if s in ['unknown', 'unavailable', 'none', ''] %}
+            {{ s }}
+          {% else %}
+            {% set v = s | float(0) %}
+            {% set u = (state_attr('sensor.qbittorrent_upload_speed', 'unit_of_measurement') or '') | lower %}
+            {% if 'mib' in u %}
+              {{ (v * 1024) | round(2) }}
+            {% elif 'mb' in u and 'mib' not in u %}
+              {{ ((v * 1000000) / 1024) | round(2) }}
+            {% elif 'kib' in u %}
+              {{ v | round(2) }}
+            {% elif 'kb' in u and 'kib' not in u %}
+              {{ ((v * 1000) / 1024) | round(2) }}
+            {% else %}
+              {{ (v * 1024) | round(2) }}
+            {% endif %}
+          {% endif %}

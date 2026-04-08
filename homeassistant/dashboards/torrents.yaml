@@ -6,7 +6,8 @@
 #   layout-card, button-card, statistics-graph-chart-card, modern-circular-gauge
 #
 # Stock qBittorrent integration: aggregate sensors only (no per-torrent entities).
-# To embed the Web UI, add an iframe card with your qBittorrent URL (see section bottom).
+# Speed gauges & transfer chart use template sensors (KiB/s): see packages/qbittorrent_speed_k.yaml.
+# To embed the Web UI, iframe uses secret qbittorrent_webui_url.
 
 views:
   - title: Torrents
@@ -28,302 +29,175 @@ views:
           - type: custom:layout-card
             layout_type: custom:grid-layout
             layout:
-              grid-template-columns: minmax(280px, 38%) 1fr
+              grid-template-columns: repeat(4, minmax(220px, 1fr))
               grid-gap: 12px
               place-items: stretch
               mediaquery:
-                '(max-width: 900px)':
-                  grid-template-columns: 100%
+                '(max-width: 1300px)':
+                  grid-template-columns: repeat(2, minmax(220px, 1fr))
+                '(max-width: 700px)':
+                  grid-template-columns: 1fr
             grid_options:
               columns: full
             cards:
-              - type: vertical-stack
-                cards:
-                  - type: custom:button-card
-                    entity: sensor.qbittorrent_download_speed
-                    show_icon: false
-                    show_name: false
-                    show_state: false
-                    show_label: false
-                    tap_action:
-                      action: more-info
-                    triggers_update:
-                      - sensor.qbittorrent_download_speed
-                      - sensor.qbittorrent_upload_speed
-                      - sensor.qbittorrent_status
-                      - sensor.qbittorrent_connection_status
-                      - sensor.qbittorrent_all_torrents
-                      - switch.qbittorrent_alternative_speed
-                      - sensor.qbittorrent_download_speed_limit
-                      - sensor.qbittorrent_upload_speed_limit
-                    styles:
-                      card:
-                        - background-color: '#1c1c1c'
-                        - border: 1px solid rgba(255, 255, 255, 0.1)
-                        - border-radius: 12px
-                        - padding: 14px 16px
-                    label: |
-                      [[[
-                        const fmtSpd = (eid) => {
-                          const e = hass.states[eid];
-                          if (!e) return '—';
-                          const v = e.state;
-                          const u = e.attributes.unit_of_measurement || '';
-                          if (v === 'unavailable' || v === 'unknown') return '—';
-                          return `${v} ${u}`.trim();
-                        };
-                        const altOn = hass.states['switch.qbittorrent_alternative_speed']?.state === 'on';
-                        const dlLim = hass.states['sensor.qbittorrent_download_speed_limit']?.state;
-                        const ulLim = hass.states['sensor.qbittorrent_upload_speed_limit']?.state;
-                        let limNote = '';
-                        if (dlLim && !['unavailable', 'unknown'].includes(String(dlLim)))
-                          limNote += ' · DL limit ' + dlLim;
-                        if (ulLim && !['unavailable', 'unknown'].includes(String(ulLim)))
-                          limNote += ' · UL limit ' + ulLim;
-                        const statusLine = altOn
-                          ? 'Alternative speed ON' + limNote
-                          : 'Normal limits' + limNote;
-                        const total = hass.states['sensor.qbittorrent_all_torrents']?.state ?? '—';
-                        const conn = hass.states['sensor.qbittorrent_connection_status']?.state ?? '—';
-                        const st = hass.states['sensor.qbittorrent_status']?.state ?? '—';
-                        return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;">
-                          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-                            <div style="font-size:1.85rem;font-weight:800;letter-spacing:-0.04em;color:#2e8bc0;">qB</div>
-                            <div style="font-size:0.72rem;opacity:0.75;line-height:1.35;">Desktop client · ${conn}</div>
-                          </div>
-                          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-                            <div style="background:rgba(46,139,192,0.12);border-radius:10px;padding:10px;border:1px solid rgba(46,139,192,0.25);">
-                              <div style="font-size:0.58rem;text-transform:uppercase;opacity:0.7;margin-bottom:4px;">Download</div>
-                              <div style="font-size:1.05rem;font-weight:700;color:#4fc3f7;">${fmtSpd('sensor.qbittorrent_download_speed')}</div>
-                            </div>
-                            <div style="background:rgba(129,199,132,0.12);border-radius:10px;padding:10px;border:1px solid rgba(129,199,132,0.25);">
-                              <div style="font-size:0.58rem;text-transform:uppercase;opacity:0.7;margin-bottom:4px;">Upload</div>
-                              <div style="font-size:1.05rem;font-weight:700;color:#81c784;">${fmtSpd('sensor.qbittorrent_upload_speed')}</div>
-                            </div>
-                          </div>
-                          <div style="font-size:0.68rem;opacity:0.8;margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.04);border-radius:8px;">${statusLine}</div>
-                          <div style="display:flex;justify-content:space-between;font-size:0.68rem;opacity:0.85;">
-                            <span>Total torrents: <strong>${total}</strong></span>
-                            <span>Session: <strong>${st}</strong></span>
-                          </div>
-                        </div>`;
-                      ]]]
-
-                  - type: horizontal-stack
-                    cards:
-                      - type: custom:modern-circular-gauge
-                        entity: sensor.qbittorrent_download_speed
-                        name: DL
-                        gauge_type: standard
-                        needle: false
-                        min: 0
-                        max: 50
-                        show_icon: true
-                        icon: mdi:download
-                        show_header: false
-                        state_font_size: 22
-                        decimals: 0
-                        smooth_segments: true
-                        gauge_background_style:
-                          width: 10
-                          opacity: 0.7
-                        gauge_foreground_style:
-                          width: 8
-                          color: adaptive
-                        adaptive_icon_color: true
-                        tap_action:
-                          action: more-info
-                        segments:
-                          - from: 0
-                            color: [33, 150, 243]
-                          - from: 12
-                            color: [3, 169, 244]
-                          - from: 25
-                            color: [0, 188, 212]
-                          - from: 40
-                            color: [128, 222, 234]
-                          - from: 50
-                            color: [179, 229, 252]
-                        secondary: {}
-                      - type: custom:modern-circular-gauge
-                        entity: sensor.qbittorrent_upload_speed
-                        name: UL
-                        gauge_type: standard
-                        needle: false
-                        min: 0
-                        max: 50
-                        show_icon: true
-                        icon: mdi:upload
-                        show_header: false
-                        state_font_size: 22
-                        decimals: 0
-                        smooth_segments: true
-                        gauge_background_style:
-                          width: 10
-                          opacity: 0.7
-                        gauge_foreground_style:
-                          width: 8
-                          color: adaptive
-                        adaptive_icon_color: true
-                        tap_action:
-                          action: more-info
-                        segments:
-                          - from: 0
-                            color: [102, 187, 106]
-                          - from: 12
-                            color: [67, 160, 71]
-                          - from: 25
-                            color: [56, 142, 60]
-                          - from: 40
-                            color: [165, 214, 167]
-                          - from: 50
-                            color: [200, 230, 201]
-                        secondary: {}
-
-              - type: custom:layout-card
-                layout_type: custom:grid-layout
-                layout:
-                  grid-template-columns: 1fr 1fr
-                  grid-gap: 8px
-                  mediaquery:
-                    '(max-width: 520px)':
-                      grid-template-columns: 1fr
-                grid_options:
-                  columns: full
-                cards:
-                  - type: custom:statistics-graph-chart-card
-                    card_header: Dl speed (24h)
-                    show_grid: false
-                    show_tooltip: true
-                    show_legend: false
-                    show_y_axis: false
-                    show_x_axis: true
-                    show_x_ticks: false
-                    show_y_ticks: false
-                    cache: true
-                    animate_graph: false
-                    hours_to_show: 24
-                    points_per_hour: 2
-                    height: 90
-                    chart_mode: timeline
-                    group_by: interval
-                    entities:
-                      - entity: sensor.qbittorrent_download_speed
-                        name: Download
-                        color: '#4fc3f7'
-                        graph_type: line
-                        line_width: 2
-                        show_fill: true
-                        smooth: true
-                        decimals: 0
-                        aggregate_func: avg
-                    tap_action:
-                      action: more-info
-                  - type: custom:statistics-graph-chart-card
-                    card_header: Ul speed (24h)
-                    show_grid: false
-                    show_tooltip: true
-                    show_legend: false
-                    show_y_axis: false
-                    show_x_axis: true
-                    show_x_ticks: false
-                    show_y_ticks: false
-                    cache: true
-                    animate_graph: false
-                    hours_to_show: 24
-                    points_per_hour: 2
-                    height: 90
-                    chart_mode: timeline
-                    group_by: interval
-                    entities:
-                      - entity: sensor.qbittorrent_upload_speed
-                        name: Upload
-                        color: '#81c784'
-                        graph_type: line
-                        line_width: 2
-                        show_fill: true
-                        smooth: true
-                        decimals: 0
-                        aggregate_func: avg
-                    tap_action:
-                      action: more-info
-                  - type: custom:statistics-graph-chart-card
-                    card_header: Active torrents
-                    show_grid: false
-                    show_tooltip: true
-                    show_legend: false
-                    show_y_axis: false
-                    show_x_axis: true
-                    show_x_ticks: false
-                    show_y_ticks: false
-                    cache: true
-                    animate_graph: false
-                    hours_to_show: 24
-                    points_per_hour: 2
-                    height: 90
-                    chart_mode: timeline
-                    group_by: interval
-                    entities:
-                      - entity: sensor.qbittorrent_active_torrents
-                        name: Active
-                        color: '#aed581'
-                        graph_type: line
-                        line_width: 2
-                        show_fill: true
-                        smooth: true
-                        decimals: 0
-                        aggregate_func: max
-                    tap_action:
-                      action: more-info
-                  - type: custom:statistics-graph-chart-card
-                    card_header: Paused & errors
-                    show_grid: false
-                    show_tooltip: true
-                    show_legend: false
-                    show_y_axis: false
-                    show_x_axis: true
-                    show_x_ticks: false
-                    show_y_ticks: false
-                    cache: true
-                    animate_graph: false
-                    hours_to_show: 24
-                    points_per_hour: 2
-                    height: 90
-                    chart_mode: timeline
-                    group_by: interval
-                    entities:
-                      - entity: sensor.qbittorrent_paused_torrents
-                        name: Paused
-                        color: '#ffb74d'
-                        graph_type: line
-                        line_width: 2
-                        show_fill: true
-                        smooth: true
-                        decimals: 0
-                        aggregate_func: max
-                      - entity: sensor.qbittorrent_errored_torrents
-                        name: Errored
-                        color: '#e57373'
-                        graph_type: line
-                        line_width: 2
-                        show_fill: false
-                        smooth: true
-                        decimals: 0
-                        aggregate_func: max
-                    tap_action:
-                      action: more-info
+              - type: custom:modern-circular-gauge
+                entity: sensor.qbittorrent_download_speed_kib
+                name: DL
+                gauge_type: standard
+                needle: false
+                min: 0
+                max: 51200
+                show_icon: true
+                icon: mdi:download
+                show_header: false
+                state_font_size: 22
+                decimals: 0
+                smooth_segments: true
+                gauge_radius: 34
+                gauge_background_style:
+                  width: 10
+                  opacity: 0.7
+                gauge_foreground_style:
+                  width: 8
+                  color: adaptive
+                adaptive_icon_color: true
+                tap_action:
+                  action: more-info
+                segments:
+                  - from: 0
+                    color: [33, 150, 243]
+                  - from: 12288
+                    color: [3, 169, 244]
+                  - from: 25600
+                    color: [0, 188, 212]
+                  - from: 40960
+                    color: [128, 222, 234]
+                  - from: 51200
+                    color: [179, 229, 252]
+                secondary: {}
+              - type: custom:modern-circular-gauge
+                entity: sensor.qbittorrent_upload_speed_kib
+                name: UL
+                gauge_type: standard
+                needle: false
+                min: 0
+                max: 51200
+                show_icon: true
+                icon: mdi:upload
+                show_header: false
+                state_font_size: 22
+                decimals: 0
+                smooth_segments: true
+                gauge_radius: 34
+                gauge_background_style:
+                  width: 10
+                  opacity: 0.7
+                gauge_foreground_style:
+                  width: 8
+                  color: adaptive
+                adaptive_icon_color: true
+                tap_action:
+                  action: more-info
+                segments:
+                  - from: 0
+                    color: [102, 187, 106]
+                  - from: 12288
+                    color: [67, 160, 71]
+                  - from: 25600
+                    color: [56, 142, 60]
+                  - from: 40960
+                    color: [165, 214, 167]
+                  - from: 51200
+                    color: [200, 230, 201]
+                secondary: {}
+              - type: custom:statistics-graph-chart-card
+                card_header: Transfer speed (24h, KiB/s)
+                show_grid: false
+                show_tooltip: true
+                show_legend: false
+                show_y_axis: false
+                show_x_axis: true
+                show_x_ticks: false
+                show_y_ticks: false
+                cache: true
+                animate_graph: false
+                hours_to_show: 24
+                points_per_hour: 6
+                height: 90
+                chart_mode: timeline
+                group_by: interval
+                entities:
+                  - entity: sensor.qbittorrent_download_speed_kib
+                    name: Download
+                    color: '#4fc3f7'
+                    graph_type: line
+                    line_width: 2
+                    show_fill: true
+                    smooth: true
+                    decimals: 3
+                    aggregate_func: max
+                  - entity: sensor.qbittorrent_upload_speed_kib
+                    name: Upload
+                    color: '#81c784'
+                    graph_type: line
+                    line_width: 2
+                    show_fill: true
+                    smooth: true
+                    decimals: 3
+                    aggregate_func: max
+                tap_action:
+                  action: more-info
+              - type: custom:statistics-graph-chart-card
+                card_header: Torrent states (24h)
+                show_grid: false
+                show_tooltip: true
+                show_legend: false
+                show_y_axis: false
+                show_x_axis: true
+                show_x_ticks: false
+                show_y_ticks: false
+                cache: true
+                animate_graph: false
+                hours_to_show: 24
+                points_per_hour: 2
+                height: 90
+                chart_mode: timeline
+                group_by: interval
+                entities:
+                  - entity: sensor.qbittorrent_active_torrents
+                    name: Active
+                    color: '#aed581'
+                    graph_type: line
+                    line_width: 2
+                    show_fill: true
+                    smooth: true
+                    decimals: 0
+                    aggregate_func: max
+                  - entity: sensor.qbittorrent_paused_torrents
+                    name: Paused
+                    color: '#ffb74d'
+                    graph_type: line
+                    line_width: 2
+                    show_fill: true
+                    smooth: true
+                    decimals: 0
+                    aggregate_func: max
+                  - entity: sensor.qbittorrent_errored_torrents
+                    name: Errored
+                    color: '#e57373'
+                    graph_type: line
+                    line_width: 2
+                    show_fill: false
+                    smooth: true
+                    decimals: 0
+                    aggregate_func: max
+                tap_action:
+                  action: more-info
 
           - type: heading
             heading_style: subtitle
             icon: mdi:counter
             heading: Torrent counts
-
-          - type: markdown
-            content: |
-              The built-in integration exposes **aggregate** counts only (no per-torrent
-              entities). **Active** = downloading + uploading; **inactive** = stalled only;
-              **paused** = stopped — not the same as “all non-active”. Use the Web UI for
-              seeding/queued/completed-style breakdowns and the full torrent table.
 
           - type: grid
             columns: 3
@@ -393,12 +267,6 @@ views:
             icon: mdi:format-list-bulleted-type
             heading: Active transfers (Web UI)
 
-          - type: markdown
-            content: |
-              **Live torrent table** (name, progress, seeds/peers, ETA) is available in
-              the qBittorrent Web UI. To embed it, add an **`iframe`** card here with
-              `url: http://YOUR_QBIT_HOST:PORT` (HTTPS HA + HTTP iframe may be blocked by
-              the browser unless you use an HTTPS UI or open HA over HTTP on LAN).
           - type: iframe
             url: !secret qbittorrent_webui_url
             aspect_ratio: 150%
