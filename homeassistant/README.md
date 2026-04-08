@@ -66,6 +66,8 @@ These physical dongles are passed through directly to the HAOS environment:
 * `/docs_ha`: Deep dives into specific radio protocols and mesh health.
 * `/packages`: Optional YAML merged into configuration when `homeassistant.packages: !include_dir_named packages` is set. Files here must be copied to **`/config/packages/`** on the HA machine (the repo copy is not used automatically).
 
+**Deploy dashboards + packages to the live Samba share:** from the repository root run `powershell -ExecutionPolicy Bypass -File scripts/sync_homeassistant_config.ps1` (default target `\\192.168.89.25\config`). Override with `-ConfigRoot` if needed.
+
 ### NVR top processes (Glances) sensor
 The infrastructure dashboard expects **`sensor.nvr_glances_top_processes`**, defined by [`packages/nvr_top_processes.yaml`](packages/nvr_top_processes.yaml) plus [`packages/nvr_glances_top_processes.py`](packages/nvr_glances_top_processes.py). The setup uses a **`command_line`** sensor (not `rest:`): Home Assistant’s **`rest`** integration does not support **`json_attributes_template`**, so you cannot build a sorted top‑10 list from Glances’ JSON array with YAML alone.
 
