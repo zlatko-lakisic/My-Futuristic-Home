@@ -1,36 +1,33 @@
 # Top 10 processes on the NVR (Glances processlist API) for the infrastructure dashboard.
 #
-# Enable packages (once) in configuration.yaml:
+# Uses command_line + a small Python helper. The modern HA `rest:` sensor does NOT
+# support `json_attributes_template` (only fixed json_attributes keys on dict responses),
+# so a plain REST YAML cannot attach a computed process list when Glances returns a JSON array.
+#
+# Files on the HA host (same folder):
+#   - nvr_top_processes.yaml (this file)
+#   - nvr_glances_top_processes.py (fetch + sort; edit URL inside if needed)
+#
+# Include from configuration.yaml:
 #   homeassistant:
-#     packages: !include_dir_named packages
+#     packages:
+#       nvr_top_processes: !include packages/nvr_top_processes.yaml
 #
-# Edit `resource` below to a URL Home Assistant can reach:
-#   - Glances default port: 61208
-#   - API paths: /api/3/processlist or /api/4/processlist (depends on Glances version)
+# After changes: Developer tools → YAML → Reload all YAML configuration (or restart).
 #
-# If the sensor stays unavailable, test the URL from the HA host (curl) and fix firewall/DNS.
+# Manual test: the Terminal / SSH *add-on* often has no Python (`python3: not found`).
+# The command_line sensor runs inside the *Home Assistant Core* container, where Python
+# lives at /usr/local/bin/python3. To test from the host: docker exec homeassistant
+# /usr/local/bin/python3 /config/packages/nvr_glances_top_processes.py
 
-rest:
-  - resource: "http://10.0.10.16:61208/api/4/processlist"
+sensor:
+  - platform: command_line
+    name: NVR Glances top processes
+    unique_id: nvr_glances_top_processes
+    icon: mdi:format-list-numbered
     scan_interval: 60
-    timeout: 25
-    verify_ssl: false
-    sensor:
-      - name: NVR Glances top processes
-        unique_id: nvr_glances_top_processes
-        icon: mdi:format-list-numbered
-        value_template: "{{ value_json | count if value_json is iterable and value_json is not string else 0 }}"
-        json_attributes_template: >
-          {% if value_json is not iterable or value_json is string %}
-          {"processes": []}
-          {% else %}
-          {% set ns = namespace(rows=[]) %}
-          {% for x in value_json %}
-            {% set c = x.cpu_percent | default(0) | float(0) %}
-            {% set m = x.memory_percent | default(0) | float(0) %}
-            {% set n = (x.name | default('?') | string)[:40] %}
-            {% set _ = ns.rows.append({'name': n, 'cpu_percent': c, 'memory_percent': m}) %}
-          {% endfor %}
-          {% set sorted = ns.rows | sort(attribute='cpu_percent', reverse=true) %}
-          {{ {'processes': sorted[:10]} | tojson }}
-          {% endif %}
+    command: /usr/local/bin/python3 /config/packages/nvr_glances_top_processes.py
+    value_template: "{{ value_json.count | default(0) | int }}"
+    json_attributes:
+      - processes
+      - processes_json
