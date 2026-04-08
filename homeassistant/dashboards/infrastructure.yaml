@@ -997,7 +997,15 @@ views:
                         show_label: false
                         triggers_update:
                           - sensor.nvr_mostardesigns_com_memory_usage
+                          - sensor.nvr_mostardesigns_com_etc_hostname_disk_usage
                           - sensor.nvr_glances_top_processes
+                          - sensor.nvr_glances_nic_ipv4_map
+                          - sensor.nvr_mostardesigns_com_br_9229c4b7924f_rx
+                          - sensor.nvr_mostardesigns_com_br_9229c4b7924f_tx
+                          - sensor.nvr_mostardesigns_com_enp3s0_rx
+                          - sensor.nvr_mostardesigns_com_enp3s0_tx
+                          - sensor.nvr_mostardesigns_com_enp4s0_rx
+                          - sensor.nvr_mostardesigns_com_enp4s0_tx
                         tap_action:
                           action: more-info
                         styles:
@@ -1030,6 +1038,24 @@ views:
                                     <div style="width:${v}%;height:100%;background:${grad};"></div>
                                   </div>
                                 </div>`;
+                              };
+                              const ipMapSt = hass.states['sensor.nvr_glances_nic_ipv4_map'];
+                              const ipv4 = (attrKey) => {
+                                if (!ipMapSt || !ipMapSt.attributes) return '—';
+                                const v = ipMapSt.attributes[attrKey];
+                                if (v == null || v === '' || ['unknown', 'unavailable', 'none'].includes(String(v).toLowerCase())) return '—';
+                                return esc(String(v));
+                              };
+                              const ratePair = (rxId, txId) => {
+                                const fr = (eid) => {
+                                  const e = hass.states[eid];
+                                  if (!e || ['unknown', 'unavailable', 'none', ''].includes(String(e.state).toLowerCase())) return '—';
+                                  const n = parseFloat(e.state);
+                                  if (isNaN(n)) return '—';
+                                  const u = e.attributes?.unit_of_measurement || '';
+                                  return `${fmt(n)} ${u}`.trim();
+                                };
+                                return `↓ ${fr(rxId)} · ↑ ${fr(txId)}`;
                               };
                               const procSt = hass.states['sensor.nvr_glances_top_processes'];
                               const parseProcList = (st) => {
@@ -1077,9 +1103,193 @@ views:
                               return `<div>
                                 ${bar('NVR CPU', 'sensor.nvr_mostardesigns_com_cpu_usage', 'linear-gradient(90deg,#ff8a80,#ff4757)')}
                                 ${bar('NVR RAM', 'sensor.nvr_mostardesigns_com_memory_usage', 'linear-gradient(90deg,#64b5f6,#378ADD)')}
+                                ${bar('Host disk (/)', 'sensor.nvr_mostardesigns_com_etc_hostname_disk_usage', 'linear-gradient(90deg,#aed581,#7cb342)')}
                                 ${procHtml}
                               </div>`;
                             ]]]
+                      - type: custom:statistics-graph-chart-card
+                        card_header: br-9229c4b7924f
+                        show_grid: false
+                        show_tooltip: true
+                        hide_legend: true
+                        show_current: false
+                        show_value: false
+                        show_values: false
+                        show_y_axis: false
+                        show_x_axis: true
+                        show_x_ticks: false
+                        show_y_ticks: false
+                        cache: true
+                        animate_graph: false
+                        hours_to_show: 6
+                        points_per_hour: 4
+                        height: 60
+                        chart_mode: timeline
+                        group_by: interval
+                        card_mod:
+                          style: |
+                            /* Hide entity list/legend rows (Download/Upload) for this custom card */
+                            ha-card .legend,
+                            ha-card #legend,
+                            ha-card .chart-legend,
+                            ha-card .graph-legend,
+                            ha-card .legend-container,
+                            ha-card .legend-item,
+                            ha-card .legend-entry,
+                            ha-card .series,
+                            ha-card .series-list,
+                            ha-card .entities,
+                            ha-card .entity,
+                            ha-card .info,
+                            ha-card .states,
+                            ha-card .content .entities,
+                            ha-card .content .legend,
+                            ha-card .content #legend {
+                              display: none !important;
+                            }
+                        entities:
+                          - entity: sensor.nvr_mostardesigns_com_br_9229c4b7924f_rx
+                            name: Download
+                            color: '#ffa726'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 2
+                            aggregate_func: avg
+                          - entity: sensor.nvr_mostardesigns_com_br_9229c4b7924f_tx
+                            name: Upload
+                            color: '#ab47bc'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 2
+                            aggregate_func: avg
+                        tap_action:
+                          action: more-info
+                      - type: custom:statistics-graph-chart-card
+                        card_header: enp3s0
+                        show_grid: false
+                        show_tooltip: true
+                        hide_legend: true
+                        show_current: false
+                        show_value: false
+                        show_values: false
+                        show_y_axis: false
+                        show_x_axis: true
+                        show_x_ticks: false
+                        show_y_ticks: false
+                        cache: true
+                        animate_graph: false
+                        hours_to_show: 6
+                        points_per_hour: 4
+                        height: 60
+                        chart_mode: timeline
+                        group_by: interval
+                        card_mod:
+                          style: |
+                            /* Hide entity list/legend rows (Download/Upload) for this custom card */
+                            ha-card .legend,
+                            ha-card #legend,
+                            ha-card .chart-legend,
+                            ha-card .graph-legend,
+                            ha-card .legend-container,
+                            ha-card .legend-item,
+                            ha-card .legend-entry,
+                            ha-card .series,
+                            ha-card .series-list,
+                            ha-card .entities,
+                            ha-card .entity,
+                            ha-card .info,
+                            ha-card .states,
+                            ha-card .content .entities,
+                            ha-card .content .legend,
+                            ha-card .content #legend {
+                              display: none !important;
+                            }
+                        entities:
+                          - entity: sensor.nvr_mostardesigns_com_enp3s0_rx
+                            name: Download
+                            color: '#ffa726'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 2
+                            aggregate_func: avg
+                          - entity: sensor.nvr_mostardesigns_com_enp3s0_tx
+                            name: Upload
+                            color: '#ab47bc'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 2
+                            aggregate_func: avg
+                        tap_action:
+                          action: more-info
+                      - type: custom:statistics-graph-chart-card
+                        card_header: enp4s0
+                        show_grid: false
+                        show_tooltip: true
+                        hide_legend: true
+                        show_current: false
+                        show_value: false
+                        show_values: false
+                        show_y_axis: false
+                        show_x_axis: true
+                        show_x_ticks: false
+                        show_y_ticks: false
+                        cache: true
+                        animate_graph: false
+                        hours_to_show: 6
+                        points_per_hour: 4
+                        height: 60
+                        chart_mode: timeline
+                        group_by: interval
+                        card_mod:
+                          style: |
+                            /* Hide entity list/legend rows (Download/Upload) for this custom card */
+                            ha-card .legend,
+                            ha-card #legend,
+                            ha-card .chart-legend,
+                            ha-card .graph-legend,
+                            ha-card .legend-container,
+                            ha-card .legend-item,
+                            ha-card .legend-entry,
+                            ha-card .series,
+                            ha-card .series-list,
+                            ha-card .entities,
+                            ha-card .entity,
+                            ha-card .info,
+                            ha-card .states,
+                            ha-card .content .entities,
+                            ha-card .content .legend,
+                            ha-card .content #legend {
+                              display: none !important;
+                            }
+                        entities:
+                          - entity: sensor.nvr_mostardesigns_com_enp4s0_rx
+                            name: Download
+                            color: '#ffa726'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 2
+                            aggregate_func: avg
+                          - entity: sensor.nvr_mostardesigns_com_enp4s0_tx
+                            name: Upload
+                            color: '#ab47bc'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: true
+                            smooth: true
+                            decimals: 2
+                            aggregate_func: avg
+                        tap_action:
+                          action: more-info
                   - square: false
                     type: vertical-stack
                     cards:

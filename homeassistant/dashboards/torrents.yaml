@@ -399,8 +399,6 @@ views:
               the qBittorrent Web UI. To embed it, add an **`iframe`** card here with
               `url: http://YOUR_QBIT_HOST:PORT` (HTTPS HA + HTTP iframe may be blocked by
               the browser unless you use an HTTPS UI or open HA over HTTP on LAN).
-
-          # Example — uncomment and set URL:
-          # - type: iframe
-          #   url: http://192.168.89.25:8080
-          #   aspect_ratio: 150%
+          - type: iframe
+            url: !secret qbittorrent_webui_url
+            aspect_ratio: 150%
