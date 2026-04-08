@@ -1013,10 +1013,22 @@ views:
                                 </div>`;
                               };
                               const procSt = hass.states['sensor.nvr_glances_top_processes'];
-                              let procs = [];
-                              if (procSt && Array.isArray(procSt.attributes?.processes)) {
-                                procs = procSt.attributes.processes;
-                              }
+                              const parseProcList = (st) => {
+                                if (!st || ['unavailable', 'unknown', 'none'].includes(String(st.state).toLowerCase())) return [];
+                                let raw = st.attributes?.processes;
+                                if (raw == null && st.attributes?.processes_json != null) {
+                                  raw = st.attributes.processes_json;
+                                }
+                                if (typeof raw === 'string') {
+                                  try {
+                                    raw = JSON.parse(raw);
+                                  } catch (e) {
+                                    return [];
+                                  }
+                                }
+                                return Array.isArray(raw) ? raw : [];
+                              };
+                              let procs = parseProcList(procSt);
                               let procHtml = '';
                               if (procs.length) {
                                 const head = `<div style="display:flex;justify-content:space-between;gap:4px;margin:10px 0 4px 0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);font-size:0.58rem;font-weight:700;opacity:0.75;text-transform:uppercase;letter-spacing:0.03em;">
@@ -1036,9 +1048,12 @@ views:
                                 }).join('');
                                 procHtml = head + rows;
                               } else {
-                                procHtml = `<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);font-size:0.58rem;opacity:0.5;line-height:1.35;">
-                                  Top processes: add homeassistant/packages/nvr_top_processes.yaml (packages: !include_dir_named packages) and set the Glances processlist URL; entity sensor.nvr_glances_top_processes.
-                                </div>`;
+                                const hint = !procSt
+                                  ? 'REST sensor missing. Put nvr_top_processes.yaml in the packages folder next to configuration.yaml, or !include it under homeassistant.packages. Then reload all YAML.'
+                                  : (['unavailable', 'unknown'].includes(String(procSt.state).toLowerCase())
+                                    ? `Process sensor is ${procSt.state}. HA cannot reach Glances (curl REST URL from HA; try 61208, /api/3 vs /api/4).`
+                                    : 'No process rows. In States, open sensor.nvr_glances_top_processes and check attributes.processes.');
+                                procHtml = `<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);font-size:0.58rem;opacity:0.5;line-height:1.35;">${hint}</div>`;
                               }
                               return `<div>
                                 ${bar('NVR CPU', 'sensor.nvr_mostardesigns_com_cpu_usage', 'linear-gradient(90deg,#ff8a80,#ff4757)')}
@@ -1328,17 +1343,13 @@ views:
                       type: custom:layout-card
                       layout_type: custom:grid-layout
                       layout:
-                        grid-template-columns: repeat(6, minmax(0, 1fr))
+                        # Container width (not viewport) drives columns — avoids 4-across on a
+                        # narrow card when the browser window is still wide. min(100%, …) forces
+                        # one column when the grid is narrower than the minimum track size.
+                        grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr))
                         grid-gap: 6px
                         place-items: stretch
                         align-items: stretch
-                        mediaquery:
-                          '(max-width: 1600px)':
-                            grid-template-columns: repeat(4, minmax(0, 1fr))
-                          '(max-width: 1100px)':
-                            grid-template-columns: repeat(2, minmax(0, 1fr))
-                          '(max-width: 640px)':
-                            grid-template-columns: 100%
                       grid_options:
                         columns: full
                     card_param: cards

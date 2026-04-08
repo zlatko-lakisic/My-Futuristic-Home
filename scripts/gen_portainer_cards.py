@@ -344,17 +344,10 @@ def main() -> None:
                   - type: custom:layout-card
                     layout_type: custom:grid-layout
                     layout:
-                      grid-template-columns: repeat(6, minmax(0, 1fr))
+                      grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr))
                       grid-gap: 6px
                       place-items: stretch
                       align-items: stretch
-                      mediaquery:
-                        '(max-width: 1600px)':
-                          grid-template-columns: repeat(4, minmax(0, 1fr))
-                        '(max-width: 1100px)':
-                          grid-template-columns: repeat(2, minmax(0, 1fr))
-                        '(max-width: 640px)':
-                          grid-template-columns: 100%
                     grid_options:
                       columns: full
                     cards:
