@@ -132,7 +132,7 @@ views:
                         entity: sensor.mikrotik_home_hap_ac_cpu_load
                         name: CPU
                         gauge_type: standard
-                        needle: true
+                        needle: false
                         smooth_segments: true
                         min: 0
                         max: 100
@@ -182,7 +182,7 @@ views:
                         entity: sensor.mikrotik_home_hap_ac_memory_usage
                         name: Memory
                         gauge_type: standard
-                        needle: true
+                        needle: false
                         smooth_segments: true
                         min: 0
                         max: 100
@@ -1075,7 +1075,7 @@ views:
                               sensor.nvr_mostardesigns_com_nvidia_rtx_4000_sff_ada_generation_gpu_nvidia0_processor_usage
                             name: Compute
                             gauge_type: standard
-                            needle: true
+                            needle: false
                             min: 0
                             max: 100
                             show_icon: true
@@ -1121,7 +1121,7 @@ views:
                               sensor.nvr_mostardesigns_com_nvidia_rtx_4000_sff_ada_generation_gpu_nvidia0_memory_usage
                             name: Memory
                             gauge_type: standard
-                            needle: true
+                            needle: false
                             min: 0
                             max: 100
                             show_icon: true

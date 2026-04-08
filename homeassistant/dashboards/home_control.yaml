@@ -1,0 +1,170 @@
+# TOTAL HOME INTERIOR CONTROL — Lovelace (YAML)
+#
+# Entity picks from Home Assistant MCP (ha_list_entities / ha_get_entity_state).
+# Requires: layout-card (same as infrastructure / torrents dashboards).
+#
+# Gaps / verify on your install:
+#   - Dining: no "dining" entities returned — placeholder markdown only.
+#   - Living room: no main ceiling light entity — add when you have one.
+#   - Office: no office ceiling light — speaker + Nest Protect only.
+#   - Bedroom hallway main: light.light_switch (generic name; tied to dim_bedroom_hallway_light automation).
+#   - Guest closet: light.closet_light ("Closet") — confirm it is guest closet.
+#   - Front hallway temp: Nest living-room sensor as interior reference (no front-door Nest sensor).
+#   - House fan: switch.house_fan only (no speed slider entity).
+#   - Vanity: switch.vanity (often unavailable / restored).
+#   - Mockup timers ("12s left"): not wired — add timer helpers + template if desired.
+
+views:
+  - title: Home Control
+    path: home-control
+    type: panel
+    icon: mdi:home-automation
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: heading
+            heading_style: title
+            heading: TOTAL HOME INTERIOR CONTROL
+
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: repeat(3, minmax(280px, 1fr))
+              grid-gap: 12px
+              place-items: stretch
+              align-items: start
+              mediaquery:
+                '(max-width: 1000px)':
+                  grid-template-columns: 100%
+            grid_options:
+              columns: full
+            cards:
+              # ——— Column 1 ———
+              - type: vertical-stack
+                cards:
+                  - type: entities
+                    title: MASTER BEDROOM
+                    show_header_toggle: false
+                    state_color: true
+                    entities:
+                      - entity: switch.master_bedroom_light_switch
+                        name: Main lights
+                      - entity: light.master_bedroom_closet_lights_top_light
+                        name: Closet lights (top)
+                      - entity: light.master_bedroom_closet_light_bottom_light
+                        name: Closet lights (bottom)
+                      - entity: switch.vanity
+                        name: Vanity light
+                      - entity: sensor.nest_temperature_sensor_master_bedroom_temperature
+                        name: Nest temp sensor
+                      - entity: binary_sensor.master_bedroom_closet_presence_sensor_motion
+                        name: Closet motion
+                  - type: media-control
+                    entity: media_player.master_bedroom_tv
+                  - type: media-control
+                    entity: media_player.master_bedroom_speaker
+
+                  - type: entities
+                    title: MIDDLE ROOM
+                    show_header_toggle: false
+                    state_color: true
+                    entities:
+                      - light.in_wall_paddle_dimmer_no_ntrl_700s
+
+                  - type: entities
+                    title: GUEST ROOM
+                    show_header_toggle: false
+                    state_color: true
+                    entities:
+                      - entity: switch.light_switch_2
+                        name: Main lights
+                      - entity: light.closet_light
+                        name: Closet lights
+
+              # ——— Column 2 ———
+              - type: vertical-stack
+                cards:
+                  - type: entities
+                    title: BEDROOM HALLWAY
+                    show_header_toggle: false
+                    state_color: true
+                    entities:
+                      - entity: light.light_switch
+                        name: Main lights
+                      - entity: switch.house_fan
+                        name: House fan
+                      - entity: binary_sensor.nest_protect_hallway_smoke_status
+                        name: Nest Protect smoke
+
+                  - type: entities
+                    title: FRONT DOOR HALLWAY
+                    show_header_toggle: false
+                    state_color: true
+                    entities:
+                      - entity: switch.front_door_light
+                        name: Main lights
+                      - entity: sensor.nest_temperature_sensor_living_room_temperature
+                        name: Nest temp (living / entry zone)
+
+                  - type: markdown
+                    content: |
+                      ### LIVING ROOM
+                      *Main lights: add a `light.*` row when you have a ceiling/group entity.*
+                  - type: media-control
+                    entity: media_player.living_room_tv
+                  - type: thermostat
+                    entity: climate.living_room
+                  - type: media-control
+                    entity: media_player.living_room_speaker
+
+              # ——— Column 3 ———
+              - type: vertical-stack
+                cards:
+                  - type: markdown
+                    content: |
+                      ### DINING ROOM
+                      No dining-area entities were found via MCP search.
+                      Add an `entities` card when you have a dining light or group.
+
+                  - type: entities
+                    title: KITCHEN
+                    show_header_toggle: false
+                    state_color: true
+                    entities:
+                      - light.kitchen_countertop_lights_light
+                      - light.kitchenette_counter_light_light
+                      - light.kitchenette_light
+
+                  - type: entities
+                    title: BOTTOM HALLWAY
+                    show_header_toggle: false
+                    state_color: true
+                    entities:
+                      - entity: light.kitchen_countertop_lights_light
+                        name: Countertop lights
+                      - entity: light.garage_hallway_light_switch
+                        name: Garage hallway lights
+
+                  - type: entities
+                    title: OFFICE
+                    show_header_toggle: false
+                    state_color: true
+                    entities:
+                      - type: markdown
+                        content: >
+                          *Main lights: add a `light.*` row when available.*
+                      - entity: binary_sensor.nest_protect_office_smoke_status
+                        name: Nest Protect smoke
+                  - type: media-control
+                    entity: media_player.office_speaker
+
+                  - type: entities
+                    title: BASEMENT
+                    show_header_toggle: false
+                    state_color: true
+                    entities:
+                      - light.basement_light
+                      - entity: binary_sensor.presence_sensor
+                        name: Motion / presence
+                      - entity: binary_sensor.nest_protect_basement_smoke_status
+                        name: Nest Protect smoke
