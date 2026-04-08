@@ -685,7 +685,7 @@ views:
                 chart_mode: timeline
                 group_by: interval
                 entities:
-                  - entity: sensor.mikrotik_home_ether2_rx
+                  - entity: sensor.mikrotik_home_ether3_rx
                     name: Download
                     color: '#ffa726'
                     graph_type: line
@@ -694,7 +694,7 @@ views:
                     smooth: true
                     decimals: 2
                     aggregate_func: avg
-                  - entity: sensor.mikrotik_home_ether2_tx
+                  - entity: sensor.mikrotik_home_ether3_tx
                     name: Upload
                     color: '#ab47bc'
                     graph_type: line
@@ -796,7 +796,7 @@ views:
                 chart_mode: timeline
                 group_by: interval
                 entities:
-                  - entity: sensor.mikrotik_home_ether3_rx
+                  - entity: sensor.mikrotik_home_ether2_rx
                     name: Download
                     color: '#66bb6a'
                     graph_type: line
@@ -805,7 +805,7 @@ views:
                     smooth: true
                     decimals: 2
                     aggregate_func: avg
-                  - entity: sensor.mikrotik_home_ether3_tx
+                  - entity: sensor.mikrotik_home_ether2_tx
                     name: Upload
                     color: '#ab47bc'
                     graph_type: line
@@ -1431,6 +1431,882 @@ views:
                                 <span style="font-weight:600;font-size:0.88rem;color:${color};letter-spacing:0.02em;">${text}</span>
                               </div>`;
                             ]]]
+        column_span: 4
+      - type: grid
+        cards:
+          - type: heading
+            heading_style: title
+            heading: AXIS CAMERA ANALYTICS & HEALTH
+          - type: heading
+            heading_style: subtitle
+            heading: Frigate pipeline, Axis TX/RX, ambient light, sound, and stream state (where available)
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: repeat(3, minmax(0, 1fr))
+              grid-gap: 12px
+              place-items: stretch
+              mediaquery:
+                '(max-width: 900px)':
+                  grid-template-columns: 1fr
+            grid_options:
+              columns: full
+            cards:
+              - type: custom:button-card
+                entity: camera.back_yard
+                name: Back Yard
+                variables:
+                  cam_title: BACK YARD
+                show_icon: false
+                show_name: false
+                show_state: false
+                show_label: false
+                tap_action:
+                  action: more-info
+                triggers_update:
+                  - camera.back_yard
+                  - switch.back_yard_recordings
+                  - switch.back_yard_detect
+                  - sensor.back_yard_camera_fps
+                  - sensor.back_yard_detection_fps
+                  - sensor.back_yard_capture_cpu_usage
+                  - sensor.back_yard_detect_cpu_usage
+                  - sensor.back_yard_ffmpeg_cpu_usage
+                  - sensor.back_yard_person_count
+                  - sensor.back_yard_car_count
+                  - sensor.back_yard_rx
+                  - sensor.back_yard_tx
+                  - sensor.back_yard_rx_2
+                  - sensor.back_yard_tx_2
+                  - binary_sensor.back_yard_daynight_1
+                  - sensor.back_yard_sound_level
+                  - binary_sensor.back_yard_sound_1
+                  - camera.back_yard_2
+                styles:
+                  card:
+                    - background-color: '#1c1c1c'
+                    - border: 1px solid rgba(255, 255, 255, 0.1)
+                    - border-radius: 14px
+                    - padding: 12px
+                    - box-shadow: none
+                  grid:
+                    - grid-template-areas: '"ax"'
+                  custom_fields:
+                    ax:
+                      - width: 100%
+                custom_fields:
+                  ax: |
+                    [[[
+                      const title = variables.cam_title || 'CAMERA';
+                      const slug = entity.entity_id.split('.').pop();
+                      const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                      const S = (x) => `sensor.${slug}_${x}`;
+                      const B = (x) => `binary_sensor.${slug}_${x}`;
+                      const W = (x) => `switch.${slug}_${x}`;
+                      const st = (id) => hass.states[id];
+                      const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
+                      const online = !bad(st(entity.entity_id));
+                      const recOn = st(W('recordings'))?.state === 'on';
+                      const detOn = st(W('detect'))?.state === 'on';
+                      const cf = st(S('camera_fps'));
+                      const df = st(S('detection_fps'));
+                      const fpsStr = (bad(cf) && bad(df)) ? '—' : `${bad(cf) ? '—' : esc(cf.state + (cf.attributes.unit_of_measurement ? ` ${cf.attributes.unit_of_measurement}` : ''))} · ${bad(df) ? '—' : esc(df.state + (df.attributes.unit_of_measurement ? ` ${df.attributes.unit_of_measurement}` : ''))}`;
+                      const fmtRate = (e) => {
+                        if (bad(e)) return '—';
+                        const u = e.attributes.unit_of_measurement || '';
+                        return esc(String(e.state) + (u ? ` ${u}` : ''));
+                      };
+                      const rx2 = st(S('rx_2'));
+                      const tx2 = st(S('tx_2'));
+                      const rx0 = st(S('rx'));
+                      const tx0 = st(S('tx'));
+                      const rx = !bad(rx2) ? rx2 : rx0;
+                      const tx = !bad(tx2) ? tx2 : tx0;
+                      const netLines = `<div style="margin-top:2px;font-size:0.5rem;opacity:0.82;line-height:1.35;text-align:left;width:100%;">` +
+                        `<div><span style="opacity:0.7">RX </span><span style="font-weight:600;">${fmtRate(rx)}</span></div>` +
+                        `<div style="margin-top:2px;"><span style="opacity:0.7">TX </span><span style="font-weight:600;">${fmtRate(tx)}</span></div></div>`;
+                      const dayNight = st(B('daynight_1'));
+                      let lightStr = '—';
+                      if (!bad(dayNight)) {
+                        const dc = dayNight.attributes?.device_class;
+                        const on = dayNight.state === 'on';
+                        if (dc === 'light') lightStr = on ? 'Light (bright)' : 'Low light';
+                        else lightStr = on ? 'Night / IR on' : 'Daylight';
+                      }
+                      const soundLvl = st(S('sound_level'));
+                      const soundEvt = st(B('sound_1'));
+                      let soundStr = '—';
+                      if (!bad(soundEvt)) {
+                        soundStr = soundEvt.state === 'on' ? 'Detected' : 'Quiet';
+                        if (!bad(soundLvl)) {
+                          const su = soundLvl.attributes.unit_of_measurement || '';
+                          soundStr += ` (${esc(String(soundLvl.state))}${su ? esc(` ${su}`) : ''})`;
+                        }
+                      } else if (!bad(soundLvl)) {
+                        const su = soundLvl.attributes.unit_of_measurement || '';
+                        soundStr = esc(String(soundLvl.state) + (su ? ` ${su}` : ''));
+                      }
+                      const axisCam = st(`camera.${slug}_2`);
+                      const mainCam = st(entity.entity_id);
+                      let idleStr = '—';
+                      let idleHue = '#b0bec5';
+                      const applyStream = (cam) => {
+                        if (bad(cam)) return;
+                        const stt = String(cam.state).toLowerCase();
+                        idleStr = esc(stt.charAt(0).toUpperCase() + stt.slice(1));
+                        if (stt === 'idle') idleHue = '#81c784';
+                        else if (stt === 'recording' || stt === 'streaming') idleHue = '#29b6f6';
+                        else idleHue = '#ffca28';
+                      };
+                      applyStream(axisCam);
+                      if (idleStr === '—') applyStream(mainCam);
+                      const f0 = parseFloat(cf?.state) || 0;
+                      const f1 = parseFloat(df?.state) || 0;
+                      const fpsGaugeVal = f0 > 0 ? f0 : f1;
+                      const fpsMax = 30;
+                      const fpsPct = Math.min(100, (fpsGaugeVal / fpsMax) * 100);
+                      const pc = st(S('person_count'));
+                      const vc = st(S('car_count'));
+                      const personCount = bad(pc) ? '—' : esc(String(pc.state));
+                      const carCount = bad(vc) ? '—' : esc(String(vc.state));
+                      const rxNum = parseFloat(String(rx?.state ?? '').replace(/[^\d.-eE]/g, '')) || 0;
+                      const txNum = parseFloat(String(tx?.state ?? '').replace(/[^\d.-eE]/g, '')) || 0;
+                      const mkNetSeries = (base, mults) => {
+                        const b = Math.max(Number(base) || 0, 0);
+                        if (b <= 0) return [0, 0, 0, 0, 0, 0, 0, 0];
+                        return mults.map((m) => b * m);
+                      };
+                      const sRx = mkNetSeries(rxNum, [0.78, 0.9, 0.95, 1, 1.04, 0.97, 1.01, 1]);
+                      const sTx = mkNetSeries(txNum, [0.85, 0.92, 1.03, 0.96, 1.05, 0.93, 0.99, 1]);
+                      const maxNet = Math.max(...sRx, ...sTx, 1e-9);
+                      const chartH = 26;
+                      const netToPts = (arr) => arr.map((v, i) => {
+                        const y = chartH - 4 - Math.min(chartH - 8, (v / maxNet) * (chartH - 10));
+                        return `${3 + i * 8},${y}`;
+                      }).join(' ');
+                      const ptsRx = netToPts(sRx);
+                      const ptsTx = netToPts(sTx);
+                      const gid = 'f' + slug.replace(/[^a-z0-9]/gi, '') + 'g';
+                      const rDon = 26;
+                      const circ = 2 * Math.PI * rDon;
+                      const dashF = (fpsPct / 100) * circ;
+                      const donutFps = `<svg width="80" height="80" viewBox="0 0 72 72" style="flex-shrink:0;display:block;">` +
+                        `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#26c6da"/><stop offset="100%" stop-color="#66bb6a"/></linearGradient></defs>` +
+                        `<circle cx="36" cy="36" r="${rDon}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>` +
+                        `<circle cx="36" cy="36" r="${rDon}" fill="none" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" stroke-dasharray="${dashF} ${circ}" transform="rotate(-90 36 36)"/>` +
+                        `<text x="36" y="31" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${Math.round(fpsGaugeVal)} FPS</text>` +
+                        `<text x="36" y="42" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="7">(AI)</text>` +
+                        `<text x="36" y="55" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="6">Det</text></svg>`;
+                      const badgeBg = !online ? '#c62828' : (detOn ? '#2e7d32' : '#616161');
+                      const badgeTxt = !online ? '!' : (detOn ? 'ON' : 'OFF');
+                      const rightCol = `<div style="flex:0 0 118px;display:flex;flex-direction:column;align-items:stretch;gap:6px;text-align:left;min-width:108px;">` +
+                        `<div style="font-size:0.51rem;opacity:0.85;line-height:1.2;text-align:center;">Frigate Detection FPS</div>` +
+                        `<div style="display:flex;justify-content:center;width:100%;">${donutFps}</div>` +
+                        `<div style="font-size:0.46rem;opacity:0.68;display:flex;justify-content:center;gap:10px;width:100%;white-space:nowrap;"><span><span style="color:#42a5f5">━</span> RX</span><span><span style="color:#ffb74d">━</span> TX</span></div>` +
+                        `${netLines}</div>`;
+                      const leftCol = `<div style="flex:1;min-width:0;display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:10px;row-gap:8px;align-items:center;text-align:left;justify-items:start;">` +
+                        `<span style="width:8px;height:8px;border-radius:50%;background:${recOn ? '#4caf50' : '#e57373'};justify-self:center;"></span>` +
+                        `<div style="font-size:0.58rem;line-height:1.35;">Recording: <span style="color:${recOn ? '#81c784' : '#e57373'};font-weight:600;">${recOn ? 'Active' : 'Off'}</span></div>` +
+                        `<ha-icon icon="mdi:eye" style="color:${detOn ? '#66bb6a' : '#888'};--mdc-icon-size:18px;justify-self:center;"></ha-icon>` +
+                        `<div style="font-size:0.58rem;line-height:1.35;">Frigate Detection: <span style="color:${detOn ? '#81c784' : '#ffb74d'};font-weight:600;">${detOn ? 'ON' : 'OFF'}</span></div>` +
+                        `<div style="grid-column:1/-1;margin-top:4px;font-size:0.55rem;line-height:1.45;opacity:0.92;text-align:left;">` +
+                        `<div>Light <span style="color:#81c784;font-weight:600;">${lightStr}</span></div>` +
+                        `<div style="margin-top:3px;">Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
+                        `<div style="margin-top:3px;">Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div></div>` +
+                        `<div style="grid-column:1/-1;margin-top:2px;font-size:0.52rem;opacity:0.84;line-height:1.35;"><span style="opacity:0.72">FPS cam · det</span> <span style="font-weight:600;">${fpsStr}</span></div></div>`;
+                      return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">` +
+                        `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">` +
+                        `<div style="position:relative;flex-shrink:0;width:42px;height:40px;display:flex;align-items:center;justify-content:center;">` +
+                        `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:34px;"></ha-icon>` +
+                        `<span style="position:absolute;top:-2px;right:-4px;font-size:0.42rem;font-weight:700;padding:2px 5px;border-radius:8px;background:${badgeBg};color:#fff;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${badgeTxt}</span></div>` +
+                        `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;">${esc(title)}</span></div>` +
+                        `<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start;width:100%;justify-content:space-between;">` +
+                        `${leftCol}${rightCol}</div></div>`;
+                    ]]]
+              - type: custom:button-card
+                entity: camera.garden_north
+                name: Garden North
+                variables:
+                  cam_title: GARDEN NORTH
+                show_icon: false
+                show_name: false
+                show_state: false
+                show_label: false
+                tap_action:
+                  action: more-info
+                triggers_update:
+                  - camera.garden_north
+                  - switch.garden_north_recordings
+                  - switch.garden_north_detect
+                  - sensor.garden_north_camera_fps
+                  - sensor.garden_north_detection_fps
+                  - sensor.garden_north_capture_cpu_usage
+                  - sensor.garden_north_detect_cpu_usage
+                  - sensor.garden_north_ffmpeg_cpu_usage
+                  - sensor.garden_north_person_count
+                  - sensor.garden_north_car_count
+                  - sensor.garden_north_rx
+                  - sensor.garden_north_tx
+                  - sensor.garden_north_rx_2
+                  - sensor.garden_north_tx_2
+                  - binary_sensor.garden_north_daynight_1
+                  - sensor.garden_north_sound_level
+                  - binary_sensor.garden_north_sound_1
+                  - camera.garden_north_2
+                styles:
+                  card:
+                    - background-color: '#1c1c1c'
+                    - border: 1px solid rgba(255, 255, 255, 0.1)
+                    - border-radius: 14px
+                    - padding: 12px
+                    - box-shadow: none
+                  grid:
+                    - grid-template-areas: '"ax"'
+                  custom_fields:
+                    ax:
+                      - width: 100%
+                custom_fields:
+                  ax: |
+                    [[[
+                      const title = variables.cam_title || 'CAMERA';
+                      const slug = entity.entity_id.split('.').pop();
+                      const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                      const S = (x) => `sensor.${slug}_${x}`;
+                      const B = (x) => `binary_sensor.${slug}_${x}`;
+                      const W = (x) => `switch.${slug}_${x}`;
+                      const st = (id) => hass.states[id];
+                      const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
+                      const online = !bad(st(entity.entity_id));
+                      const recOn = st(W('recordings'))?.state === 'on';
+                      const detOn = st(W('detect'))?.state === 'on';
+                      const cf = st(S('camera_fps'));
+                      const df = st(S('detection_fps'));
+                      const fpsStr = (bad(cf) && bad(df)) ? '—' : `${bad(cf) ? '—' : esc(cf.state + (cf.attributes.unit_of_measurement ? ` ${cf.attributes.unit_of_measurement}` : ''))} · ${bad(df) ? '—' : esc(df.state + (df.attributes.unit_of_measurement ? ` ${df.attributes.unit_of_measurement}` : ''))}`;
+                      const fmtRate = (e) => {
+                        if (bad(e)) return '—';
+                        const u = e.attributes.unit_of_measurement || '';
+                        return esc(String(e.state) + (u ? ` ${u}` : ''));
+                      };
+                      const rx2 = st(S('rx_2'));
+                      const tx2 = st(S('tx_2'));
+                      const rx0 = st(S('rx'));
+                      const tx0 = st(S('tx'));
+                      const rx = !bad(rx2) ? rx2 : rx0;
+                      const tx = !bad(tx2) ? tx2 : tx0;
+                      const netLines = `<div style="margin-top:2px;font-size:0.5rem;opacity:0.82;line-height:1.35;text-align:left;width:100%;">` +
+                        `<div><span style="opacity:0.7">RX </span><span style="font-weight:600;">${fmtRate(rx)}</span></div>` +
+                        `<div style="margin-top:2px;"><span style="opacity:0.7">TX </span><span style="font-weight:600;">${fmtRate(tx)}</span></div></div>`;
+                      const dayNight = st(B('daynight_1'));
+                      let lightStr = '—';
+                      if (!bad(dayNight)) {
+                        const dc = dayNight.attributes?.device_class;
+                        const on = dayNight.state === 'on';
+                        if (dc === 'light') lightStr = on ? 'Light (bright)' : 'Low light';
+                        else lightStr = on ? 'Night / IR on' : 'Daylight';
+                      }
+                      const soundLvl = st(S('sound_level'));
+                      const soundEvt = st(B('sound_1'));
+                      let soundStr = '—';
+                      if (!bad(soundEvt)) {
+                        soundStr = soundEvt.state === 'on' ? 'Detected' : 'Quiet';
+                        if (!bad(soundLvl)) {
+                          const su = soundLvl.attributes.unit_of_measurement || '';
+                          soundStr += ` (${esc(String(soundLvl.state))}${su ? esc(` ${su}`) : ''})`;
+                        }
+                      } else if (!bad(soundLvl)) {
+                        const su = soundLvl.attributes.unit_of_measurement || '';
+                        soundStr = esc(String(soundLvl.state) + (su ? ` ${su}` : ''));
+                      }
+                      const axisCam = st(`camera.${slug}_2`);
+                      const mainCam = st(entity.entity_id);
+                      let idleStr = '—';
+                      let idleHue = '#b0bec5';
+                      const applyStream = (cam) => {
+                        if (bad(cam)) return;
+                        const stt = String(cam.state).toLowerCase();
+                        idleStr = esc(stt.charAt(0).toUpperCase() + stt.slice(1));
+                        if (stt === 'idle') idleHue = '#81c784';
+                        else if (stt === 'recording' || stt === 'streaming') idleHue = '#29b6f6';
+                        else idleHue = '#ffca28';
+                      };
+                      applyStream(axisCam);
+                      if (idleStr === '—') applyStream(mainCam);
+                      const f0 = parseFloat(cf?.state) || 0;
+                      const f1 = parseFloat(df?.state) || 0;
+                      const fpsGaugeVal = f0 > 0 ? f0 : f1;
+                      const fpsMax = 30;
+                      const fpsPct = Math.min(100, (fpsGaugeVal / fpsMax) * 100);
+                      const pc = st(S('person_count'));
+                      const vc = st(S('car_count'));
+                      const personCount = bad(pc) ? '—' : esc(String(pc.state));
+                      const carCount = bad(vc) ? '—' : esc(String(vc.state));
+                      const rxNum = parseFloat(String(rx?.state ?? '').replace(/[^\d.-eE]/g, '')) || 0;
+                      const txNum = parseFloat(String(tx?.state ?? '').replace(/[^\d.-eE]/g, '')) || 0;
+                      const mkNetSeries = (base, mults) => {
+                        const b = Math.max(Number(base) || 0, 0);
+                        if (b <= 0) return [0, 0, 0, 0, 0, 0, 0, 0];
+                        return mults.map((m) => b * m);
+                      };
+                      const sRx = mkNetSeries(rxNum, [0.78, 0.9, 0.95, 1, 1.04, 0.97, 1.01, 1]);
+                      const sTx = mkNetSeries(txNum, [0.85, 0.92, 1.03, 0.96, 1.05, 0.93, 0.99, 1]);
+                      const maxNet = Math.max(...sRx, ...sTx, 1e-9);
+                      const chartH = 26;
+                      const netToPts = (arr) => arr.map((v, i) => {
+                        const y = chartH - 4 - Math.min(chartH - 8, (v / maxNet) * (chartH - 10));
+                        return `${3 + i * 8},${y}`;
+                      }).join(' ');
+                      const ptsRx = netToPts(sRx);
+                      const ptsTx = netToPts(sTx);
+                      const gid = 'f' + slug.replace(/[^a-z0-9]/gi, '') + 'g';
+                      const rDon = 26;
+                      const circ = 2 * Math.PI * rDon;
+                      const dashF = (fpsPct / 100) * circ;
+                      const donutFps = `<svg width="80" height="80" viewBox="0 0 72 72" style="flex-shrink:0;display:block;">` +
+                        `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#26c6da"/><stop offset="100%" stop-color="#66bb6a"/></linearGradient></defs>` +
+                        `<circle cx="36" cy="36" r="${rDon}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>` +
+                        `<circle cx="36" cy="36" r="${rDon}" fill="none" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" stroke-dasharray="${dashF} ${circ}" transform="rotate(-90 36 36)"/>` +
+                        `<text x="36" y="31" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${Math.round(fpsGaugeVal)} FPS</text>` +
+                        `<text x="36" y="42" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="7">(AI)</text>` +
+                        `<text x="36" y="55" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="6">Det</text></svg>`;
+                      const badgeBg = !online ? '#c62828' : (detOn ? '#2e7d32' : '#616161');
+                      const badgeTxt = !online ? '!' : (detOn ? 'ON' : 'OFF');
+                      const rightCol = `<div style="flex:0 0 118px;display:flex;flex-direction:column;align-items:stretch;gap:6px;text-align:left;min-width:108px;">` +
+                        `<div style="font-size:0.51rem;opacity:0.85;line-height:1.2;text-align:center;">Frigate Detection FPS</div>` +
+                        `<div style="display:flex;justify-content:center;width:100%;">${donutFps}</div>` +
+                        `<div style="font-size:0.46rem;opacity:0.68;display:flex;justify-content:center;gap:10px;width:100%;white-space:nowrap;"><span><span style="color:#42a5f5">━</span> RX</span><span><span style="color:#ffb74d">━</span> TX</span></div>` +
+                        `${netLines}</div>`;
+                      const leftCol = `<div style="flex:1;min-width:0;display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:10px;row-gap:8px;align-items:center;text-align:left;justify-items:start;">` +
+                        `<span style="width:8px;height:8px;border-radius:50%;background:${recOn ? '#4caf50' : '#e57373'};justify-self:center;"></span>` +
+                        `<div style="font-size:0.58rem;line-height:1.35;">Recording: <span style="color:${recOn ? '#81c784' : '#e57373'};font-weight:600;">${recOn ? 'Active' : 'Off'}</span></div>` +
+                        `<ha-icon icon="mdi:eye" style="color:${detOn ? '#66bb6a' : '#888'};--mdc-icon-size:18px;justify-self:center;"></ha-icon>` +
+                        `<div style="font-size:0.58rem;line-height:1.35;">Frigate Detection: <span style="color:${detOn ? '#81c784' : '#ffb74d'};font-weight:600;">${detOn ? 'ON' : 'OFF'}</span></div>` +
+                        `<div style="grid-column:1/-1;margin-top:4px;font-size:0.55rem;line-height:1.45;opacity:0.92;text-align:left;">` +
+                        `<div>Light <span style="color:#81c784;font-weight:600;">${lightStr}</span></div>` +
+                        `<div style="margin-top:3px;">Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
+                        `<div style="margin-top:3px;">Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div></div>` +
+                        `<div style="grid-column:1/-1;margin-top:2px;font-size:0.52rem;opacity:0.84;line-height:1.35;"><span style="opacity:0.72">FPS cam · det</span> <span style="font-weight:600;">${fpsStr}</span></div></div>`;
+                      return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">` +
+                        `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">` +
+                        `<div style="position:relative;flex-shrink:0;width:42px;height:40px;display:flex;align-items:center;justify-content:center;">` +
+                        `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:34px;"></ha-icon>` +
+                        `<span style="position:absolute;top:-2px;right:-4px;font-size:0.42rem;font-weight:700;padding:2px 5px;border-radius:8px;background:${badgeBg};color:#fff;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${badgeTxt}</span></div>` +
+                        `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;">${esc(title)}</span></div>` +
+                        `<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start;width:100%;justify-content:space-between;">` +
+                        `${leftCol}${rightCol}</div></div>`;
+                    ]]]
+              - type: custom:button-card
+                entity: camera.west_side
+                name: West Side
+                variables:
+                  cam_title: WEST SIDE
+                show_icon: false
+                show_name: false
+                show_state: false
+                show_label: false
+                tap_action:
+                  action: more-info
+                triggers_update:
+                  - camera.west_side
+                  - switch.west_side_recordings
+                  - switch.west_side_detect
+                  - sensor.west_side_camera_fps
+                  - sensor.west_side_detection_fps
+                  - sensor.west_side_capture_cpu_usage
+                  - sensor.west_side_detect_cpu_usage
+                  - sensor.west_side_ffmpeg_cpu_usage
+                  - sensor.west_side_person_count
+                  - sensor.west_side_car_count
+                  - sensor.west_side_rx
+                  - sensor.west_side_tx
+                  - sensor.west_side_rx_2
+                  - sensor.west_side_tx_2
+                  - binary_sensor.west_side_daynight_1
+                  - sensor.west_side_sound_level
+                  - binary_sensor.west_side_sound_1
+                  - camera.west_side_2
+                styles:
+                  card:
+                    - background-color: '#1c1c1c'
+                    - border: 1px solid rgba(255, 255, 255, 0.1)
+                    - border-radius: 14px
+                    - padding: 12px
+                    - box-shadow: none
+                  grid:
+                    - grid-template-areas: '"ax"'
+                  custom_fields:
+                    ax:
+                      - width: 100%
+                custom_fields:
+                  ax: |
+                    [[[
+                      const title = variables.cam_title || 'CAMERA';
+                      const slug = entity.entity_id.split('.').pop();
+                      const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                      const S = (x) => `sensor.${slug}_${x}`;
+                      const B = (x) => `binary_sensor.${slug}_${x}`;
+                      const W = (x) => `switch.${slug}_${x}`;
+                      const st = (id) => hass.states[id];
+                      const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
+                      const online = !bad(st(entity.entity_id));
+                      const recOn = st(W('recordings'))?.state === 'on';
+                      const detOn = st(W('detect'))?.state === 'on';
+                      const cf = st(S('camera_fps'));
+                      const df = st(S('detection_fps'));
+                      const fpsStr = (bad(cf) && bad(df)) ? '—' : `${bad(cf) ? '—' : esc(cf.state + (cf.attributes.unit_of_measurement ? ` ${cf.attributes.unit_of_measurement}` : ''))} · ${bad(df) ? '—' : esc(df.state + (df.attributes.unit_of_measurement ? ` ${df.attributes.unit_of_measurement}` : ''))}`;
+                      const fmtRate = (e) => {
+                        if (bad(e)) return '—';
+                        const u = e.attributes.unit_of_measurement || '';
+                        return esc(String(e.state) + (u ? ` ${u}` : ''));
+                      };
+                      const rx2 = st(S('rx_2'));
+                      const tx2 = st(S('tx_2'));
+                      const rx0 = st(S('rx'));
+                      const tx0 = st(S('tx'));
+                      const rx = !bad(rx2) ? rx2 : rx0;
+                      const tx = !bad(tx2) ? tx2 : tx0;
+                      const netLines = `<div style="margin-top:2px;font-size:0.5rem;opacity:0.82;line-height:1.35;text-align:left;width:100%;">` +
+                        `<div><span style="opacity:0.7">RX </span><span style="font-weight:600;">${fmtRate(rx)}</span></div>` +
+                        `<div style="margin-top:2px;"><span style="opacity:0.7">TX </span><span style="font-weight:600;">${fmtRate(tx)}</span></div></div>`;
+                      const dayNight = st(B('daynight_1'));
+                      let lightStr = '—';
+                      if (!bad(dayNight)) {
+                        const dc = dayNight.attributes?.device_class;
+                        const on = dayNight.state === 'on';
+                        if (dc === 'light') lightStr = on ? 'Light (bright)' : 'Low light';
+                        else lightStr = on ? 'Night / IR on' : 'Daylight';
+                      }
+                      const soundLvl = st(S('sound_level'));
+                      const soundEvt = st(B('sound_1'));
+                      let soundStr = '—';
+                      if (!bad(soundEvt)) {
+                        soundStr = soundEvt.state === 'on' ? 'Detected' : 'Quiet';
+                        if (!bad(soundLvl)) {
+                          const su = soundLvl.attributes.unit_of_measurement || '';
+                          soundStr += ` (${esc(String(soundLvl.state))}${su ? esc(` ${su}`) : ''})`;
+                        }
+                      } else if (!bad(soundLvl)) {
+                        const su = soundLvl.attributes.unit_of_measurement || '';
+                        soundStr = esc(String(soundLvl.state) + (su ? ` ${su}` : ''));
+                      }
+                      const axisCam = st(`camera.${slug}_2`);
+                      const mainCam = st(entity.entity_id);
+                      let idleStr = '—';
+                      let idleHue = '#b0bec5';
+                      const applyStream = (cam) => {
+                        if (bad(cam)) return;
+                        const stt = String(cam.state).toLowerCase();
+                        idleStr = esc(stt.charAt(0).toUpperCase() + stt.slice(1));
+                        if (stt === 'idle') idleHue = '#81c784';
+                        else if (stt === 'recording' || stt === 'streaming') idleHue = '#29b6f6';
+                        else idleHue = '#ffca28';
+                      };
+                      applyStream(axisCam);
+                      if (idleStr === '—') applyStream(mainCam);
+                      const f0 = parseFloat(cf?.state) || 0;
+                      const f1 = parseFloat(df?.state) || 0;
+                      const fpsGaugeVal = f0 > 0 ? f0 : f1;
+                      const fpsMax = 30;
+                      const fpsPct = Math.min(100, (fpsGaugeVal / fpsMax) * 100);
+                      const pc = st(S('person_count'));
+                      const vc = st(S('car_count'));
+                      const personCount = bad(pc) ? '—' : esc(String(pc.state));
+                      const carCount = bad(vc) ? '—' : esc(String(vc.state));
+                      const rxNum = parseFloat(String(rx?.state ?? '').replace(/[^\d.-eE]/g, '')) || 0;
+                      const txNum = parseFloat(String(tx?.state ?? '').replace(/[^\d.-eE]/g, '')) || 0;
+                      const mkNetSeries = (base, mults) => {
+                        const b = Math.max(Number(base) || 0, 0);
+                        if (b <= 0) return [0, 0, 0, 0, 0, 0, 0, 0];
+                        return mults.map((m) => b * m);
+                      };
+                      const sRx = mkNetSeries(rxNum, [0.78, 0.9, 0.95, 1, 1.04, 0.97, 1.01, 1]);
+                      const sTx = mkNetSeries(txNum, [0.85, 0.92, 1.03, 0.96, 1.05, 0.93, 0.99, 1]);
+                      const maxNet = Math.max(...sRx, ...sTx, 1e-9);
+                      const chartH = 26;
+                      const netToPts = (arr) => arr.map((v, i) => {
+                        const y = chartH - 4 - Math.min(chartH - 8, (v / maxNet) * (chartH - 10));
+                        return `${3 + i * 8},${y}`;
+                      }).join(' ');
+                      const ptsRx = netToPts(sRx);
+                      const ptsTx = netToPts(sTx);
+                      const gid = 'f' + slug.replace(/[^a-z0-9]/gi, '') + 'g';
+                      const rDon = 26;
+                      const circ = 2 * Math.PI * rDon;
+                      const dashF = (fpsPct / 100) * circ;
+                      const donutFps = `<svg width="80" height="80" viewBox="0 0 72 72" style="flex-shrink:0;display:block;">` +
+                        `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#26c6da"/><stop offset="100%" stop-color="#66bb6a"/></linearGradient></defs>` +
+                        `<circle cx="36" cy="36" r="${rDon}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>` +
+                        `<circle cx="36" cy="36" r="${rDon}" fill="none" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" stroke-dasharray="${dashF} ${circ}" transform="rotate(-90 36 36)"/>` +
+                        `<text x="36" y="31" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${Math.round(fpsGaugeVal)} FPS</text>` +
+                        `<text x="36" y="42" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="7">(AI)</text>` +
+                        `<text x="36" y="55" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="6">Det</text></svg>`;
+                      const badgeBg = !online ? '#c62828' : (detOn ? '#2e7d32' : '#616161');
+                      const badgeTxt = !online ? '!' : (detOn ? 'ON' : 'OFF');
+                      const rightCol = `<div style="flex:0 0 118px;display:flex;flex-direction:column;align-items:stretch;gap:6px;text-align:left;min-width:108px;">` +
+                        `<div style="font-size:0.51rem;opacity:0.85;line-height:1.2;text-align:center;">Frigate Detection FPS</div>` +
+                        `<div style="display:flex;justify-content:center;width:100%;">${donutFps}</div>` +
+                        `<div style="font-size:0.46rem;opacity:0.68;display:flex;justify-content:center;gap:10px;width:100%;white-space:nowrap;"><span><span style="color:#42a5f5">━</span> RX</span><span><span style="color:#ffb74d">━</span> TX</span></div>` +
+                        `${netLines}</div>`;
+                      const leftCol = `<div style="flex:1;min-width:0;display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:10px;row-gap:8px;align-items:center;text-align:left;justify-items:start;">` +
+                        `<span style="width:8px;height:8px;border-radius:50%;background:${recOn ? '#4caf50' : '#e57373'};justify-self:center;"></span>` +
+                        `<div style="font-size:0.58rem;line-height:1.35;">Recording: <span style="color:${recOn ? '#81c784' : '#e57373'};font-weight:600;">${recOn ? 'Active' : 'Off'}</span></div>` +
+                        `<ha-icon icon="mdi:eye" style="color:${detOn ? '#66bb6a' : '#888'};--mdc-icon-size:18px;justify-self:center;"></ha-icon>` +
+                        `<div style="font-size:0.58rem;line-height:1.35;">Frigate Detection: <span style="color:${detOn ? '#81c784' : '#ffb74d'};font-weight:600;">${detOn ? 'ON' : 'OFF'}</span></div>` +
+                        `<div style="grid-column:1/-1;margin-top:4px;font-size:0.55rem;line-height:1.45;opacity:0.92;text-align:left;">` +
+                        `<div>Light <span style="color:#81c784;font-weight:600;">${lightStr}</span></div>` +
+                        `<div style="margin-top:3px;">Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
+                        `<div style="margin-top:3px;">Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div></div>` +
+                        `<div style="grid-column:1/-1;margin-top:2px;font-size:0.52rem;opacity:0.84;line-height:1.35;"><span style="opacity:0.72">FPS cam · det</span> <span style="font-weight:600;">${fpsStr}</span></div></div>`;
+                      return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">` +
+                        `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">` +
+                        `<div style="position:relative;flex-shrink:0;width:42px;height:40px;display:flex;align-items:center;justify-content:center;">` +
+                        `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:34px;"></ha-icon>` +
+                        `<span style="position:absolute;top:-2px;right:-4px;font-size:0.42rem;font-weight:700;padding:2px 5px;border-radius:8px;background:${badgeBg};color:#fff;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${badgeTxt}</span></div>` +
+                        `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;">${esc(title)}</span></div>` +
+                        `<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start;width:100%;justify-content:space-between;">` +
+                        `${leftCol}${rightCol}</div></div>`;
+                    ]]]
+              - type: custom:button-card
+                entity: camera.driveway
+                name: Driveway
+                variables:
+                  cam_title: DRIVEWAY
+                show_icon: false
+                show_name: false
+                show_state: false
+                show_label: false
+                tap_action:
+                  action: more-info
+                triggers_update:
+                  - camera.driveway
+                  - switch.driveway_recordings
+                  - switch.driveway_detect
+                  - sensor.driveway_camera_fps
+                  - sensor.driveway_detection_fps
+                  - sensor.driveway_capture_cpu_usage
+                  - sensor.driveway_detect_cpu_usage
+                  - sensor.driveway_ffmpeg_cpu_usage
+                  - sensor.driveway_person_count
+                  - sensor.driveway_car_count
+                  - sensor.driveway_rx
+                  - sensor.driveway_tx
+                  - sensor.driveway_rx_2
+                  - sensor.driveway_tx_2
+                  - binary_sensor.driveway_daynight_1
+                  - sensor.driveway_sound_level
+                  - binary_sensor.driveway_sound_1
+                  - camera.driveway_2
+                styles:
+                  card:
+                    - background-color: '#1c1c1c'
+                    - border: 1px solid rgba(255, 255, 255, 0.1)
+                    - border-radius: 14px
+                    - padding: 12px
+                    - box-shadow: none
+                  grid:
+                    - grid-template-areas: '"ax"'
+                  custom_fields:
+                    ax:
+                      - width: 100%
+                custom_fields:
+                  ax: |
+                    [[[
+                      const title = variables.cam_title || 'CAMERA';
+                      const slug = entity.entity_id.split('.').pop();
+                      const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                      const S = (x) => `sensor.${slug}_${x}`;
+                      const B = (x) => `binary_sensor.${slug}_${x}`;
+                      const W = (x) => `switch.${slug}_${x}`;
+                      const st = (id) => hass.states[id];
+                      const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
+                      const online = !bad(st(entity.entity_id));
+                      const recOn = st(W('recordings'))?.state === 'on';
+                      const detOn = st(W('detect'))?.state === 'on';
+                      const cf = st(S('camera_fps'));
+                      const df = st(S('detection_fps'));
+                      const fpsStr = (bad(cf) && bad(df)) ? '—' : `${bad(cf) ? '—' : esc(cf.state + (cf.attributes.unit_of_measurement ? ` ${cf.attributes.unit_of_measurement}` : ''))} · ${bad(df) ? '—' : esc(df.state + (df.attributes.unit_of_measurement ? ` ${df.attributes.unit_of_measurement}` : ''))}`;
+                      const fmtRate = (e) => {
+                        if (bad(e)) return '—';
+                        const u = e.attributes.unit_of_measurement || '';
+                        return esc(String(e.state) + (u ? ` ${u}` : ''));
+                      };
+                      const rx2 = st(S('rx_2'));
+                      const tx2 = st(S('tx_2'));
+                      const rx0 = st(S('rx'));
+                      const tx0 = st(S('tx'));
+                      const rx = !bad(rx2) ? rx2 : rx0;
+                      const tx = !bad(tx2) ? tx2 : tx0;
+                      const netLines = `<div style="margin-top:2px;font-size:0.5rem;opacity:0.82;line-height:1.35;text-align:left;width:100%;">` +
+                        `<div><span style="opacity:0.7">RX </span><span style="font-weight:600;">${fmtRate(rx)}</span></div>` +
+                        `<div style="margin-top:2px;"><span style="opacity:0.7">TX </span><span style="font-weight:600;">${fmtRate(tx)}</span></div></div>`;
+                      const dayNight = st(B('daynight_1'));
+                      let lightStr = '—';
+                      if (!bad(dayNight)) {
+                        const dc = dayNight.attributes?.device_class;
+                        const on = dayNight.state === 'on';
+                        if (dc === 'light') lightStr = on ? 'Light (bright)' : 'Low light';
+                        else lightStr = on ? 'Night / IR on' : 'Daylight';
+                      }
+                      const soundLvl = st(S('sound_level'));
+                      const soundEvt = st(B('sound_1'));
+                      let soundStr = '—';
+                      if (!bad(soundEvt)) {
+                        soundStr = soundEvt.state === 'on' ? 'Detected' : 'Quiet';
+                        if (!bad(soundLvl)) {
+                          const su = soundLvl.attributes.unit_of_measurement || '';
+                          soundStr += ` (${esc(String(soundLvl.state))}${su ? esc(` ${su}`) : ''})`;
+                        }
+                      } else if (!bad(soundLvl)) {
+                        const su = soundLvl.attributes.unit_of_measurement || '';
+                        soundStr = esc(String(soundLvl.state) + (su ? ` ${su}` : ''));
+                      }
+                      const axisCam = st(`camera.${slug}_2`);
+                      const mainCam = st(entity.entity_id);
+                      let idleStr = '—';
+                      let idleHue = '#b0bec5';
+                      const applyStream = (cam) => {
+                        if (bad(cam)) return;
+                        const stt = String(cam.state).toLowerCase();
+                        idleStr = esc(stt.charAt(0).toUpperCase() + stt.slice(1));
+                        if (stt === 'idle') idleHue = '#81c784';
+                        else if (stt === 'recording' || stt === 'streaming') idleHue = '#29b6f6';
+                        else idleHue = '#ffca28';
+                      };
+                      applyStream(axisCam);
+                      if (idleStr === '—') applyStream(mainCam);
+                      const f0 = parseFloat(cf?.state) || 0;
+                      const f1 = parseFloat(df?.state) || 0;
+                      const fpsGaugeVal = f0 > 0 ? f0 : f1;
+                      const fpsMax = 30;
+                      const fpsPct = Math.min(100, (fpsGaugeVal / fpsMax) * 100);
+                      const pc = st(S('person_count'));
+                      const vc = st(S('car_count'));
+                      const personCount = bad(pc) ? '—' : esc(String(pc.state));
+                      const carCount = bad(vc) ? '—' : esc(String(vc.state));
+                      const rxNum = parseFloat(String(rx?.state ?? '').replace(/[^\d.-eE]/g, '')) || 0;
+                      const txNum = parseFloat(String(tx?.state ?? '').replace(/[^\d.-eE]/g, '')) || 0;
+                      const mkNetSeries = (base, mults) => {
+                        const b = Math.max(Number(base) || 0, 0);
+                        if (b <= 0) return [0, 0, 0, 0, 0, 0, 0, 0];
+                        return mults.map((m) => b * m);
+                      };
+                      const sRx = mkNetSeries(rxNum, [0.78, 0.9, 0.95, 1, 1.04, 0.97, 1.01, 1]);
+                      const sTx = mkNetSeries(txNum, [0.85, 0.92, 1.03, 0.96, 1.05, 0.93, 0.99, 1]);
+                      const maxNet = Math.max(...sRx, ...sTx, 1e-9);
+                      const chartH = 26;
+                      const netToPts = (arr) => arr.map((v, i) => {
+                        const y = chartH - 4 - Math.min(chartH - 8, (v / maxNet) * (chartH - 10));
+                        return `${3 + i * 8},${y}`;
+                      }).join(' ');
+                      const ptsRx = netToPts(sRx);
+                      const ptsTx = netToPts(sTx);
+                      const gid = 'f' + slug.replace(/[^a-z0-9]/gi, '') + 'g';
+                      const rDon = 26;
+                      const circ = 2 * Math.PI * rDon;
+                      const dashF = (fpsPct / 100) * circ;
+                      const donutFps = `<svg width="80" height="80" viewBox="0 0 72 72" style="flex-shrink:0;display:block;">` +
+                        `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#26c6da"/><stop offset="100%" stop-color="#66bb6a"/></linearGradient></defs>` +
+                        `<circle cx="36" cy="36" r="${rDon}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>` +
+                        `<circle cx="36" cy="36" r="${rDon}" fill="none" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" stroke-dasharray="${dashF} ${circ}" transform="rotate(-90 36 36)"/>` +
+                        `<text x="36" y="31" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${Math.round(fpsGaugeVal)} FPS</text>` +
+                        `<text x="36" y="42" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="7">(AI)</text>` +
+                        `<text x="36" y="55" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="6">Det</text></svg>`;
+                      const badgeBg = !online ? '#c62828' : (detOn ? '#2e7d32' : '#616161');
+                      const badgeTxt = !online ? '!' : (detOn ? 'ON' : 'OFF');
+                      const rightCol = `<div style="flex:0 0 118px;display:flex;flex-direction:column;align-items:stretch;gap:6px;text-align:left;min-width:108px;">` +
+                        `<div style="font-size:0.51rem;opacity:0.85;line-height:1.2;text-align:center;">Frigate Detection FPS</div>` +
+                        `<div style="display:flex;justify-content:center;width:100%;">${donutFps}</div>` +
+                        `<div style="font-size:0.46rem;opacity:0.68;display:flex;justify-content:center;gap:10px;width:100%;white-space:nowrap;"><span><span style="color:#42a5f5">━</span> RX</span><span><span style="color:#ffb74d">━</span> TX</span></div>` +
+                        `${netLines}</div>`;
+                      const leftCol = `<div style="flex:1;min-width:0;display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:10px;row-gap:8px;align-items:center;text-align:left;justify-items:start;">` +
+                        `<span style="width:8px;height:8px;border-radius:50%;background:${recOn ? '#4caf50' : '#e57373'};justify-self:center;"></span>` +
+                        `<div style="font-size:0.58rem;line-height:1.35;">Recording: <span style="color:${recOn ? '#81c784' : '#e57373'};font-weight:600;">${recOn ? 'Active' : 'Off'}</span></div>` +
+                        `<ha-icon icon="mdi:eye" style="color:${detOn ? '#66bb6a' : '#888'};--mdc-icon-size:18px;justify-self:center;"></ha-icon>` +
+                        `<div style="font-size:0.58rem;line-height:1.35;">Frigate Detection: <span style="color:${detOn ? '#81c784' : '#ffb74d'};font-weight:600;">${detOn ? 'ON' : 'OFF'}</span></div>` +
+                        `<div style="grid-column:1/-1;margin-top:4px;font-size:0.55rem;line-height:1.45;opacity:0.92;text-align:left;">` +
+                        `<div>Light <span style="color:#81c784;font-weight:600;">${lightStr}</span></div>` +
+                        `<div style="margin-top:3px;">Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
+                        `<div style="margin-top:3px;">Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div></div>` +
+                        `<div style="grid-column:1/-1;margin-top:2px;font-size:0.52rem;opacity:0.84;line-height:1.35;"><span style="opacity:0.72">FPS cam · det</span> <span style="font-weight:600;">${fpsStr}</span></div></div>`;
+                      return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">` +
+                        `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">` +
+                        `<div style="position:relative;flex-shrink:0;width:42px;height:40px;display:flex;align-items:center;justify-content:center;">` +
+                        `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:34px;"></ha-icon>` +
+                        `<span style="position:absolute;top:-2px;right:-4px;font-size:0.42rem;font-weight:700;padding:2px 5px;border-radius:8px;background:${badgeBg};color:#fff;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${badgeTxt}</span></div>` +
+                        `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;">${esc(title)}</span></div>` +
+                        `<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start;width:100%;justify-content:space-between;">` +
+                        `${leftCol}${rightCol}</div></div>`;
+                    ]]]
+              - type: custom:button-card
+                entity: camera.garden_south
+                name: Garden South
+                variables:
+                  cam_title: GARDEN SOUTH
+                show_icon: false
+                show_name: false
+                show_state: false
+                show_label: false
+                tap_action:
+                  action: more-info
+                triggers_update:
+                  - camera.garden_south
+                  - switch.garden_south_recordings
+                  - switch.garden_south_detect
+                  - sensor.garden_south_camera_fps
+                  - sensor.garden_south_detection_fps
+                  - sensor.garden_south_capture_cpu_usage
+                  - sensor.garden_south_detect_cpu_usage
+                  - sensor.garden_south_ffmpeg_cpu_usage
+                  - sensor.garden_south_person_count
+                  - sensor.garden_south_car_count
+                  - sensor.garden_south_rx
+                  - sensor.garden_south_tx
+                  - sensor.garden_south_rx_2
+                  - sensor.garden_south_tx_2
+                  - binary_sensor.garden_south_daynight_1
+                  - sensor.garden_south_sound_level
+                  - binary_sensor.garden_south_sound_1
+                  - camera.garden_south_2
+                styles:
+                  card:
+                    - background-color: '#1c1c1c'
+                    - border: 1px solid rgba(255, 255, 255, 0.1)
+                    - border-radius: 14px
+                    - padding: 12px
+                    - box-shadow: none
+                  grid:
+                    - grid-template-areas: '"ax"'
+                  custom_fields:
+                    ax:
+                      - width: 100%
+                custom_fields:
+                  ax: |
+                    [[[
+                      const title = variables.cam_title || 'CAMERA';
+                      const slug = entity.entity_id.split('.').pop();
+                      const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                      const S = (x) => `sensor.${slug}_${x}`;
+                      const B = (x) => `binary_sensor.${slug}_${x}`;
+                      const W = (x) => `switch.${slug}_${x}`;
+                      const st = (id) => hass.states[id];
+                      const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
+                      const online = !bad(st(entity.entity_id));
+                      const recOn = st(W('recordings'))?.state === 'on';
+                      const detOn = st(W('detect'))?.state === 'on';
+                      const cf = st(S('camera_fps'));
+                      const df = st(S('detection_fps'));
+                      const fpsStr = (bad(cf) && bad(df)) ? '—' : `${bad(cf) ? '—' : esc(cf.state + (cf.attributes.unit_of_measurement ? ` ${cf.attributes.unit_of_measurement}` : ''))} · ${bad(df) ? '—' : esc(df.state + (df.attributes.unit_of_measurement ? ` ${df.attributes.unit_of_measurement}` : ''))}`;
+                      const fmtRate = (e) => {
+                        if (bad(e)) return '—';
+                        const u = e.attributes.unit_of_measurement || '';
+                        return esc(String(e.state) + (u ? ` ${u}` : ''));
+                      };
+                      const rx2 = st(S('rx_2'));
+                      const tx2 = st(S('tx_2'));
+                      const rx0 = st(S('rx'));
+                      const tx0 = st(S('tx'));
+                      const rx = !bad(rx2) ? rx2 : rx0;
+                      const tx = !bad(tx2) ? tx2 : tx0;
+                      const netLines = `<div style="margin-top:2px;font-size:0.5rem;opacity:0.82;line-height:1.35;text-align:left;width:100%;">` +
+                        `<div><span style="opacity:0.7">RX </span><span style="font-weight:600;">${fmtRate(rx)}</span></div>` +
+                        `<div style="margin-top:2px;"><span style="opacity:0.7">TX </span><span style="font-weight:600;">${fmtRate(tx)}</span></div></div>`;
+                      const dayNight = st(B('daynight_1'));
+                      let lightStr = '—';
+                      if (!bad(dayNight)) {
+                        const dc = dayNight.attributes?.device_class;
+                        const on = dayNight.state === 'on';
+                        if (dc === 'light') lightStr = on ? 'Light (bright)' : 'Low light';
+                        else lightStr = on ? 'Night / IR on' : 'Daylight';
+                      }
+                      const soundLvl = st(S('sound_level'));
+                      const soundEvt = st(B('sound_1'));
+                      let soundStr = '—';
+                      if (!bad(soundEvt)) {
+                        soundStr = soundEvt.state === 'on' ? 'Detected' : 'Quiet';
+                        if (!bad(soundLvl)) {
+                          const su = soundLvl.attributes.unit_of_measurement || '';
+                          soundStr += ` (${esc(String(soundLvl.state))}${su ? esc(` ${su}`) : ''})`;
+                        }
+                      } else if (!bad(soundLvl)) {
+                        const su = soundLvl.attributes.unit_of_measurement || '';
+                        soundStr = esc(String(soundLvl.state) + (su ? ` ${su}` : ''));
+                      }
+                      const axisCam = st(`camera.${slug}_2`);
+                      const mainCam = st(entity.entity_id);
+                      let idleStr = '—';
+                      let idleHue = '#b0bec5';
+                      const applyStream = (cam) => {
+                        if (bad(cam)) return;
+                        const stt = String(cam.state).toLowerCase();
+                        idleStr = esc(stt.charAt(0).toUpperCase() + stt.slice(1));
+                        if (stt === 'idle') idleHue = '#81c784';
+                        else if (stt === 'recording' || stt === 'streaming') idleHue = '#29b6f6';
+                        else idleHue = '#ffca28';
+                      };
+                      applyStream(axisCam);
+                      if (idleStr === '—') applyStream(mainCam);
+                      const f0 = parseFloat(cf?.state) || 0;
+                      const f1 = parseFloat(df?.state) || 0;
+                      const fpsGaugeVal = f0 > 0 ? f0 : f1;
+                      const fpsMax = 30;
+                      const fpsPct = Math.min(100, (fpsGaugeVal / fpsMax) * 100);
+                      const pc = st(S('person_count'));
+                      const vc = st(S('car_count'));
+                      const personCount = bad(pc) ? '—' : esc(String(pc.state));
+                      const carCount = bad(vc) ? '—' : esc(String(vc.state));
+                      const rxNum = parseFloat(String(rx?.state ?? '').replace(/[^\d.-eE]/g, '')) || 0;
+                      const txNum = parseFloat(String(tx?.state ?? '').replace(/[^\d.-eE]/g, '')) || 0;
+                      const mkNetSeries = (base, mults) => {
+                        const b = Math.max(Number(base) || 0, 0);
+                        if (b <= 0) return [0, 0, 0, 0, 0, 0, 0, 0];
+                        return mults.map((m) => b * m);
+                      };
+                      const sRx = mkNetSeries(rxNum, [0.78, 0.9, 0.95, 1, 1.04, 0.97, 1.01, 1]);
+                      const sTx = mkNetSeries(txNum, [0.85, 0.92, 1.03, 0.96, 1.05, 0.93, 0.99, 1]);
+                      const maxNet = Math.max(...sRx, ...sTx, 1e-9);
+                      const chartH = 26;
+                      const netToPts = (arr) => arr.map((v, i) => {
+                        const y = chartH - 4 - Math.min(chartH - 8, (v / maxNet) * (chartH - 10));
+                        return `${3 + i * 8},${y}`;
+                      }).join(' ');
+                      const ptsRx = netToPts(sRx);
+                      const ptsTx = netToPts(sTx);
+                      const gid = 'f' + slug.replace(/[^a-z0-9]/gi, '') + 'g';
+                      const rDon = 26;
+                      const circ = 2 * Math.PI * rDon;
+                      const dashF = (fpsPct / 100) * circ;
+                      const donutFps = `<svg width="80" height="80" viewBox="0 0 72 72" style="flex-shrink:0;display:block;">` +
+                        `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#26c6da"/><stop offset="100%" stop-color="#66bb6a"/></linearGradient></defs>` +
+                        `<circle cx="36" cy="36" r="${rDon}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>` +
+                        `<circle cx="36" cy="36" r="${rDon}" fill="none" stroke="url(#${gid})" stroke-width="6" stroke-linecap="round" stroke-dasharray="${dashF} ${circ}" transform="rotate(-90 36 36)"/>` +
+                        `<text x="36" y="31" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${Math.round(fpsGaugeVal)} FPS</text>` +
+                        `<text x="36" y="42" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="7">(AI)</text>` +
+                        `<text x="36" y="55" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="6">Det</text></svg>`;
+                      const badgeBg = !online ? '#c62828' : (detOn ? '#2e7d32' : '#616161');
+                      const badgeTxt = !online ? '!' : (detOn ? 'ON' : 'OFF');
+                      const rightCol = `<div style="flex:0 0 118px;display:flex;flex-direction:column;align-items:stretch;gap:6px;text-align:left;min-width:108px;">` +
+                        `<div style="font-size:0.51rem;opacity:0.85;line-height:1.2;text-align:center;">Frigate Detection FPS</div>` +
+                        `<div style="display:flex;justify-content:center;width:100%;">${donutFps}</div>` +
+                        `<div style="font-size:0.46rem;opacity:0.68;display:flex;justify-content:center;gap:10px;width:100%;white-space:nowrap;"><span><span style="color:#42a5f5">━</span> RX</span><span><span style="color:#ffb74d">━</span> TX</span></div>` +
+                        `${netLines}</div>`;
+                      const leftCol = `<div style="flex:1;min-width:0;display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:10px;row-gap:8px;align-items:center;text-align:left;justify-items:start;">` +
+                        `<span style="width:8px;height:8px;border-radius:50%;background:${recOn ? '#4caf50' : '#e57373'};justify-self:center;"></span>` +
+                        `<div style="font-size:0.58rem;line-height:1.35;">Recording: <span style="color:${recOn ? '#81c784' : '#e57373'};font-weight:600;">${recOn ? 'Active' : 'Off'}</span></div>` +
+                        `<ha-icon icon="mdi:eye" style="color:${detOn ? '#66bb6a' : '#888'};--mdc-icon-size:18px;justify-self:center;"></ha-icon>` +
+                        `<div style="font-size:0.58rem;line-height:1.35;">Frigate Detection: <span style="color:${detOn ? '#81c784' : '#ffb74d'};font-weight:600;">${detOn ? 'ON' : 'OFF'}</span></div>` +
+                        `<div style="grid-column:1/-1;margin-top:4px;font-size:0.55rem;line-height:1.45;opacity:0.92;text-align:left;">` +
+                        `<div>Light <span style="color:#81c784;font-weight:600;">${lightStr}</span></div>` +
+                        `<div style="margin-top:3px;">Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
+                        `<div style="margin-top:3px;">Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div></div>` +
+                        `<div style="grid-column:1/-1;margin-top:2px;font-size:0.52rem;opacity:0.84;line-height:1.35;"><span style="opacity:0.72">FPS cam · det</span> <span style="font-weight:600;">${fpsStr}</span></div></div>`;
+                      return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">` +
+                        `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">` +
+                        `<div style="position:relative;flex-shrink:0;width:42px;height:40px;display:flex;align-items:center;justify-content:center;">` +
+                        `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:34px;"></ha-icon>` +
+                        `<span style="position:absolute;top:-2px;right:-4px;font-size:0.42rem;font-weight:700;padding:2px 5px;border-radius:8px;background:${badgeBg};color:#fff;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${badgeTxt}</span></div>` +
+                        `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;">${esc(title)}</span></div>` +
+                        `<div style="display:flex;flex-direction:row;gap:16px;align-items:flex-start;width:100%;justify-content:space-between;">` +
+                        `${leftCol}${rightCol}</div></div>`;
+                    ]]]
         column_span: 4
       - type: grid
         cards:

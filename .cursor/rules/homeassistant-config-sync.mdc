@@ -1,0 +1,19 @@
+---
+description: Deploy homeassistant dashboard/package edits to live HA config share
+globs: homeassistant/dashboards/**,homeassistant/packages/**
+alwaysApply: false
+---
+
+# Sync Home Assistant config to the live share
+
+Edits under `homeassistant/dashboards/` or `homeassistant/packages/` are **not** read by Home Assistant until they exist on the HA host (`/config`). This repo treats **`\\192.168.89.25\config`** as that live tree (Samba).
+
+**After changing any file matched by the globs above, run from the repo root:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/sync_homeassistant_config.ps1
+```
+
+(PowerShell 7: `pwsh -File ...`.) Use another path only if the share moves: `-ConfigRoot '\\other\config'`.
+
+Do **not** consider the task done for dashboard/package work until this script has been run successfully (or the user confirms they deploy another way).
