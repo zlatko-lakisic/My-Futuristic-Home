@@ -17,7 +17,8 @@ if (-not (Test-Path $haRoot)) {
 
 $pair = @(
     @{ Src = 'dashboards'; Note = 'Lovelace dashboard YAML' },
-    @{ Src = 'packages'; Note = 'Packages (!include_dir_named packages)' }
+    @{ Src = 'packages'; Note = 'Packages (!include_dir_named packages)' },
+    @{ Src = 'www'; Note = 'Static files (config www -> /local/)' }
 )
 
 foreach ($p in $pair) {

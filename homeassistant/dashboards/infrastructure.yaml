@@ -1439,7 +1439,7 @@ views:
             heading: AXIS CAMERA ANALYTICS & HEALTH
           - type: heading
             heading_style: subtitle
-            heading: Frigate pipeline, Axis TX/RX, ambient light, sound, and stream state (where available)
+            heading: Frigate pipeline, ambient light, sound, and stream state (where available)
           - type: custom:layout-card
             layout_type: custom:grid-layout
             layout:
@@ -1452,12 +1452,36 @@ views:
             grid_options:
               columns: full
             cards:
-              - type: custom:layout-card
-                layout_type: custom:grid-layout
-                layout:
-                  grid-template-columns: minmax(0, 1fr) minmax(104px, 124px) minmax(104px, 124px)
-                  grid-gap: 8px
-                  place-items: stretch
+              - type: custom:stack-in-card
+                mode: horizontal
+                keep:
+                  margin: false
+                  outer_padding: false
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: #1c1c1c !important;
+                      border: 1px solid rgba(255,255,255,0.1) !important;
+                      border-radius: 14px !important;
+                      box-shadow: none !important;
+                      padding: 12px 14px 12px 16px !important;
+                      display: flex !important;
+                      flex-direction: row !important;
+                      align-items: center !important;
+                      overflow: visible !important;
+                    }
+                    ha-card stack-in-card ha-card,
+                    stack-in-card ha-card {
+                      --ha-card-border-width: 0px !important;
+                      --ha-card-box-shadow: none !important;
+                      border: none !important;
+                      outline: none !important;
+                      box-shadow: none !important;
+                    }
+                    stack-in-card > div {
+                      border: none !important;
+                      box-shadow: none !important;
+                    }
                 cards:
                   - type: custom:button-card
                     entity: camera.back_yard
@@ -1472,28 +1496,39 @@ views:
                       action: more-info
                     triggers_update:
                       - camera.back_yard
-                      - switch.back_yard_recordings
-                  - switch.back_yard_detect
-                  - sensor.back_yard_rx
-                      - sensor.back_yard_tx
-                      - sensor.back_yard_rx_2
-                      - sensor.back_yard_tx_2
+                      - switch.back_yard_detect
                       - binary_sensor.back_yard_daynight_1
                       - sensor.back_yard_sound_level
                       - binary_sensor.back_yard_sound_1
                       - camera.back_yard_2
                     styles:
                       card:
-                        - background-color: '#1c1c1c'
-                        - border: 1px solid rgba(255, 255, 255, 0.1)
-                        - border-radius: 14px
-                        - padding: 12px
+                        - background-color: transparent
+                        - border: none
+                        - border-radius: 0
+                        - padding: 0
                         - box-shadow: none
+                        - overflow: visible
                       grid:
                         - grid-template-areas: '"ax"'
                       custom_fields:
                         ax:
                           - width: 100%
+                          - overflow: visible
+                    card_mod:
+                      style: |
+                        ha-card {
+                          flex: 1 1 auto !important;
+                          min-width: 0 !important;
+                          margin: 0 !important;
+                          overflow: visible !important;
+                        }
+                        ha-card .card-content {
+                          overflow: visible !important;
+                        }
+                        #card {
+                          overflow: visible !important;
+                        }
                     custom_fields:
                       ax: |
                         [[[
@@ -1506,29 +1541,23 @@ views:
                           const st = (id) => hass.states[id];
                           const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
                           const online = !bad(st(entity.entity_id));
-                          const recOn = st(W('recordings'))?.state === 'on';
                           const detOn = st(W('detect'))?.state === 'on';
-                          const fmtRate = (e) => {
-                            if (bad(e)) return '—';
-                            const u = e.attributes.unit_of_measurement || '';
-                            return esc(String(e.state) + (u ? ` ${u}` : ''));
-                          };
-                          const rx2 = st(S('rx_2'));
-                          const tx2 = st(S('tx_2'));
-                          const rx0 = st(S('rx'));
-                          const tx0 = st(S('tx'));
-                          const rx = !bad(rx2) ? rx2 : rx0;
-                          const tx = !bad(tx2) ? tx2 : tx0;
-                          const netLines = `<div style="margin-top:2px;font-size:0.5rem;opacity:0.82;line-height:1.35;text-align:left;width:100%;">` +
-                            `<div><span style="opacity:0.7">RX </span><span style="font-weight:600;">${fmtRate(rx)}</span></div>` +
-                            `<div style="margin-top:2px;"><span style="opacity:0.7">TX </span><span style="font-weight:600;">${fmtRate(tx)}</span></div></div>`;
                           const dayNight = st(B('daynight_1'));
                           let lightStr = '—';
+                          let lightIcon = 'mdi:brightness-6';
+                          let lightIconColor = '#81c784';
                           if (!bad(dayNight)) {
                             const dc = dayNight.attributes?.device_class;
                             const on = dayNight.state === 'on';
-                            if (dc === 'light') lightStr = on ? 'Light (bright)' : 'Low light';
-                            else lightStr = on ? 'Night / IR on' : 'Daylight';
+                            if (dc === 'light') {
+                              lightStr = on ? 'Light (bright)' : 'Low light';
+                              lightIcon = on ? 'mdi:brightness-7' : 'mdi:brightness-4';
+                              lightIconColor = on ? '#fff59d' : '#90a4ae';
+                            } else {
+                              lightStr = on ? 'Night / IR on' : 'Daylight';
+                              lightIcon = on ? 'mdi:weather-night' : 'mdi:white-balance-sunny';
+                              lightIconColor = on ? '#9fa8da' : '#ffd54f';
+                            }
                           }
                           const soundLvl = st(S('sound_level'));
                           const soundEvt = st(B('sound_1'));
@@ -1545,39 +1574,50 @@ views:
                           }
                           const axisCam = st(`camera.${slug}_2`);
                           const mainCam = st(entity.entity_id);
+                          let streamRaw = '';
                           let idleStr = '—';
                           let idleHue = '#b0bec5';
                           const applyStream = (cam) => {
                             if (bad(cam)) return;
-                            const stt = String(cam.state).toLowerCase();
-                            idleStr = esc(stt.charAt(0).toUpperCase() + stt.slice(1));
-                            if (stt === 'idle') idleHue = '#81c784';
-                            else if (stt === 'recording' || stt === 'streaming') idleHue = '#29b6f6';
+                            streamRaw = String(cam.state).toLowerCase();
+                            idleStr = esc(streamRaw.charAt(0).toUpperCase() + streamRaw.slice(1));
+                            if (streamRaw === 'idle') idleHue = '#81c784';
+                            else if (streamRaw === 'recording' || streamRaw === 'streaming') idleHue = '#29b6f6';
                             else idleHue = '#ffca28';
                           };
                           applyStream(axisCam);
                           if (idleStr === '—') applyStream(mainCam);
+                          let streamIcon = 'mdi:video-off-outline';
+                          let streamIconColor = '#78909c';
+                          if (streamRaw === 'idle') { streamIcon = 'mdi:sleep'; streamIconColor = idleHue; }
+                          else if (streamRaw === 'streaming' || streamRaw === 'playing') { streamIcon = 'mdi:video'; streamIconColor = idleHue; }
+                          else if (streamRaw === 'recording') { streamIcon = 'mdi:record-rec'; streamIconColor = idleHue; }
+                          else if (streamRaw) { streamIcon = 'mdi:video-marker-outline'; streamIconColor = idleHue; }
                           const badgeBg = !online ? '#c62828' : (detOn ? '#2e7d32' : '#616161');
                           const badgeTxt = !online ? '!' : (detOn ? 'ON' : 'OFF');
-                          const netRow = `<div style="grid-column:1/-1;margin-top:6px;font-size:0.46rem;opacity:0.68;">` +
-                            `<div style="display:flex;gap:10px;margin-bottom:4px;"><span><span style="color:#42a5f5">━</span> RX</span><span><span style="color:#ffb74d">━</span> TX</span></div>` +
-                            `${netLines}</div>`;
-                          const leftCol = `<div style="flex:1;min-width:0;display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:10px;row-gap:8px;align-items:center;text-align:left;justify-items:start;">` +
-                            `<span style="width:8px;height:8px;border-radius:50%;background:${recOn ? '#4caf50' : '#e57373'};justify-self:center;"></span>` +
-                            `<div style="font-size:0.58rem;line-height:1.35;">Recording: <span style="color:${recOn ? '#81c784' : '#e57373'};font-weight:600;">${recOn ? 'Active' : 'Off'}</span></div>` +
-                            `<ha-icon icon="mdi:eye" style="color:${detOn ? '#66bb6a' : '#888'};--mdc-icon-size:18px;justify-self:center;"></ha-icon>` +
-                            `<div style="font-size:0.58rem;line-height:1.35;">Frigate Detection: <span style="color:${detOn ? '#81c784' : '#ffb74d'};font-weight:600;">${detOn ? 'ON' : 'OFF'}</span></div>` +
-                            `<div style="grid-column:1/-1;margin-top:4px;font-size:0.55rem;line-height:1.45;opacity:0.92;text-align:left;">` +
+                          const camHeaderImg = (src) => `<img src="${src}" alt="" width="36" height="36" style="object-fit:contain;display:block;opacity:${online ? 1 : 0.45};" loading="lazy" />`;
+                          const useGardenBulletImg = slug === 'garden_north' || slug === 'garden_south';
+                          const useDomeCamImg = slug === 'back_yard' || slug === 'west_side' || slug === 'driveway';
+                          const headerCamHtml = useGardenBulletImg
+                            ? camHeaderImg('/local/axis_camera_garden.png')
+                            : useDomeCamImg
+                              ? camHeaderImg('/local/axis_camera_dome.png')
+                              : `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:32px;"></ha-icon>`;
+                          const leftCol = `<div style="flex:1;min-width:0;padding:2px 8px 2px 6px;box-sizing:border-box;">` +
+                            `<div style="display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:8px;row-gap:6px;align-items:center;font-size:0.55rem;line-height:1.38;opacity:0.93;text-align:left;">` +
+                            `<ha-icon icon="${lightIcon}" style="color:${lightIconColor};--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
                             `<div>Light <span style="color:#81c784;font-weight:600;">${lightStr}</span></div>` +
-                            `<div style="margin-top:3px;">Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
-                            `<div style="margin-top:3px;">Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div></div>` +
-                            `${netRow}</div>`;
-                          return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">` +
-                            `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">` +
-                            `<div style="position:relative;flex-shrink:0;width:42px;height:40px;display:flex;align-items:center;justify-content:center;">` +
-                            `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:34px;"></ha-icon>` +
-                            `<span style="position:absolute;top:-2px;right:-4px;font-size:0.42rem;font-weight:700;padding:2px 5px;border-radius:8px;background:${badgeBg};color:#fff;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${badgeTxt}</span></div>` +
-                            `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;">${esc(title)}</span></div>` +
+                            `<ha-icon icon="mdi:volume-high" style="color:#4dd0e1;--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
+                            `<div>Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
+                            `<ha-icon icon="${streamIcon}" style="color:${streamIconColor};--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
+                            `<div>Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div>` +
+                            `</div></div>`;
+                          return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;overflow:visible;padding:5px 5px 5px 8px;">` +
+                            `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;min-height:44px;">` +
+                            `<div style="position:relative;flex-shrink:0;width:46px;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:visible;">` +
+                            `${headerCamHtml}` +
+                            `<span style="position:absolute;top:2px;right:2px;font-size:0.38rem;font-weight:700;padding:1px 4px;border-radius:6px;background:${badgeBg};color:#fff;line-height:1.15;box-shadow:0 1px 3px rgba(0,0,0,0.4);white-space:nowrap;">${badgeTxt}</span></div>` +
+                            `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;line-height:1.2;">${esc(title)}</span></div>` +
                             `${leftCol}</div>`;
                         ]]]
                   - type: custom:modern-circular-gauge
@@ -1593,7 +1633,7 @@ views:
                     header_position: top
                     show_header: false
                     state_font_size: 18
-                    gauge_radius: 34
+                    gauge_radius: 38
                     decimals: 1
                     gauge_background_style:
                       width: 9
@@ -1633,11 +1673,42 @@ views:
                       action: more-info
                     card_mod:
                       style: |
+                        :host {
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                        }
                         ha-card {
-                          background: #1c1c1c !important;
-                          border: 1px solid rgba(255,255,255,0.1) !important;
-                          border-radius: 14px !important;
+                          background: transparent !important;
+                          border: 0 !important;
+                          border-width: 0 !important;
+                          border-style: none !important;
+                          border-color: transparent !important;
+                          outline: none !important;
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                          border-radius: 0 !important;
                           box-shadow: none !important;
+                          padding: 0 !important;
+                          margin: 0 0 0 6px !important;
+                          flex: 0 0 auto !important;
+                          min-height: 0 !important;
+                        }
+                        ha-card::before,
+                        ha-card::after {
+                          display: none !important;
+                          content: none !important;
+                        }
+                        ha-card .card-content {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+                        modern-circular-gauge {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
                         }
                   - type: custom:modern-circular-gauge
                     entity: sensor.back_yard_frigate_fps
@@ -1652,7 +1723,7 @@ views:
                     header_position: top
                     show_header: false
                     state_font_size: 18
-                    gauge_radius: 34
+                    gauge_radius: 38
                     decimals: 1
                     gauge_background_style:
                       width: 9
@@ -1687,18 +1758,73 @@ views:
                       action: more-info
                     card_mod:
                       style: |
-                        ha-card {
-                          background: #1c1c1c !important;
-                          border: 1px solid rgba(255,255,255,0.1) !important;
-                          border-radius: 14px !important;
-                          box-shadow: none !important;
+                        :host {
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
                         }
-              - type: custom:layout-card
-                layout_type: custom:grid-layout
-                layout:
-                  grid-template-columns: minmax(0, 1fr) minmax(104px, 124px) minmax(104px, 124px)
-                  grid-gap: 8px
-                  place-items: stretch
+                        ha-card {
+                          background: transparent !important;
+                          border: 0 !important;
+                          border-width: 0 !important;
+                          border-style: none !important;
+                          border-color: transparent !important;
+                          outline: none !important;
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                          border-radius: 0 !important;
+                          box-shadow: none !important;
+                          padding: 0 !important;
+                          margin: 0 0 0 6px !important;
+                          flex: 0 0 auto !important;
+                          min-height: 0 !important;
+                        }
+                        ha-card::before,
+                        ha-card::after {
+                          display: none !important;
+                          content: none !important;
+                        }
+                        ha-card .card-content {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+                        modern-circular-gauge {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+              - type: custom:stack-in-card
+                mode: horizontal
+                keep:
+                  margin: false
+                  outer_padding: false
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: #1c1c1c !important;
+                      border: 1px solid rgba(255,255,255,0.1) !important;
+                      border-radius: 14px !important;
+                      box-shadow: none !important;
+                      padding: 12px 14px 12px 16px !important;
+                      display: flex !important;
+                      flex-direction: row !important;
+                      align-items: center !important;
+                      overflow: visible !important;
+                    }
+                    ha-card stack-in-card ha-card,
+                    stack-in-card ha-card {
+                      --ha-card-border-width: 0px !important;
+                      --ha-card-box-shadow: none !important;
+                      border: none !important;
+                      outline: none !important;
+                      box-shadow: none !important;
+                    }
+                    stack-in-card > div {
+                      border: none !important;
+                      box-shadow: none !important;
+                    }
                 cards:
                   - type: custom:button-card
                     entity: camera.garden_north
@@ -1713,28 +1839,39 @@ views:
                       action: more-info
                     triggers_update:
                       - camera.garden_north
-                      - switch.garden_north_recordings
-                  - switch.garden_north_detect
-                  - sensor.garden_north_rx
-                      - sensor.garden_north_tx
-                      - sensor.garden_north_rx_2
-                      - sensor.garden_north_tx_2
+                      - switch.garden_north_detect
                       - binary_sensor.garden_north_daynight_1
                       - sensor.garden_north_sound_level
                       - binary_sensor.garden_north_sound_1
                       - camera.garden_north_2
                     styles:
                       card:
-                        - background-color: '#1c1c1c'
-                        - border: 1px solid rgba(255, 255, 255, 0.1)
-                        - border-radius: 14px
-                        - padding: 12px
+                        - background-color: transparent
+                        - border: none
+                        - border-radius: 0
+                        - padding: 0
                         - box-shadow: none
+                        - overflow: visible
                       grid:
                         - grid-template-areas: '"ax"'
                       custom_fields:
                         ax:
                           - width: 100%
+                          - overflow: visible
+                    card_mod:
+                      style: |
+                        ha-card {
+                          flex: 1 1 auto !important;
+                          min-width: 0 !important;
+                          margin: 0 !important;
+                          overflow: visible !important;
+                        }
+                        ha-card .card-content {
+                          overflow: visible !important;
+                        }
+                        #card {
+                          overflow: visible !important;
+                        }
                     custom_fields:
                       ax: |
                         [[[
@@ -1747,29 +1884,23 @@ views:
                           const st = (id) => hass.states[id];
                           const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
                           const online = !bad(st(entity.entity_id));
-                          const recOn = st(W('recordings'))?.state === 'on';
                           const detOn = st(W('detect'))?.state === 'on';
-                          const fmtRate = (e) => {
-                            if (bad(e)) return '—';
-                            const u = e.attributes.unit_of_measurement || '';
-                            return esc(String(e.state) + (u ? ` ${u}` : ''));
-                          };
-                          const rx2 = st(S('rx_2'));
-                          const tx2 = st(S('tx_2'));
-                          const rx0 = st(S('rx'));
-                          const tx0 = st(S('tx'));
-                          const rx = !bad(rx2) ? rx2 : rx0;
-                          const tx = !bad(tx2) ? tx2 : tx0;
-                          const netLines = `<div style="margin-top:2px;font-size:0.5rem;opacity:0.82;line-height:1.35;text-align:left;width:100%;">` +
-                            `<div><span style="opacity:0.7">RX </span><span style="font-weight:600;">${fmtRate(rx)}</span></div>` +
-                            `<div style="margin-top:2px;"><span style="opacity:0.7">TX </span><span style="font-weight:600;">${fmtRate(tx)}</span></div></div>`;
                           const dayNight = st(B('daynight_1'));
                           let lightStr = '—';
+                          let lightIcon = 'mdi:brightness-6';
+                          let lightIconColor = '#81c784';
                           if (!bad(dayNight)) {
                             const dc = dayNight.attributes?.device_class;
                             const on = dayNight.state === 'on';
-                            if (dc === 'light') lightStr = on ? 'Light (bright)' : 'Low light';
-                            else lightStr = on ? 'Night / IR on' : 'Daylight';
+                            if (dc === 'light') {
+                              lightStr = on ? 'Light (bright)' : 'Low light';
+                              lightIcon = on ? 'mdi:brightness-7' : 'mdi:brightness-4';
+                              lightIconColor = on ? '#fff59d' : '#90a4ae';
+                            } else {
+                              lightStr = on ? 'Night / IR on' : 'Daylight';
+                              lightIcon = on ? 'mdi:weather-night' : 'mdi:white-balance-sunny';
+                              lightIconColor = on ? '#9fa8da' : '#ffd54f';
+                            }
                           }
                           const soundLvl = st(S('sound_level'));
                           const soundEvt = st(B('sound_1'));
@@ -1786,39 +1917,50 @@ views:
                           }
                           const axisCam = st(`camera.${slug}_2`);
                           const mainCam = st(entity.entity_id);
+                          let streamRaw = '';
                           let idleStr = '—';
                           let idleHue = '#b0bec5';
                           const applyStream = (cam) => {
                             if (bad(cam)) return;
-                            const stt = String(cam.state).toLowerCase();
-                            idleStr = esc(stt.charAt(0).toUpperCase() + stt.slice(1));
-                            if (stt === 'idle') idleHue = '#81c784';
-                            else if (stt === 'recording' || stt === 'streaming') idleHue = '#29b6f6';
+                            streamRaw = String(cam.state).toLowerCase();
+                            idleStr = esc(streamRaw.charAt(0).toUpperCase() + streamRaw.slice(1));
+                            if (streamRaw === 'idle') idleHue = '#81c784';
+                            else if (streamRaw === 'recording' || streamRaw === 'streaming') idleHue = '#29b6f6';
                             else idleHue = '#ffca28';
                           };
                           applyStream(axisCam);
                           if (idleStr === '—') applyStream(mainCam);
+                          let streamIcon = 'mdi:video-off-outline';
+                          let streamIconColor = '#78909c';
+                          if (streamRaw === 'idle') { streamIcon = 'mdi:sleep'; streamIconColor = idleHue; }
+                          else if (streamRaw === 'streaming' || streamRaw === 'playing') { streamIcon = 'mdi:video'; streamIconColor = idleHue; }
+                          else if (streamRaw === 'recording') { streamIcon = 'mdi:record-rec'; streamIconColor = idleHue; }
+                          else if (streamRaw) { streamIcon = 'mdi:video-marker-outline'; streamIconColor = idleHue; }
                           const badgeBg = !online ? '#c62828' : (detOn ? '#2e7d32' : '#616161');
                           const badgeTxt = !online ? '!' : (detOn ? 'ON' : 'OFF');
-                          const netRow = `<div style="grid-column:1/-1;margin-top:6px;font-size:0.46rem;opacity:0.68;">` +
-                            `<div style="display:flex;gap:10px;margin-bottom:4px;"><span><span style="color:#42a5f5">━</span> RX</span><span><span style="color:#ffb74d">━</span> TX</span></div>` +
-                            `${netLines}</div>`;
-                          const leftCol = `<div style="flex:1;min-width:0;display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:10px;row-gap:8px;align-items:center;text-align:left;justify-items:start;">` +
-                            `<span style="width:8px;height:8px;border-radius:50%;background:${recOn ? '#4caf50' : '#e57373'};justify-self:center;"></span>` +
-                            `<div style="font-size:0.58rem;line-height:1.35;">Recording: <span style="color:${recOn ? '#81c784' : '#e57373'};font-weight:600;">${recOn ? 'Active' : 'Off'}</span></div>` +
-                            `<ha-icon icon="mdi:eye" style="color:${detOn ? '#66bb6a' : '#888'};--mdc-icon-size:18px;justify-self:center;"></ha-icon>` +
-                            `<div style="font-size:0.58rem;line-height:1.35;">Frigate Detection: <span style="color:${detOn ? '#81c784' : '#ffb74d'};font-weight:600;">${detOn ? 'ON' : 'OFF'}</span></div>` +
-                            `<div style="grid-column:1/-1;margin-top:4px;font-size:0.55rem;line-height:1.45;opacity:0.92;text-align:left;">` +
+                          const camHeaderImg = (src) => `<img src="${src}" alt="" width="36" height="36" style="object-fit:contain;display:block;opacity:${online ? 1 : 0.45};" loading="lazy" />`;
+                          const useGardenBulletImg = slug === 'garden_north' || slug === 'garden_south';
+                          const useDomeCamImg = slug === 'back_yard' || slug === 'west_side' || slug === 'driveway';
+                          const headerCamHtml = useGardenBulletImg
+                            ? camHeaderImg('/local/axis_camera_garden.png')
+                            : useDomeCamImg
+                              ? camHeaderImg('/local/axis_camera_dome.png')
+                              : `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:32px;"></ha-icon>`;
+                          const leftCol = `<div style="flex:1;min-width:0;padding:2px 8px 2px 6px;box-sizing:border-box;">` +
+                            `<div style="display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:8px;row-gap:6px;align-items:center;font-size:0.55rem;line-height:1.38;opacity:0.93;text-align:left;">` +
+                            `<ha-icon icon="${lightIcon}" style="color:${lightIconColor};--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
                             `<div>Light <span style="color:#81c784;font-weight:600;">${lightStr}</span></div>` +
-                            `<div style="margin-top:3px;">Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
-                            `<div style="margin-top:3px;">Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div></div>` +
-                            `${netRow}</div>`;
-                          return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">` +
-                            `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">` +
-                            `<div style="position:relative;flex-shrink:0;width:42px;height:40px;display:flex;align-items:center;justify-content:center;">` +
-                            `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:34px;"></ha-icon>` +
-                            `<span style="position:absolute;top:-2px;right:-4px;font-size:0.42rem;font-weight:700;padding:2px 5px;border-radius:8px;background:${badgeBg};color:#fff;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${badgeTxt}</span></div>` +
-                            `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;">${esc(title)}</span></div>` +
+                            `<ha-icon icon="mdi:volume-high" style="color:#4dd0e1;--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
+                            `<div>Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
+                            `<ha-icon icon="${streamIcon}" style="color:${streamIconColor};--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
+                            `<div>Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div>` +
+                            `</div></div>`;
+                          return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;overflow:visible;padding:5px 5px 5px 8px;">` +
+                            `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;min-height:44px;">` +
+                            `<div style="position:relative;flex-shrink:0;width:46px;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:visible;">` +
+                            `${headerCamHtml}` +
+                            `<span style="position:absolute;top:2px;right:2px;font-size:0.38rem;font-weight:700;padding:1px 4px;border-radius:6px;background:${badgeBg};color:#fff;line-height:1.15;box-shadow:0 1px 3px rgba(0,0,0,0.4);white-space:nowrap;">${badgeTxt}</span></div>` +
+                            `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;line-height:1.2;">${esc(title)}</span></div>` +
                             `${leftCol}</div>`;
                         ]]]
                   - type: custom:modern-circular-gauge
@@ -1834,7 +1976,7 @@ views:
                     header_position: top
                     show_header: false
                     state_font_size: 18
-                    gauge_radius: 34
+                    gauge_radius: 38
                     decimals: 1
                     gauge_background_style:
                       width: 9
@@ -1874,11 +2016,42 @@ views:
                       action: more-info
                     card_mod:
                       style: |
+                        :host {
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                        }
                         ha-card {
-                          background: #1c1c1c !important;
-                          border: 1px solid rgba(255,255,255,0.1) !important;
-                          border-radius: 14px !important;
+                          background: transparent !important;
+                          border: 0 !important;
+                          border-width: 0 !important;
+                          border-style: none !important;
+                          border-color: transparent !important;
+                          outline: none !important;
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                          border-radius: 0 !important;
                           box-shadow: none !important;
+                          padding: 0 !important;
+                          margin: 0 0 0 6px !important;
+                          flex: 0 0 auto !important;
+                          min-height: 0 !important;
+                        }
+                        ha-card::before,
+                        ha-card::after {
+                          display: none !important;
+                          content: none !important;
+                        }
+                        ha-card .card-content {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+                        modern-circular-gauge {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
                         }
                   - type: custom:modern-circular-gauge
                     entity: sensor.garden_north_frigate_fps
@@ -1893,7 +2066,7 @@ views:
                     header_position: top
                     show_header: false
                     state_font_size: 18
-                    gauge_radius: 34
+                    gauge_radius: 38
                     decimals: 1
                     gauge_background_style:
                       width: 9
@@ -1928,18 +2101,73 @@ views:
                       action: more-info
                     card_mod:
                       style: |
-                        ha-card {
-                          background: #1c1c1c !important;
-                          border: 1px solid rgba(255,255,255,0.1) !important;
-                          border-radius: 14px !important;
-                          box-shadow: none !important;
+                        :host {
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
                         }
-              - type: custom:layout-card
-                layout_type: custom:grid-layout
-                layout:
-                  grid-template-columns: minmax(0, 1fr) minmax(104px, 124px) minmax(104px, 124px)
-                  grid-gap: 8px
-                  place-items: stretch
+                        ha-card {
+                          background: transparent !important;
+                          border: 0 !important;
+                          border-width: 0 !important;
+                          border-style: none !important;
+                          border-color: transparent !important;
+                          outline: none !important;
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                          border-radius: 0 !important;
+                          box-shadow: none !important;
+                          padding: 0 !important;
+                          margin: 0 0 0 6px !important;
+                          flex: 0 0 auto !important;
+                          min-height: 0 !important;
+                        }
+                        ha-card::before,
+                        ha-card::after {
+                          display: none !important;
+                          content: none !important;
+                        }
+                        ha-card .card-content {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+                        modern-circular-gauge {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+              - type: custom:stack-in-card
+                mode: horizontal
+                keep:
+                  margin: false
+                  outer_padding: false
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: #1c1c1c !important;
+                      border: 1px solid rgba(255,255,255,0.1) !important;
+                      border-radius: 14px !important;
+                      box-shadow: none !important;
+                      padding: 12px 14px 12px 16px !important;
+                      display: flex !important;
+                      flex-direction: row !important;
+                      align-items: center !important;
+                      overflow: visible !important;
+                    }
+                    ha-card stack-in-card ha-card,
+                    stack-in-card ha-card {
+                      --ha-card-border-width: 0px !important;
+                      --ha-card-box-shadow: none !important;
+                      border: none !important;
+                      outline: none !important;
+                      box-shadow: none !important;
+                    }
+                    stack-in-card > div {
+                      border: none !important;
+                      box-shadow: none !important;
+                    }
                 cards:
                   - type: custom:button-card
                     entity: camera.west_side
@@ -1954,28 +2182,39 @@ views:
                       action: more-info
                     triggers_update:
                       - camera.west_side
-                      - switch.west_side_recordings
-                  - switch.west_side_detect
-                  - sensor.west_side_rx
-                      - sensor.west_side_tx
-                      - sensor.west_side_rx_2
-                      - sensor.west_side_tx_2
+                      - switch.west_side_detect
                       - binary_sensor.west_side_daynight_1
                       - sensor.west_side_sound_level
                       - binary_sensor.west_side_sound_1
                       - camera.west_side_2
                     styles:
                       card:
-                        - background-color: '#1c1c1c'
-                        - border: 1px solid rgba(255, 255, 255, 0.1)
-                        - border-radius: 14px
-                        - padding: 12px
+                        - background-color: transparent
+                        - border: none
+                        - border-radius: 0
+                        - padding: 0
                         - box-shadow: none
+                        - overflow: visible
                       grid:
                         - grid-template-areas: '"ax"'
                       custom_fields:
                         ax:
                           - width: 100%
+                          - overflow: visible
+                    card_mod:
+                      style: |
+                        ha-card {
+                          flex: 1 1 auto !important;
+                          min-width: 0 !important;
+                          margin: 0 !important;
+                          overflow: visible !important;
+                        }
+                        ha-card .card-content {
+                          overflow: visible !important;
+                        }
+                        #card {
+                          overflow: visible !important;
+                        }
                     custom_fields:
                       ax: |
                         [[[
@@ -1988,29 +2227,23 @@ views:
                           const st = (id) => hass.states[id];
                           const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
                           const online = !bad(st(entity.entity_id));
-                          const recOn = st(W('recordings'))?.state === 'on';
                           const detOn = st(W('detect'))?.state === 'on';
-                          const fmtRate = (e) => {
-                            if (bad(e)) return '—';
-                            const u = e.attributes.unit_of_measurement || '';
-                            return esc(String(e.state) + (u ? ` ${u}` : ''));
-                          };
-                          const rx2 = st(S('rx_2'));
-                          const tx2 = st(S('tx_2'));
-                          const rx0 = st(S('rx'));
-                          const tx0 = st(S('tx'));
-                          const rx = !bad(rx2) ? rx2 : rx0;
-                          const tx = !bad(tx2) ? tx2 : tx0;
-                          const netLines = `<div style="margin-top:2px;font-size:0.5rem;opacity:0.82;line-height:1.35;text-align:left;width:100%;">` +
-                            `<div><span style="opacity:0.7">RX </span><span style="font-weight:600;">${fmtRate(rx)}</span></div>` +
-                            `<div style="margin-top:2px;"><span style="opacity:0.7">TX </span><span style="font-weight:600;">${fmtRate(tx)}</span></div></div>`;
                           const dayNight = st(B('daynight_1'));
                           let lightStr = '—';
+                          let lightIcon = 'mdi:brightness-6';
+                          let lightIconColor = '#81c784';
                           if (!bad(dayNight)) {
                             const dc = dayNight.attributes?.device_class;
                             const on = dayNight.state === 'on';
-                            if (dc === 'light') lightStr = on ? 'Light (bright)' : 'Low light';
-                            else lightStr = on ? 'Night / IR on' : 'Daylight';
+                            if (dc === 'light') {
+                              lightStr = on ? 'Light (bright)' : 'Low light';
+                              lightIcon = on ? 'mdi:brightness-7' : 'mdi:brightness-4';
+                              lightIconColor = on ? '#fff59d' : '#90a4ae';
+                            } else {
+                              lightStr = on ? 'Night / IR on' : 'Daylight';
+                              lightIcon = on ? 'mdi:weather-night' : 'mdi:white-balance-sunny';
+                              lightIconColor = on ? '#9fa8da' : '#ffd54f';
+                            }
                           }
                           const soundLvl = st(S('sound_level'));
                           const soundEvt = st(B('sound_1'));
@@ -2027,39 +2260,50 @@ views:
                           }
                           const axisCam = st(`camera.${slug}_2`);
                           const mainCam = st(entity.entity_id);
+                          let streamRaw = '';
                           let idleStr = '—';
                           let idleHue = '#b0bec5';
                           const applyStream = (cam) => {
                             if (bad(cam)) return;
-                            const stt = String(cam.state).toLowerCase();
-                            idleStr = esc(stt.charAt(0).toUpperCase() + stt.slice(1));
-                            if (stt === 'idle') idleHue = '#81c784';
-                            else if (stt === 'recording' || stt === 'streaming') idleHue = '#29b6f6';
+                            streamRaw = String(cam.state).toLowerCase();
+                            idleStr = esc(streamRaw.charAt(0).toUpperCase() + streamRaw.slice(1));
+                            if (streamRaw === 'idle') idleHue = '#81c784';
+                            else if (streamRaw === 'recording' || streamRaw === 'streaming') idleHue = '#29b6f6';
                             else idleHue = '#ffca28';
                           };
                           applyStream(axisCam);
                           if (idleStr === '—') applyStream(mainCam);
+                          let streamIcon = 'mdi:video-off-outline';
+                          let streamIconColor = '#78909c';
+                          if (streamRaw === 'idle') { streamIcon = 'mdi:sleep'; streamIconColor = idleHue; }
+                          else if (streamRaw === 'streaming' || streamRaw === 'playing') { streamIcon = 'mdi:video'; streamIconColor = idleHue; }
+                          else if (streamRaw === 'recording') { streamIcon = 'mdi:record-rec'; streamIconColor = idleHue; }
+                          else if (streamRaw) { streamIcon = 'mdi:video-marker-outline'; streamIconColor = idleHue; }
                           const badgeBg = !online ? '#c62828' : (detOn ? '#2e7d32' : '#616161');
                           const badgeTxt = !online ? '!' : (detOn ? 'ON' : 'OFF');
-                          const netRow = `<div style="grid-column:1/-1;margin-top:6px;font-size:0.46rem;opacity:0.68;">` +
-                            `<div style="display:flex;gap:10px;margin-bottom:4px;"><span><span style="color:#42a5f5">━</span> RX</span><span><span style="color:#ffb74d">━</span> TX</span></div>` +
-                            `${netLines}</div>`;
-                          const leftCol = `<div style="flex:1;min-width:0;display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:10px;row-gap:8px;align-items:center;text-align:left;justify-items:start;">` +
-                            `<span style="width:8px;height:8px;border-radius:50%;background:${recOn ? '#4caf50' : '#e57373'};justify-self:center;"></span>` +
-                            `<div style="font-size:0.58rem;line-height:1.35;">Recording: <span style="color:${recOn ? '#81c784' : '#e57373'};font-weight:600;">${recOn ? 'Active' : 'Off'}</span></div>` +
-                            `<ha-icon icon="mdi:eye" style="color:${detOn ? '#66bb6a' : '#888'};--mdc-icon-size:18px;justify-self:center;"></ha-icon>` +
-                            `<div style="font-size:0.58rem;line-height:1.35;">Frigate Detection: <span style="color:${detOn ? '#81c784' : '#ffb74d'};font-weight:600;">${detOn ? 'ON' : 'OFF'}</span></div>` +
-                            `<div style="grid-column:1/-1;margin-top:4px;font-size:0.55rem;line-height:1.45;opacity:0.92;text-align:left;">` +
+                          const camHeaderImg = (src) => `<img src="${src}" alt="" width="36" height="36" style="object-fit:contain;display:block;opacity:${online ? 1 : 0.45};" loading="lazy" />`;
+                          const useGardenBulletImg = slug === 'garden_north' || slug === 'garden_south';
+                          const useDomeCamImg = slug === 'back_yard' || slug === 'west_side' || slug === 'driveway';
+                          const headerCamHtml = useGardenBulletImg
+                            ? camHeaderImg('/local/axis_camera_garden.png')
+                            : useDomeCamImg
+                              ? camHeaderImg('/local/axis_camera_dome.png')
+                              : `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:32px;"></ha-icon>`;
+                          const leftCol = `<div style="flex:1;min-width:0;padding:2px 8px 2px 6px;box-sizing:border-box;">` +
+                            `<div style="display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:8px;row-gap:6px;align-items:center;font-size:0.55rem;line-height:1.38;opacity:0.93;text-align:left;">` +
+                            `<ha-icon icon="${lightIcon}" style="color:${lightIconColor};--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
                             `<div>Light <span style="color:#81c784;font-weight:600;">${lightStr}</span></div>` +
-                            `<div style="margin-top:3px;">Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
-                            `<div style="margin-top:3px;">Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div></div>` +
-                            `${netRow}</div>`;
-                          return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">` +
-                            `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">` +
-                            `<div style="position:relative;flex-shrink:0;width:42px;height:40px;display:flex;align-items:center;justify-content:center;">` +
-                            `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:34px;"></ha-icon>` +
-                            `<span style="position:absolute;top:-2px;right:-4px;font-size:0.42rem;font-weight:700;padding:2px 5px;border-radius:8px;background:${badgeBg};color:#fff;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${badgeTxt}</span></div>` +
-                            `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;">${esc(title)}</span></div>` +
+                            `<ha-icon icon="mdi:volume-high" style="color:#4dd0e1;--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
+                            `<div>Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
+                            `<ha-icon icon="${streamIcon}" style="color:${streamIconColor};--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
+                            `<div>Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div>` +
+                            `</div></div>`;
+                          return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;overflow:visible;padding:5px 5px 5px 8px;">` +
+                            `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;min-height:44px;">` +
+                            `<div style="position:relative;flex-shrink:0;width:46px;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:visible;">` +
+                            `${headerCamHtml}` +
+                            `<span style="position:absolute;top:2px;right:2px;font-size:0.38rem;font-weight:700;padding:1px 4px;border-radius:6px;background:${badgeBg};color:#fff;line-height:1.15;box-shadow:0 1px 3px rgba(0,0,0,0.4);white-space:nowrap;">${badgeTxt}</span></div>` +
+                            `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;line-height:1.2;">${esc(title)}</span></div>` +
                             `${leftCol}</div>`;
                         ]]]
                   - type: custom:modern-circular-gauge
@@ -2075,7 +2319,7 @@ views:
                     header_position: top
                     show_header: false
                     state_font_size: 18
-                    gauge_radius: 34
+                    gauge_radius: 38
                     decimals: 1
                     gauge_background_style:
                       width: 9
@@ -2115,11 +2359,42 @@ views:
                       action: more-info
                     card_mod:
                       style: |
+                        :host {
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                        }
                         ha-card {
-                          background: #1c1c1c !important;
-                          border: 1px solid rgba(255,255,255,0.1) !important;
-                          border-radius: 14px !important;
+                          background: transparent !important;
+                          border: 0 !important;
+                          border-width: 0 !important;
+                          border-style: none !important;
+                          border-color: transparent !important;
+                          outline: none !important;
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                          border-radius: 0 !important;
                           box-shadow: none !important;
+                          padding: 0 !important;
+                          margin: 0 0 0 6px !important;
+                          flex: 0 0 auto !important;
+                          min-height: 0 !important;
+                        }
+                        ha-card::before,
+                        ha-card::after {
+                          display: none !important;
+                          content: none !important;
+                        }
+                        ha-card .card-content {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+                        modern-circular-gauge {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
                         }
                   - type: custom:modern-circular-gauge
                     entity: sensor.west_side_frigate_fps
@@ -2134,7 +2409,7 @@ views:
                     header_position: top
                     show_header: false
                     state_font_size: 18
-                    gauge_radius: 34
+                    gauge_radius: 38
                     decimals: 1
                     gauge_background_style:
                       width: 9
@@ -2169,18 +2444,73 @@ views:
                       action: more-info
                     card_mod:
                       style: |
-                        ha-card {
-                          background: #1c1c1c !important;
-                          border: 1px solid rgba(255,255,255,0.1) !important;
-                          border-radius: 14px !important;
-                          box-shadow: none !important;
+                        :host {
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
                         }
-              - type: custom:layout-card
-                layout_type: custom:grid-layout
-                layout:
-                  grid-template-columns: minmax(0, 1fr) minmax(104px, 124px) minmax(104px, 124px)
-                  grid-gap: 8px
-                  place-items: stretch
+                        ha-card {
+                          background: transparent !important;
+                          border: 0 !important;
+                          border-width: 0 !important;
+                          border-style: none !important;
+                          border-color: transparent !important;
+                          outline: none !important;
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                          border-radius: 0 !important;
+                          box-shadow: none !important;
+                          padding: 0 !important;
+                          margin: 0 0 0 6px !important;
+                          flex: 0 0 auto !important;
+                          min-height: 0 !important;
+                        }
+                        ha-card::before,
+                        ha-card::after {
+                          display: none !important;
+                          content: none !important;
+                        }
+                        ha-card .card-content {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+                        modern-circular-gauge {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+              - type: custom:stack-in-card
+                mode: horizontal
+                keep:
+                  margin: false
+                  outer_padding: false
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: #1c1c1c !important;
+                      border: 1px solid rgba(255,255,255,0.1) !important;
+                      border-radius: 14px !important;
+                      box-shadow: none !important;
+                      padding: 12px 14px 12px 16px !important;
+                      display: flex !important;
+                      flex-direction: row !important;
+                      align-items: center !important;
+                      overflow: visible !important;
+                    }
+                    ha-card stack-in-card ha-card,
+                    stack-in-card ha-card {
+                      --ha-card-border-width: 0px !important;
+                      --ha-card-box-shadow: none !important;
+                      border: none !important;
+                      outline: none !important;
+                      box-shadow: none !important;
+                    }
+                    stack-in-card > div {
+                      border: none !important;
+                      box-shadow: none !important;
+                    }
                 cards:
                   - type: custom:button-card
                     entity: camera.driveway
@@ -2195,28 +2525,39 @@ views:
                       action: more-info
                     triggers_update:
                       - camera.driveway
-                      - switch.driveway_recordings
-                  - switch.driveway_detect
-                  - sensor.driveway_rx
-                      - sensor.driveway_tx
-                      - sensor.driveway_rx_2
-                      - sensor.driveway_tx_2
+                      - switch.driveway_detect
                       - binary_sensor.driveway_daynight_1
                       - sensor.driveway_sound_level
                       - binary_sensor.driveway_sound_1
                       - camera.driveway_2
                     styles:
                       card:
-                        - background-color: '#1c1c1c'
-                        - border: 1px solid rgba(255, 255, 255, 0.1)
-                        - border-radius: 14px
-                        - padding: 12px
+                        - background-color: transparent
+                        - border: none
+                        - border-radius: 0
+                        - padding: 0
                         - box-shadow: none
+                        - overflow: visible
                       grid:
                         - grid-template-areas: '"ax"'
                       custom_fields:
                         ax:
                           - width: 100%
+                          - overflow: visible
+                    card_mod:
+                      style: |
+                        ha-card {
+                          flex: 1 1 auto !important;
+                          min-width: 0 !important;
+                          margin: 0 !important;
+                          overflow: visible !important;
+                        }
+                        ha-card .card-content {
+                          overflow: visible !important;
+                        }
+                        #card {
+                          overflow: visible !important;
+                        }
                     custom_fields:
                       ax: |
                         [[[
@@ -2229,29 +2570,23 @@ views:
                           const st = (id) => hass.states[id];
                           const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
                           const online = !bad(st(entity.entity_id));
-                          const recOn = st(W('recordings'))?.state === 'on';
                           const detOn = st(W('detect'))?.state === 'on';
-                          const fmtRate = (e) => {
-                            if (bad(e)) return '—';
-                            const u = e.attributes.unit_of_measurement || '';
-                            return esc(String(e.state) + (u ? ` ${u}` : ''));
-                          };
-                          const rx2 = st(S('rx_2'));
-                          const tx2 = st(S('tx_2'));
-                          const rx0 = st(S('rx'));
-                          const tx0 = st(S('tx'));
-                          const rx = !bad(rx2) ? rx2 : rx0;
-                          const tx = !bad(tx2) ? tx2 : tx0;
-                          const netLines = `<div style="margin-top:2px;font-size:0.5rem;opacity:0.82;line-height:1.35;text-align:left;width:100%;">` +
-                            `<div><span style="opacity:0.7">RX </span><span style="font-weight:600;">${fmtRate(rx)}</span></div>` +
-                            `<div style="margin-top:2px;"><span style="opacity:0.7">TX </span><span style="font-weight:600;">${fmtRate(tx)}</span></div></div>`;
                           const dayNight = st(B('daynight_1'));
                           let lightStr = '—';
+                          let lightIcon = 'mdi:brightness-6';
+                          let lightIconColor = '#81c784';
                           if (!bad(dayNight)) {
                             const dc = dayNight.attributes?.device_class;
                             const on = dayNight.state === 'on';
-                            if (dc === 'light') lightStr = on ? 'Light (bright)' : 'Low light';
-                            else lightStr = on ? 'Night / IR on' : 'Daylight';
+                            if (dc === 'light') {
+                              lightStr = on ? 'Light (bright)' : 'Low light';
+                              lightIcon = on ? 'mdi:brightness-7' : 'mdi:brightness-4';
+                              lightIconColor = on ? '#fff59d' : '#90a4ae';
+                            } else {
+                              lightStr = on ? 'Night / IR on' : 'Daylight';
+                              lightIcon = on ? 'mdi:weather-night' : 'mdi:white-balance-sunny';
+                              lightIconColor = on ? '#9fa8da' : '#ffd54f';
+                            }
                           }
                           const soundLvl = st(S('sound_level'));
                           const soundEvt = st(B('sound_1'));
@@ -2268,39 +2603,50 @@ views:
                           }
                           const axisCam = st(`camera.${slug}_2`);
                           const mainCam = st(entity.entity_id);
+                          let streamRaw = '';
                           let idleStr = '—';
                           let idleHue = '#b0bec5';
                           const applyStream = (cam) => {
                             if (bad(cam)) return;
-                            const stt = String(cam.state).toLowerCase();
-                            idleStr = esc(stt.charAt(0).toUpperCase() + stt.slice(1));
-                            if (stt === 'idle') idleHue = '#81c784';
-                            else if (stt === 'recording' || stt === 'streaming') idleHue = '#29b6f6';
+                            streamRaw = String(cam.state).toLowerCase();
+                            idleStr = esc(streamRaw.charAt(0).toUpperCase() + streamRaw.slice(1));
+                            if (streamRaw === 'idle') idleHue = '#81c784';
+                            else if (streamRaw === 'recording' || streamRaw === 'streaming') idleHue = '#29b6f6';
                             else idleHue = '#ffca28';
                           };
                           applyStream(axisCam);
                           if (idleStr === '—') applyStream(mainCam);
+                          let streamIcon = 'mdi:video-off-outline';
+                          let streamIconColor = '#78909c';
+                          if (streamRaw === 'idle') { streamIcon = 'mdi:sleep'; streamIconColor = idleHue; }
+                          else if (streamRaw === 'streaming' || streamRaw === 'playing') { streamIcon = 'mdi:video'; streamIconColor = idleHue; }
+                          else if (streamRaw === 'recording') { streamIcon = 'mdi:record-rec'; streamIconColor = idleHue; }
+                          else if (streamRaw) { streamIcon = 'mdi:video-marker-outline'; streamIconColor = idleHue; }
                           const badgeBg = !online ? '#c62828' : (detOn ? '#2e7d32' : '#616161');
                           const badgeTxt = !online ? '!' : (detOn ? 'ON' : 'OFF');
-                          const netRow = `<div style="grid-column:1/-1;margin-top:6px;font-size:0.46rem;opacity:0.68;">` +
-                            `<div style="display:flex;gap:10px;margin-bottom:4px;"><span><span style="color:#42a5f5">━</span> RX</span><span><span style="color:#ffb74d">━</span> TX</span></div>` +
-                            `${netLines}</div>`;
-                          const leftCol = `<div style="flex:1;min-width:0;display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:10px;row-gap:8px;align-items:center;text-align:left;justify-items:start;">` +
-                            `<span style="width:8px;height:8px;border-radius:50%;background:${recOn ? '#4caf50' : '#e57373'};justify-self:center;"></span>` +
-                            `<div style="font-size:0.58rem;line-height:1.35;">Recording: <span style="color:${recOn ? '#81c784' : '#e57373'};font-weight:600;">${recOn ? 'Active' : 'Off'}</span></div>` +
-                            `<ha-icon icon="mdi:eye" style="color:${detOn ? '#66bb6a' : '#888'};--mdc-icon-size:18px;justify-self:center;"></ha-icon>` +
-                            `<div style="font-size:0.58rem;line-height:1.35;">Frigate Detection: <span style="color:${detOn ? '#81c784' : '#ffb74d'};font-weight:600;">${detOn ? 'ON' : 'OFF'}</span></div>` +
-                            `<div style="grid-column:1/-1;margin-top:4px;font-size:0.55rem;line-height:1.45;opacity:0.92;text-align:left;">` +
+                          const camHeaderImg = (src) => `<img src="${src}" alt="" width="36" height="36" style="object-fit:contain;display:block;opacity:${online ? 1 : 0.45};" loading="lazy" />`;
+                          const useGardenBulletImg = slug === 'garden_north' || slug === 'garden_south';
+                          const useDomeCamImg = slug === 'back_yard' || slug === 'west_side' || slug === 'driveway';
+                          const headerCamHtml = useGardenBulletImg
+                            ? camHeaderImg('/local/axis_camera_garden.png')
+                            : useDomeCamImg
+                              ? camHeaderImg('/local/axis_camera_dome.png')
+                              : `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:32px;"></ha-icon>`;
+                          const leftCol = `<div style="flex:1;min-width:0;padding:2px 8px 2px 6px;box-sizing:border-box;">` +
+                            `<div style="display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:8px;row-gap:6px;align-items:center;font-size:0.55rem;line-height:1.38;opacity:0.93;text-align:left;">` +
+                            `<ha-icon icon="${lightIcon}" style="color:${lightIconColor};--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
                             `<div>Light <span style="color:#81c784;font-weight:600;">${lightStr}</span></div>` +
-                            `<div style="margin-top:3px;">Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
-                            `<div style="margin-top:3px;">Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div></div>` +
-                            `${netRow}</div>`;
-                          return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">` +
-                            `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">` +
-                            `<div style="position:relative;flex-shrink:0;width:42px;height:40px;display:flex;align-items:center;justify-content:center;">` +
-                            `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:34px;"></ha-icon>` +
-                            `<span style="position:absolute;top:-2px;right:-4px;font-size:0.42rem;font-weight:700;padding:2px 5px;border-radius:8px;background:${badgeBg};color:#fff;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${badgeTxt}</span></div>` +
-                            `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;">${esc(title)}</span></div>` +
+                            `<ha-icon icon="mdi:volume-high" style="color:#4dd0e1;--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
+                            `<div>Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
+                            `<ha-icon icon="${streamIcon}" style="color:${streamIconColor};--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
+                            `<div>Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div>` +
+                            `</div></div>`;
+                          return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;overflow:visible;padding:5px 5px 5px 8px;">` +
+                            `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;min-height:44px;">` +
+                            `<div style="position:relative;flex-shrink:0;width:46px;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:visible;">` +
+                            `${headerCamHtml}` +
+                            `<span style="position:absolute;top:2px;right:2px;font-size:0.38rem;font-weight:700;padding:1px 4px;border-radius:6px;background:${badgeBg};color:#fff;line-height:1.15;box-shadow:0 1px 3px rgba(0,0,0,0.4);white-space:nowrap;">${badgeTxt}</span></div>` +
+                            `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;line-height:1.2;">${esc(title)}</span></div>` +
                             `${leftCol}</div>`;
                         ]]]
                   - type: custom:modern-circular-gauge
@@ -2316,7 +2662,7 @@ views:
                     header_position: top
                     show_header: false
                     state_font_size: 18
-                    gauge_radius: 34
+                    gauge_radius: 38
                     decimals: 1
                     gauge_background_style:
                       width: 9
@@ -2356,11 +2702,42 @@ views:
                       action: more-info
                     card_mod:
                       style: |
+                        :host {
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                        }
                         ha-card {
-                          background: #1c1c1c !important;
-                          border: 1px solid rgba(255,255,255,0.1) !important;
-                          border-radius: 14px !important;
+                          background: transparent !important;
+                          border: 0 !important;
+                          border-width: 0 !important;
+                          border-style: none !important;
+                          border-color: transparent !important;
+                          outline: none !important;
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                          border-radius: 0 !important;
                           box-shadow: none !important;
+                          padding: 0 !important;
+                          margin: 0 0 0 6px !important;
+                          flex: 0 0 auto !important;
+                          min-height: 0 !important;
+                        }
+                        ha-card::before,
+                        ha-card::after {
+                          display: none !important;
+                          content: none !important;
+                        }
+                        ha-card .card-content {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+                        modern-circular-gauge {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
                         }
                   - type: custom:modern-circular-gauge
                     entity: sensor.driveway_frigate_fps
@@ -2375,7 +2752,7 @@ views:
                     header_position: top
                     show_header: false
                     state_font_size: 18
-                    gauge_radius: 34
+                    gauge_radius: 38
                     decimals: 1
                     gauge_background_style:
                       width: 9
@@ -2410,18 +2787,73 @@ views:
                       action: more-info
                     card_mod:
                       style: |
-                        ha-card {
-                          background: #1c1c1c !important;
-                          border: 1px solid rgba(255,255,255,0.1) !important;
-                          border-radius: 14px !important;
-                          box-shadow: none !important;
+                        :host {
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
                         }
-              - type: custom:layout-card
-                layout_type: custom:grid-layout
-                layout:
-                  grid-template-columns: minmax(0, 1fr) minmax(104px, 124px) minmax(104px, 124px)
-                  grid-gap: 8px
-                  place-items: stretch
+                        ha-card {
+                          background: transparent !important;
+                          border: 0 !important;
+                          border-width: 0 !important;
+                          border-style: none !important;
+                          border-color: transparent !important;
+                          outline: none !important;
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                          border-radius: 0 !important;
+                          box-shadow: none !important;
+                          padding: 0 !important;
+                          margin: 0 0 0 6px !important;
+                          flex: 0 0 auto !important;
+                          min-height: 0 !important;
+                        }
+                        ha-card::before,
+                        ha-card::after {
+                          display: none !important;
+                          content: none !important;
+                        }
+                        ha-card .card-content {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+                        modern-circular-gauge {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+              - type: custom:stack-in-card
+                mode: horizontal
+                keep:
+                  margin: false
+                  outer_padding: false
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: #1c1c1c !important;
+                      border: 1px solid rgba(255,255,255,0.1) !important;
+                      border-radius: 14px !important;
+                      box-shadow: none !important;
+                      padding: 12px 14px 12px 16px !important;
+                      display: flex !important;
+                      flex-direction: row !important;
+                      align-items: center !important;
+                      overflow: visible !important;
+                    }
+                    ha-card stack-in-card ha-card,
+                    stack-in-card ha-card {
+                      --ha-card-border-width: 0px !important;
+                      --ha-card-box-shadow: none !important;
+                      border: none !important;
+                      outline: none !important;
+                      box-shadow: none !important;
+                    }
+                    stack-in-card > div {
+                      border: none !important;
+                      box-shadow: none !important;
+                    }
                 cards:
                   - type: custom:button-card
                     entity: camera.garden_south
@@ -2436,28 +2868,39 @@ views:
                       action: more-info
                     triggers_update:
                       - camera.garden_south
-                      - switch.garden_south_recordings
-                  - switch.garden_south_detect
-                  - sensor.garden_south_rx
-                      - sensor.garden_south_tx
-                      - sensor.garden_south_rx_2
-                      - sensor.garden_south_tx_2
+                      - switch.garden_south_detect
                       - binary_sensor.garden_south_daynight_1
                       - sensor.garden_south_sound_level
                       - binary_sensor.garden_south_sound_1
                       - camera.garden_south_2
                     styles:
                       card:
-                        - background-color: '#1c1c1c'
-                        - border: 1px solid rgba(255, 255, 255, 0.1)
-                        - border-radius: 14px
-                        - padding: 12px
+                        - background-color: transparent
+                        - border: none
+                        - border-radius: 0
+                        - padding: 0
                         - box-shadow: none
+                        - overflow: visible
                       grid:
                         - grid-template-areas: '"ax"'
                       custom_fields:
                         ax:
                           - width: 100%
+                          - overflow: visible
+                    card_mod:
+                      style: |
+                        ha-card {
+                          flex: 1 1 auto !important;
+                          min-width: 0 !important;
+                          margin: 0 !important;
+                          overflow: visible !important;
+                        }
+                        ha-card .card-content {
+                          overflow: visible !important;
+                        }
+                        #card {
+                          overflow: visible !important;
+                        }
                     custom_fields:
                       ax: |
                         [[[
@@ -2470,29 +2913,23 @@ views:
                           const st = (id) => hass.states[id];
                           const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
                           const online = !bad(st(entity.entity_id));
-                          const recOn = st(W('recordings'))?.state === 'on';
                           const detOn = st(W('detect'))?.state === 'on';
-                          const fmtRate = (e) => {
-                            if (bad(e)) return '—';
-                            const u = e.attributes.unit_of_measurement || '';
-                            return esc(String(e.state) + (u ? ` ${u}` : ''));
-                          };
-                          const rx2 = st(S('rx_2'));
-                          const tx2 = st(S('tx_2'));
-                          const rx0 = st(S('rx'));
-                          const tx0 = st(S('tx'));
-                          const rx = !bad(rx2) ? rx2 : rx0;
-                          const tx = !bad(tx2) ? tx2 : tx0;
-                          const netLines = `<div style="margin-top:2px;font-size:0.5rem;opacity:0.82;line-height:1.35;text-align:left;width:100%;">` +
-                            `<div><span style="opacity:0.7">RX </span><span style="font-weight:600;">${fmtRate(rx)}</span></div>` +
-                            `<div style="margin-top:2px;"><span style="opacity:0.7">TX </span><span style="font-weight:600;">${fmtRate(tx)}</span></div></div>`;
                           const dayNight = st(B('daynight_1'));
                           let lightStr = '—';
+                          let lightIcon = 'mdi:brightness-6';
+                          let lightIconColor = '#81c784';
                           if (!bad(dayNight)) {
                             const dc = dayNight.attributes?.device_class;
                             const on = dayNight.state === 'on';
-                            if (dc === 'light') lightStr = on ? 'Light (bright)' : 'Low light';
-                            else lightStr = on ? 'Night / IR on' : 'Daylight';
+                            if (dc === 'light') {
+                              lightStr = on ? 'Light (bright)' : 'Low light';
+                              lightIcon = on ? 'mdi:brightness-7' : 'mdi:brightness-4';
+                              lightIconColor = on ? '#fff59d' : '#90a4ae';
+                            } else {
+                              lightStr = on ? 'Night / IR on' : 'Daylight';
+                              lightIcon = on ? 'mdi:weather-night' : 'mdi:white-balance-sunny';
+                              lightIconColor = on ? '#9fa8da' : '#ffd54f';
+                            }
                           }
                           const soundLvl = st(S('sound_level'));
                           const soundEvt = st(B('sound_1'));
@@ -2509,39 +2946,50 @@ views:
                           }
                           const axisCam = st(`camera.${slug}_2`);
                           const mainCam = st(entity.entity_id);
+                          let streamRaw = '';
                           let idleStr = '—';
                           let idleHue = '#b0bec5';
                           const applyStream = (cam) => {
                             if (bad(cam)) return;
-                            const stt = String(cam.state).toLowerCase();
-                            idleStr = esc(stt.charAt(0).toUpperCase() + stt.slice(1));
-                            if (stt === 'idle') idleHue = '#81c784';
-                            else if (stt === 'recording' || stt === 'streaming') idleHue = '#29b6f6';
+                            streamRaw = String(cam.state).toLowerCase();
+                            idleStr = esc(streamRaw.charAt(0).toUpperCase() + streamRaw.slice(1));
+                            if (streamRaw === 'idle') idleHue = '#81c784';
+                            else if (streamRaw === 'recording' || streamRaw === 'streaming') idleHue = '#29b6f6';
                             else idleHue = '#ffca28';
                           };
                           applyStream(axisCam);
                           if (idleStr === '—') applyStream(mainCam);
+                          let streamIcon = 'mdi:video-off-outline';
+                          let streamIconColor = '#78909c';
+                          if (streamRaw === 'idle') { streamIcon = 'mdi:sleep'; streamIconColor = idleHue; }
+                          else if (streamRaw === 'streaming' || streamRaw === 'playing') { streamIcon = 'mdi:video'; streamIconColor = idleHue; }
+                          else if (streamRaw === 'recording') { streamIcon = 'mdi:record-rec'; streamIconColor = idleHue; }
+                          else if (streamRaw) { streamIcon = 'mdi:video-marker-outline'; streamIconColor = idleHue; }
                           const badgeBg = !online ? '#c62828' : (detOn ? '#2e7d32' : '#616161');
                           const badgeTxt = !online ? '!' : (detOn ? 'ON' : 'OFF');
-                          const netRow = `<div style="grid-column:1/-1;margin-top:6px;font-size:0.46rem;opacity:0.68;">` +
-                            `<div style="display:flex;gap:10px;margin-bottom:4px;"><span><span style="color:#42a5f5">━</span> RX</span><span><span style="color:#ffb74d">━</span> TX</span></div>` +
-                            `${netLines}</div>`;
-                          const leftCol = `<div style="flex:1;min-width:0;display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:10px;row-gap:8px;align-items:center;text-align:left;justify-items:start;">` +
-                            `<span style="width:8px;height:8px;border-radius:50%;background:${recOn ? '#4caf50' : '#e57373'};justify-self:center;"></span>` +
-                            `<div style="font-size:0.58rem;line-height:1.35;">Recording: <span style="color:${recOn ? '#81c784' : '#e57373'};font-weight:600;">${recOn ? 'Active' : 'Off'}</span></div>` +
-                            `<ha-icon icon="mdi:eye" style="color:${detOn ? '#66bb6a' : '#888'};--mdc-icon-size:18px;justify-self:center;"></ha-icon>` +
-                            `<div style="font-size:0.58rem;line-height:1.35;">Frigate Detection: <span style="color:${detOn ? '#81c784' : '#ffb74d'};font-weight:600;">${detOn ? 'ON' : 'OFF'}</span></div>` +
-                            `<div style="grid-column:1/-1;margin-top:4px;font-size:0.55rem;line-height:1.45;opacity:0.92;text-align:left;">` +
+                          const camHeaderImg = (src) => `<img src="${src}" alt="" width="36" height="36" style="object-fit:contain;display:block;opacity:${online ? 1 : 0.45};" loading="lazy" />`;
+                          const useGardenBulletImg = slug === 'garden_north' || slug === 'garden_south';
+                          const useDomeCamImg = slug === 'back_yard' || slug === 'west_side' || slug === 'driveway';
+                          const headerCamHtml = useGardenBulletImg
+                            ? camHeaderImg('/local/axis_camera_garden.png')
+                            : useDomeCamImg
+                              ? camHeaderImg('/local/axis_camera_dome.png')
+                              : `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:32px;"></ha-icon>`;
+                          const leftCol = `<div style="flex:1;min-width:0;padding:2px 8px 2px 6px;box-sizing:border-box;">` +
+                            `<div style="display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:8px;row-gap:6px;align-items:center;font-size:0.55rem;line-height:1.38;opacity:0.93;text-align:left;">` +
+                            `<ha-icon icon="${lightIcon}" style="color:${lightIconColor};--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
                             `<div>Light <span style="color:#81c784;font-weight:600;">${lightStr}</span></div>` +
-                            `<div style="margin-top:3px;">Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
-                            `<div style="margin-top:3px;">Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div></div>` +
-                            `${netRow}</div>`;
-                          return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;">` +
-                            `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">` +
-                            `<div style="position:relative;flex-shrink:0;width:42px;height:40px;display:flex;align-items:center;justify-content:center;">` +
-                            `<ha-icon icon="mdi:cctv" style="color:${online ? '#64b5f6' : '#666'};--mdc-icon-size:34px;"></ha-icon>` +
-                            `<span style="position:absolute;top:-2px;right:-4px;font-size:0.42rem;font-weight:700;padding:2px 5px;border-radius:8px;background:${badgeBg};color:#fff;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.4);">${badgeTxt}</span></div>` +
-                            `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;">${esc(title)}</span></div>` +
+                            `<ha-icon icon="mdi:volume-high" style="color:#4dd0e1;--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
+                            `<div>Sound <span style="color:#81c784;font-weight:600;">${soundStr}</span></div>` +
+                            `<ha-icon icon="${streamIcon}" style="color:${streamIconColor};--mdc-icon-size:17px;justify-self:center;"></ha-icon>` +
+                            `<div>Stream <span style="color:${idleHue};font-weight:600;">${idleStr}</span></div>` +
+                            `</div></div>`;
+                          return `<div style="display:flex;flex-direction:column;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;box-sizing:border-box;overflow:visible;padding:5px 5px 5px 8px;">` +
+                            `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;min-height:44px;">` +
+                            `<div style="position:relative;flex-shrink:0;width:46px;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:visible;">` +
+                            `${headerCamHtml}` +
+                            `<span style="position:absolute;top:2px;right:2px;font-size:0.38rem;font-weight:700;padding:1px 4px;border-radius:6px;background:${badgeBg};color:#fff;line-height:1.15;box-shadow:0 1px 3px rgba(0,0,0,0.4);white-space:nowrap;">${badgeTxt}</span></div>` +
+                            `<span style="font-weight:700;font-size:0.8rem;letter-spacing:0.02em;line-height:1.2;">${esc(title)}</span></div>` +
                             `${leftCol}</div>`;
                         ]]]
                   - type: custom:modern-circular-gauge
@@ -2557,7 +3005,7 @@ views:
                     header_position: top
                     show_header: false
                     state_font_size: 18
-                    gauge_radius: 34
+                    gauge_radius: 38
                     decimals: 1
                     gauge_background_style:
                       width: 9
@@ -2597,11 +3045,42 @@ views:
                       action: more-info
                     card_mod:
                       style: |
+                        :host {
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                        }
                         ha-card {
-                          background: #1c1c1c !important;
-                          border: 1px solid rgba(255,255,255,0.1) !important;
-                          border-radius: 14px !important;
+                          background: transparent !important;
+                          border: 0 !important;
+                          border-width: 0 !important;
+                          border-style: none !important;
+                          border-color: transparent !important;
+                          outline: none !important;
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                          border-radius: 0 !important;
                           box-shadow: none !important;
+                          padding: 0 !important;
+                          margin: 0 0 0 6px !important;
+                          flex: 0 0 auto !important;
+                          min-height: 0 !important;
+                        }
+                        ha-card::before,
+                        ha-card::after {
+                          display: none !important;
+                          content: none !important;
+                        }
+                        ha-card .card-content {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+                        modern-circular-gauge {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
                         }
                   - type: custom:modern-circular-gauge
                     entity: sensor.garden_south_frigate_fps
@@ -2616,7 +3095,7 @@ views:
                     header_position: top
                     show_header: false
                     state_font_size: 18
-                    gauge_radius: 34
+                    gauge_radius: 38
                     decimals: 1
                     gauge_background_style:
                       width: 9
@@ -2651,11 +3130,42 @@ views:
                       action: more-info
                     card_mod:
                       style: |
+                        :host {
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                        }
                         ha-card {
-                          background: #1c1c1c !important;
-                          border: 1px solid rgba(255,255,255,0.1) !important;
-                          border-radius: 14px !important;
+                          background: transparent !important;
+                          border: 0 !important;
+                          border-width: 0 !important;
+                          border-style: none !important;
+                          border-color: transparent !important;
+                          outline: none !important;
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                          border-radius: 0 !important;
                           box-shadow: none !important;
+                          padding: 0 !important;
+                          margin: 0 0 0 6px !important;
+                          flex: 0 0 auto !important;
+                          min-height: 0 !important;
+                        }
+                        ha-card::before,
+                        ha-card::after {
+                          display: none !important;
+                          content: none !important;
+                        }
+                        ha-card .card-content {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
+                        }
+                        modern-circular-gauge {
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          border: none !important;
+                          background: transparent !important;
                         }
         column_span: 4
       - type: grid
