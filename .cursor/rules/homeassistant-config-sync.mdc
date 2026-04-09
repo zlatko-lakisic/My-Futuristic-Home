@@ -1,12 +1,12 @@
 ---
 description: Deploy homeassistant dashboard/package edits to live HA config share
-globs: homeassistant/dashboards/**,homeassistant/packages/**
+globs: homeassistant/dashboards/**,homeassistant/packages/**,homeassistant/www/**
 alwaysApply: false
 ---
 
 # Sync Home Assistant config to the live share
 
-Edits under `homeassistant/dashboards/` or `homeassistant/packages/` are **not** read by Home Assistant until they exist on the HA host (`/config`). This repo treats **`\\192.168.89.25\config`** as that live tree (Samba).
+Edits under `homeassistant/dashboards/`, `homeassistant/packages/`, or `homeassistant/www/` (served as `/local/…`) are **not** read by Home Assistant until they exist on the HA host (`/config`). This repo treats **`\\192.168.89.25\config`** as that live tree (Samba).
 
 **After changing any file matched by the globs above, run from the repo root:**
 

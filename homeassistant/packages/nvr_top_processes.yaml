@@ -21,26 +21,27 @@
 # lives at /usr/local/bin/python3. To test from the host: docker exec homeassistant
 # /usr/local/bin/python3 /config/packages/nvr_glances_top_processes.py
 
-sensor:
-  - platform: command_line
-    name: NVR Glances top processes
-    unique_id: nvr_glances_top_processes
-    icon: mdi:format-list-numbered
-    scan_interval: 60
-    command: /usr/local/bin/python3 /config/packages/nvr_glances_top_processes.py
-    value_template: "{{ value_json.count | default(0) | int }}"
-    json_attributes:
-      - processes
-      - processes_json
+template:
+  - sensor:
+    - platform: command_line
+      name: NVR Glances top processes
+      unique_id: nvr_glances_top_processes
+      icon: mdi:format-list-numbered
+      scan_interval: 60
+      command: /usr/local/bin/python3 /config/packages/nvr_glances_top_processes.py
+      value_template: "{{ value_json.count | default(0) | int }}"
+      json_attributes:
+        - processes
+        - processes_json
 
-  - platform: command_line
-    name: NVR Glances NIC IPv4
-    unique_id: nvr_glances_nic_ipv4_map
-    icon: mdi:ip-network
-    scan_interval: 120
-    command: /usr/local/bin/python3 /config/packages/nvr_glances_ip.py
-    value_template: "{{ value_json.enp3s0 | default('—') }}"
-    json_attributes:
-      - enp3s0
-      - enp4s0
-      - br_9229c4b7924f
+    - platform: command_line
+      name: NVR Glances NIC IPv4
+      unique_id: nvr_glances_nic_ipv4_map
+      icon: mdi:ip-network
+      scan_interval: 120
+      command: /usr/local/bin/python3 /config/packages/nvr_glances_ip.py
+      value_template: "{{ value_json.enp3s0 | default('—') }}"
+      json_attributes:
+        - enp3s0
+        - enp4s0
+        - br_9229c4b7924f
