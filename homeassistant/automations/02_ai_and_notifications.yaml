@@ -1,0 +1,207 @@
+- id: '1748680509520'
+  alias: LLM Testing
+  description: ''
+  triggers: []
+  conditions: []
+  actions:
+  - action: llmvision.image_analyzer
+    metadata: {}
+    data:
+      include_filename: true
+      max_tokens: 100
+      temperature: 0.2
+      provider: 01JWHT1NGX5W2D8NZHKFD7E29J
+      message: Describe the image.
+      remember: true
+      expose_images: true
+      model: gemini-2.0-flash
+      image_entity:
+      - camera.driveway
+      - image.driveway_car
+    response_variable: response
+  - action: persistent_notification.create
+    metadata: {}
+    data:
+      title: Front Camera Motion
+      message: '{{response.response_text}}'
+  mode: single
+- id: '1757609105003'
+  alias: East Gate Open AI Analysis
+  description: Snapshot east camera, analyze via CodeProject AI (LLM Vision → omega-ollama), notify sidebar + Fold 5 when people are seen.
+  triggers:
+  - type: opened
+    device_id: e88a17f24dde3dee2b920427434ab2e7
+    entity_id: b45e9e153db0d69b27ce925264d33a7b
+    domain: binary_sensor
+    trigger: device
+  conditions: []
+  variables:
+    snapshot_timestamp: '{{ now().strftime("%Y%m%d-%H%M%S") }}'
+    snapshot_rel: 'tmp/east_gate_{{ snapshot_timestamp }}.jpg'
+    snapshot_path: '/config/www/{{ snapshot_rel }}'
+    public_image_url: 'https://ha.mostardesigns.com/local/{{ snapshot_rel }}'
+  actions:
+  - action: camera.snapshot
+    target:
+      entity_id: camera.east_side
+    data:
+      filename: '{{ snapshot_path }}'
+  - action: llmvision.image_analyzer
+    data:
+      provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      model: omega-ollama
+      image_file: '{{ snapshot_path }}'
+      include_filename: false
+      store_in_timeline: false
+      use_memory: false
+      max_tokens: 500
+      generate_title: false
+      expose_images: false
+      target_width: 1280
+      message: "You are viewing one still frame from the east gate security camera.\nAnswer in exactly 3 lines (no text before line 1):\nLine 1: exactly PEOPLE if any person is clearly visible, otherwise exactly NOPEOPLE.\nLine 2: a clear description for a home log (2–4 sentences).\nLine 3: at most 8 words for a phone alert."
+    response_variable: ai_response
+  - variables:
+      reply: '{{ ai_response.response_text | default("") | trim }}'
+      log_description: "{% set sl = reply.splitlines() %}{% if sl | length > 1 %}{{ sl[1] | trim }}{% else %}{{ reply }}{% endif %}"
+      mobile_short: "{% set sl = reply.splitlines() %}{% if sl | length > 2 %}{{ sl[2] | trim }}{% elif sl | length > 1 %}{{ sl[1] | truncate(80, true, '') }}{% else %}East gate{% endif %}"
+  - if:
+    - condition: template
+      value_template: "{% set g = (ai_response.response_text | default('') | trim).splitlines() | first | default('', true) | trim %} {% set tok = g.split()[0] | upper if g else 'NOPEOPLE' %} {{ tok == 'PEOPLE' }}"
+    then:
+    - action: persistent_notification.create
+      data:
+        notification_id: east_gate_ai_{{ snapshot_timestamp }}
+        title: East gate — people — {{ now().strftime('%Y-%m-%d %H:%M:%S') }}
+        message: |
+          {{ log_description }}
+
+          ![East gate](/local/{{ snapshot_rel }})
+    - action: notify.mobile_app_zlatko_fold_5
+      data:
+        title: East gate — people
+        message: '{{ mobile_short }}'
+        data:
+          image: '{{ public_image_url }}'
+          url: /back-yard/east-gate
+          clickAction: /back-yard/east-gate
+          push:
+            sound:
+              name: default
+              critical: 1
+              volume: 1
+  mode: single
+- id: '1757732558171'
+  alias: East Gate Open Notification
+  description: ''
+  triggers:
+  - type: opened
+    device_id: e88a17f24dde3dee2b920427434ab2e7
+    entity_id: b45e9e153db0d69b27ce925264d33a7b
+    domain: binary_sensor
+    trigger: device
+    enabled: false
+  conditions:
+  - condition: device
+    device_id: 3cab96ade88a859c680543da3cbc807e
+    domain: device_tracker
+    entity_id: 1c267935a8db63cdffb71d8fa6e2c40c
+    type: is_not_home
+    enabled: false
+  actions:
+  - action: script.process_ai_analysis_and_notification
+    metadata: {}
+    data:
+      write_persistent_notification: true
+      camera_id: camera.east_side
+      notification_title: East Gate Open Notification
+      notification_click_url: /back-yard/east-gate
+      ai_prompt: 'Summarize the events based on a series of images captured at short intervals. Focus only on moving subjects such as people, vehicles, and other active elements. Ignore static objects and scenery. Provide a clear and concise account of movements and interactions. Do not mention or imply the existence of images—present the information as if directly observing the events. If no movement is detected, respond with: ''No activity observed.'''
+  mode: single
+- id: '1757732652729'
+  alias: West Gate Open Notification
+  description: ''
+  triggers:
+  - type: opened
+    device_id: 32a8dc1724bc53e1a79ff9d8d9b15f2e
+    entity_id: 9346377e6bc669e8c01737efb30d0a3e
+    domain: binary_sensor
+    trigger: device
+  conditions:
+  - condition: device
+    device_id: 3cab96ade88a859c680543da3cbc807e
+    domain: device_tracker
+    entity_id: 1c267935a8db63cdffb71d8fa6e2c40c
+    type: is_not_home
+    enabled: false
+  actions:
+  - action: script.process_ai_analysis_and_notification
+    metadata: {}
+    data:
+      write_persistent_notification: true
+      camera_id: camera.west_side
+      notification_title: West Gate Open Notification
+      notification_click_url: /back-yard/west-gate
+  mode: single
+- id: '1757732880570'
+  alias: Driveway Car Notification
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.near_driveway_car_occupancy
+  conditions:
+  - condition: device
+    device_id: 3cab96ade88a859c680543da3cbc807e
+    domain: device_tracker
+    entity_id: 1c267935a8db63cdffb71d8fa6e2c40c
+    type: is_not_home
+    enabled: false
+  actions:
+  - action: script.process_ai_analysis_and_notification
+    metadata: {}
+    data:
+      write_persistent_notification: true
+      camera_id: camera.driveway
+      ai_prompt: 'Summarize the events based on a series of images captured at short intervals. If a vehicle is present describe it, including the make, model, color style, and provide the license plate. If there are any people, describe them and what they are doing. Otherwise respond with: ''No activity observed.'''
+      notification_title: Driveway Car Notification
+      notification_click_url: /dashboard-garage/driveway
+  mode: single
+- id: '1773361989097'
+  alias: East Side Motion
+  description: ''
+  use_blueprint:
+    path: valentinfrlch/event_summary.yaml
+    input:
+      camera_entities:
+      - camera.east_side
+      motion_sensors:
+      - binary_sensor.east_side_motion
+      provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      model: omega-ollama
+      notify: true
+      notify_device:
+      - 3cab96ade88a859c680543da3cbc807e
+      file_path: /config/www/snapshots/{{ camera_file_path }}/last_motion.jpg
+      notification_channel: '{{ camera }} snapshot'
+      run_conditions:
+      - condition: state
+        entity_id: binary_sensor.east_side_door_door
+        state:
+        - 'on'
+        enabled: false
+- id: '1773760540967'
+  alias: test
+  description: ''
+  use_blueprint:
+    path: valentinfrlch/event_summary.yaml
+    input:
+      camera_entities:
+      - camera.garden_north
+      motion_sensors:
+      - binary_sensor.garden_north_all_occupancy
+      provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      notify_device:
+      - 3cab96ade88a859c680543da3cbc807e
+      file_path: /media/local/snapshots/{{ camera_file_path }}/last_motion.jpg
+      notification_channel: '{{ camera }} snapshot'
+      model: omega-ollama

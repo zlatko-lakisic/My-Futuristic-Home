@@ -1,0 +1,71 @@
+# Mutual exclusivity: Nest (heat) vs Midea AC — matches script.control_climate + manual changes.
+- id: '1763120400001'
+  alias: Living room heat disables AC
+  description: When Nest is heating or in heat mode, turn off Midea power and climate if cooling was active.
+  mode: single
+  triggers:
+  - entity_id: climate.living_room
+    trigger: state
+    to: heat
+  - entity_id: climate.living_room
+    trigger: state
+    attribute: hvac_action
+    to: heating
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ is_state('climate.living_room', 'heat')
+         or (is_state('climate.living_room', 'auto') and state_attr('climate.living_room', 'hvac_action') | default('', true) == 'heating') }}
+  - condition: template
+    value_template: >-
+      {{ is_state('switch.150633094697190_power', 'on')
+         or states('climate.150633094697190_climate') in ['cool', 'dry', 'fan_only'] }}
+  actions:
+  - if:
+    - condition: template
+      value_template: "{{ states('climate.150633094697190_climate') not in ['unknown', 'unavailable', 'none'] and states('climate.150633094697190_climate') != 'off' }}"
+    then:
+    - action: climate.set_hvac_mode
+      target:
+        entity_id: climate.150633094697190_climate
+      data:
+        hvac_mode: 'off'
+  - if:
+    - condition: template
+      value_template: "{{ is_state('switch.150633094697190_power', 'on') }}"
+    then:
+    - action: switch.turn_off
+      target:
+        entity_id: switch.150633094697190_power
+- id: '1763120400002'
+  alias: Living room AC disables Nest heating
+  description: When AC power or Midea climate indicates cooling, turn Nest off if it was heating.
+  mode: single
+  triggers:
+  - entity_id: switch.150633094697190_power
+    trigger: state
+    to: 'on'
+  - entity_id: climate.150633094697190_climate
+    trigger: state
+    to: cool
+  - entity_id: climate.150633094697190_climate
+    trigger: state
+    to: dry
+  - entity_id: climate.150633094697190_climate
+    trigger: state
+    to: fan_only
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ is_state('climate.living_room', 'heat')
+         or (is_state('climate.living_room', 'auto') and state_attr('climate.living_room', 'hvac_action') | default('', true) == 'heating') }}
+  - condition: template
+    value_template: >-
+      {{ is_state('switch.150633094697190_power', 'on')
+         or states('climate.150633094697190_climate') in ['cool', 'dry', 'fan_only'] }}
+  actions:
+  - action: climate.set_hvac_mode
+    target:
+      entity_id: climate.living_room
+    data:
+      hvac_mode: 'off'

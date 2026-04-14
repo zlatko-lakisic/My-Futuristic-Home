@@ -68,6 +68,19 @@ These physical dongles are passed through directly to the HAOS environment:
 
 **Deploy dashboards + packages to the live Samba share:** from the repository root run `powershell -ExecutionPolicy Bypass -File scripts/sync_homeassistant_config.ps1` (default target `\\192.168.89.25\config`). Override with `-ConfigRoot` if needed.
 
+The same script also pushes **root-level YAML** and the **`automations/`** tree from this repo to `/config`: `configuration.yaml`, `scripts.yaml`, `automations.yaml`, `templates.yaml`, `scenes.yaml`, `mqtt.yaml`, plus `automations/`, `dashboards/`, `packages/`, `www/`, and `blueprints/` when those folders exist here.
+
+### Runtime config in Git (2026-04 sync)
+The repository now tracks the live HA bundle under `homeassistant/` so changes can be reviewed in Git before deploy. Highlights from the consolidated sync:
+
+- **Living room climate:** `climate.new_livingroom_climate` (`climate_template`) combines Nest `climate.living_room` and Midea `climate.150633094697190_climate` / `switch.150633094697190_power`; templates mirror manual changes; `hvac_action_template` exposes idle / heating / cooling from underlying `hvac_action` attributes.
+- **`script.control_climate`:** Entity-based actions, `mode: single`, off/cool/heat branches aligned with the template logic and mutual exclusion.
+- **Automations:** Split under `automations/` with `automation: !include_dir_merge_list automations/`; includes `04_living_room_climate_exclusivity.yaml` so heat and AC cannot run together (including manual changes).
+- **BHyve manual watering:** `input_select` / `input_number` in `configuration.yaml`, `packages/bhyve_manual_zone_resolve.yaml` (`sensor.bhyve_zone_entity`), and script fixes in `scripts.yaml`.
+- **Home Control dashboard:** Living room thermostat entity updated to `climate.new_livingroom_climate`.
+
+Secrets stay on the HA host only: `secrets.yaml` and `service_account.json` are gitignored; copy or create them on new installs.
+
 ### NVR top processes (Glances) sensor
 The infrastructure dashboard expects **`sensor.nvr_glances_top_processes`**, defined by [`packages/nvr_top_processes.yaml`](packages/nvr_top_processes.yaml) plus [`packages/nvr_glances_top_processes.py`](packages/nvr_glances_top_processes.py). The setup uses a **`command_line`** sensor (not `rest:`): Home Assistant’s **`rest`** integration does not support **`json_attributes_template`**, so you cannot build a sorted top‑10 list from Glances’ JSON array with YAML alone.
 

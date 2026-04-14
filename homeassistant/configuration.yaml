@@ -1,0 +1,240 @@
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+automation: !include_dir_merge_list automations/
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+lovelace:
+  dashboards:
+    infrastructure-yaml:
+      mode: yaml
+      title: Infrastructure
+      icon: mdi:server-network
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/infrastructure.yaml
+    torrents-yaml:
+      mode: yaml
+      title: Torrents
+      icon: mdi:download-network
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/torrents.yaml
+    backyard-yaml:
+      mode: yaml
+      title: Backyard
+      icon: mdi:grass
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/backyard.yaml
+    home-control-yaml:
+      mode: yaml
+      title: Home Control
+      icon: mdi:home-automation
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/home_control.yaml
+
+homeassistant:
+  country: US
+  external_url: "https://ha.mostardesigns.com"
+  internal_url: "http://192.168.89.25:8123"
+  #customize: !include customize.yaml
+  media_dirs:
+    share_media: /media/public_share_4_ha_media
+  allowlist_external_dirs:
+    - "/config/www"
+    - "/media/public_share_4_ha_media"
+  packages:
+    nvr_top_processes: !include packages/nvr_top_processes.yaml
+    qbittorrent_speed_k: !include packages/qbittorrent_speed_k.yaml
+    axis_frigate_gauge_sensors: !include packages/axis_frigate_gauge_sensors.yaml
+    bhyve_manual_zone_resolve: !include packages/bhyve_manual_zone_resolve.yaml
+
+influxdb:
+  api_version: "1"
+  host: "127.0.0.1"
+  port: "8086"
+  verify_ssl: false
+  ssl: false
+  database: "home_assistant"
+  username: "home_assistant"
+  password: !secret influxdb_password
+  max_retries: 3
+
+template: !include templates.yaml
+    
+climate:
+  - unique_id: "7966441f-ee57-471d-a387-ab0a879859ff"
+    platform: climate_template
+    name: New Livingroom Climate
+    modes:
+      - "off"
+      - "cool"
+      - "heat"
+    min_temp: 55
+    max_temp: 85
+    
+    # get current temp.
+    current_temperature_template: "{{ states('sensor.living_room_temperature') }}"
+    
+    # get current humidity.
+    current_humidity_template: "{{ states('sensor.living_room_humidity') }}"
+
+    # Mirror real equipment (manual changes on Nest or Midea are picked up here).
+    hvac_mode_template: >-
+      {% set nest = states('climate.living_room') %}
+      {% set nest_act = state_attr('climate.living_room', 'hvac_action') | default('', true) %}
+      {% set heating = nest == 'heat' or (nest == 'auto' and nest_act == 'heating') %}
+      {% set midea = states('climate.150633094697190_climate') %}
+      {% set cooling = is_state('switch.150633094697190_power', 'on')
+        or midea in ['cool', 'dry', 'fan_only'] %}
+      {% if heating %}
+        heat
+      {% elif cooling %}
+        cool
+      {% else %}
+        off
+      {% endif %}
+    # Nest/Midea hvac_action → combined action (idle = not actively heating or cooling).
+    hvac_action_template: "{% set n = state_attr('climate.living_room', 'hvac_action') | default('', true) | lower %}{% set m = state_attr('climate.150633094697190_climate', 'hvac_action') | default('', true) | lower %}{% if n in ['heating', 'preheating'] %}heating{% elif m in ['cooling', 'drying'] %}cooling{% else %}idle{% endif %}"
+    target_temperature_template: >-
+      {% set nest = states('climate.living_room') %}
+      {% set nest_act = state_attr('climate.living_room', 'hvac_action') | default('', true) %}
+      {% set heating = nest == 'heat' or (nest == 'auto' and nest_act == 'heating') %}
+      {% set midea = states('climate.150633094697190_climate') %}
+      {% set cooling = is_state('switch.150633094697190_power', 'on')
+        or midea in ['cool', 'dry', 'fan_only'] %}
+      {% if heating %}
+        {{ state_attr('climate.living_room', 'temperature') | float(72) }}
+      {% elif cooling %}
+        {{ state_attr('climate.150633094697190_climate', 'temperature') | float(72) }}
+      {% else %}
+        {% set n = state_attr('climate.living_room', 'temperature') | default(72, true) | float(72) %}
+        {% set a = state_attr('climate.150633094697190_climate', 'temperature') | default(72, true) | float(72) %}
+        {{ ((n + a) / 2) | round(1) }}
+      {% endif %}
+
+    set_hvac_mode:
+      - service: script.control_climate
+        data:
+          temperature: "{{ state_attr('climate.new_livingroom_climate', 'temperature') | float(72) }}"
+          operation_mode: "{{ hvac_mode }}"
+    set_temperature:
+      - service: script.control_climate
+        data:
+          temperature: "{{ temperature }}"
+          operation_mode: "{{ states('climate.new_livingroom_climate') }}"
+
+notify:
+  - name: ALL_DEVICES
+    platform: group
+    services:
+      - action: notify_mobile_app_zlatko_fold5
+      # Add more devices here, e.g.:
+      # - action: notify_mobile_app_another_phone
+      # - action: notify_mobile_app_tablet
+
+sensor:
+  - platform: openweathermap_all
+    api_key: !secret openweathermap_api_key
+    latitude: 41.0137572
+    longitude: -73.8082339
+
+mqtt: !include mqtt.yaml
+
+input_select:
+  bhyve_manual_zone:
+    name: BHyve Manual Zone
+    options:
+      - Cabbage zone
+      - East Lawn
+      - Flower Bed
+      - Flower Garden & Back Lawn Time Zone 4 zone
+      - Front Lawn
+      - Kitchen Lawn
+      - Top Flowers
+      - Vegitable Garden Timer Peppers & Kale Zone zone
+      - Vegitable Garden Timer Tomato Zone zone
+      - Vegitable Garden Timer Top Zone zone
+      - Vegitable Garden Timer Zucchini Zone zone
+    initial: Front Lawn
+    icon: mdi:sprinkler-variant
+
+input_number:
+  bhyve_manual_duration_minutes:
+    name: BHyve Watering Duration
+    min: 1
+    max: 25
+    step: 1
+    mode: slider
+    unit_of_measurement: min
+    initial: 10
+    icon: mdi:timer-outline
+
+http:
+  ip_ban_enabled: true
+  login_attempts_threshold: 5
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 10.0.10.0/24
+    - 192.168.89.0/24
+
+device_tracker:
+  - platform: google_maps
+    username: "adnalakisic@gmail.com"
+  - platform: google_maps
+    username: "ikostic@live.nl"
+  - platform: google_maps
+    username: "vahida.zujo1@gmail.com"
+    
+google_assistant:
+  secure_devices_pin: !secret google_assistant_secure_devices_pin
+  project_id: "home-assistant-1142"
+  service_account: !include service_account.json
+  report_state: true
+  exposed_domains:
+    - switch
+    - light
+    - cover
+    - door
+    - lock
+    - binary
+    - climate
+  entity_config:
+    cover.google_garagedoor:
+      name: 'garage door'
+      expose: true
+    lock.office_door:
+      name: 'Office Door Lock'
+      expose: true
+    binary_sensor.office_door_door:
+      name: 'Office Door'
+      expose: true
+    lock.front_door:
+      name: 'Front Door Lock'
+      expose: true
+    binary_sensor.front_door_door:
+      name: 'Front Door'
+      expose: true
+    binary_sensor.back_door_window_door_is_open:
+      name: 'Back Door'
+      expose: true
+    switch.living_room_tv:
+      expose: false
+    switch.tv:
+      expose: false
+
+system_log:
+  fire_event: true
+

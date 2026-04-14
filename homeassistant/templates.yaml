@@ -1,0 +1,5 @@
+input_text:
+  livingroom_climate_state:
+    name: Livingroom Climate State
+  livingroom_climate_target_temperature:
+    name: Livingroom Climate Target Temperature

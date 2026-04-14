@@ -1,0 +1,100 @@
+binary_sensor:
+- name: "Driveway Motion"
+  device_class: motion
+  off_delay: 2
+  state_topic: "frigate/events"
+  value_template: >
+    {% if (value_json['after']['camera'] == 'driveway') and ((value_json['after']['label'] == 'person') or (value_json['after']['label'] == 'car')) and (value_json['after']['stationary'] == false) %}
+      ON
+    {% else %}
+      OFF
+    {% endif %}
+    
+- name: "Back Yard Motion"
+  device_class: motion
+  off_delay: 2
+  state_topic: "frigate/events"
+  value_template: >
+    {% if ((value_json['after']['camera'] == 'back_yard') or (value_json['after']['camera'] == 'garden') or (value_json['after']['camera'] == 'east_side')) and ((value_json['after']['label'] == 'person') or (value_json['after']['label'] == 'dog')) and (value_json['after']['stationary'] == false) %}
+      ON
+    {% else %}
+      OFF
+    {% endif %}
+    
+- name: "Front Door Motion"
+  device_class: motion
+  off_delay: 2
+  state_topic: "frigate/events"
+  value_template: >
+    {% if (value_json['after']['camera'] == 'front_door') and ((value_json['after']['label'] == 'person') or (value_json['after']['label'] == 'dog')) and (value_json['after']['stationary'] == false) %}
+      ON
+    {% else %}
+      OFF
+    {% endif %}
+    
+- name: "West Side Motion"
+  device_class: motion
+  off_delay: 2
+  state_topic: "frigate/events"
+  value_template: >
+    {% if (value_json['after']['camera'] == 'west_side') and ((value_json['after']['label'] == 'person') or (value_json['after']['label'] == 'dog')) and (value_json['after']['stationary'] == false) %}
+      ON
+    {% else %}
+      OFF
+    {% endif %}
+
+sensor:
+
+# Meshtastic Gateway 
+
+  - name: "Meshtastic Gateway Battery Voltage"
+    unique_id: "node_1__battery_voltage"
+    state_topic: "msh/2/json/LongFast/!938bf274"
+    state_class: measurement
+    value_template: >-
+      {% if value_json.from == 2475422324 and
+            value_json.payload.voltage is defined and
+            value_json.payload.temperature is not defined %}
+        {{ (value_json.payload.voltage | float) | round(2) }}
+      {% else %}
+        {{ states('sensor.node_1_battery_voltage') }}
+      {% endif %}
+    unit_of_measurement: "Volts"
+    # Telemetry packets come in two flavors: The default node telemetry, and the I2C sensor data.
+    # Both packets contain "voltage" so we check for temperature to ignore the sensor packet here.
+
+  - name: "Meshtastic Gateway Battery Percent"
+    unique_id: "node_1_battery_percent"
+    state_topic: "msh/2/json/LongFast/!938bf274"
+    state_class: measurement
+    value_template: >-
+      {% if value_json.from == 2475422324 and value_json.payload.battery_level is defined %}
+        {{ (value_json.payload.battery_level | float) | round(2) }}
+      {% else %}
+        {{ states('sensor.node_1_battery_percent') }}
+      {% endif %}
+    unit_of_measurement: "%"
+
+  - name: "Meshtastic Gateway ChUtil"
+    unique_id: "node_1_chutil"
+    state_topic: "msh/2/json/LongFast/!938bf274"
+    state_class: measurement
+    value_template: >-
+      {% if value_json.from == 2475422324 and value_json.payload.channel_utilization is defined %}
+        {{ (value_json.payload.channel_utilization | float) | round(2) }}
+      {% else %}
+        {{ states('sensor.node_1_chutil') }}
+      {% endif %}
+    unit_of_measurement: "%"
+
+  - name: "Meshtastic Gateway AirUtilTX"
+    unique_id: "node_1_airutiltx"
+    state_topic: "msh/2/json/LongFast/!938bf274"
+    state_class: measurement
+    value_template: >-
+      {% if value_json.from == 2475422324 and value_json.payload.air_util_tx is defined %}
+        {{ (value_json.payload.air_util_tx | float) | round(2) }}
+      {% else %}
+        {{ states('sensor.node_1_airutiltx') }}
+      {% endif %}
+    unit_of_measurement: "%"

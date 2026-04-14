@@ -1,0 +1,268 @@
+process_ai_analysis_and_notification:
+  mode: parallel
+  fields:
+    camera_id:
+      selector:
+        entity:
+          domain:
+          - camera
+      name: Cameras
+      required: true
+    write_persistent_notification:
+      selector:
+        boolean: {}
+      default: true
+      name: Write Persistent Notification
+    ai_prompt:
+      selector:
+        text:
+      name: AI Prompt
+      default: 'Summarize the events based on a series of images captured at short
+        intervals. Focus only on moving subjects such as people, vehicles, and other
+        active elements. Ignore static objects and scenery. Provide a clear and concise
+        account of movements and interactions. Do not mention or imply the existence
+        of images—present the information as if directly observing the events. If
+        no movement is detected, respond with: ''No activity observed.'''
+    notification_title:
+      selector:
+        text:
+      name: Notification Title
+      default: New observability notification
+    notification_click_url:
+      selector:
+        text:
+      name: Notification Click URL
+      required: true
+    model:
+      selector:
+        text:
+      name: LLM Model
+      default: omega-ollama
+  variables:
+    snapshot_timestamp: '{{ now().strftime("%Y%m%d-%H%M%S") }}'
+  sequence:
+  - action: llmvision.stream_analyzer
+    metadata: {}
+    data:
+      remember: false
+      use_memory: false
+      duration: 10
+      max_frames: 10
+      include_filename: true
+      target_width: 1280
+      max_tokens: 1000
+      generate_title: false
+      expose_images: true
+      provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      model: '{{ model }}'
+      image_entity: '{{ camera_id }}'
+      message: '{{ai_prompt}}'
+    response_variable: ai_response
+  - variables:
+      ai_text: "{{ (ai_response.response_text\n    | default(ai_response.text, true)\n
+        \   | default('', true)) | trim }}"
+      ai_text_final: "{% if ai_text %}\n  {{ ai_text }}\n{% else %}\n  Empty LLM response.
+        key_frame: {{ ai_response.key_frame | default('n/a', true) }}\n{% endif %}"
+  - if:
+    - condition: template
+      value_template: '{{write_persistent_notification}}'
+    then:
+    - action: persistent_notification.create
+      data:
+        title: '{{ notification_title }}'
+        message: '{{ ai_text_final }}
+
+          ![image](/api/camera_proxy/{{ camera_id }})'
+  - action: notify.ALL_DEVICES
+    metadata: {}
+    data:
+      message: '{{ ai_text_final }} '
+      title: '{{ notification_title }}'
+      data:
+        image: /api/camera_proxy/{{ camera_id }}
+        url: '{{ notification_click_url }}'
+        clickAction: '{{ notification_click_url }}'
+        push:
+          sound:
+            name: default
+            critical: 1
+            volume: 1
+  alias: Process AI Analysis and Notification
+  description: ''
+control_climate:
+  mode: single
+  fields:
+    temperature:
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+      name: Temperature
+      required: true
+    operation_mode:
+      selector:
+        select:
+          mode: dropdown
+          options:
+          - label: 'Off'
+            value: 'off'
+          - label: Cool
+            value: cool
+          - label: Heat
+            value: heat
+      name: Operation Mode
+      required: true
+  sequence:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{operation_mode == ''off''}}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: "{{ states('climate.150633094697190_climate') not in ['unknown', 'unavailable', 'none'] and states('climate.150633094697190_climate') != 'off' }}"
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.150633094697190_climate
+          data:
+            hvac_mode: 'off'
+      - if:
+        - condition: template
+          value_template: "{{ is_state('switch.150633094697190_power', 'on') }}"
+        then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.150633094697190_power
+      - if:
+        - condition: template
+          value_template: "{{ states('climate.living_room') not in ['unknown', 'unavailable', 'none'] and states('climate.living_room') != 'off' }}"
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.living_room
+          data:
+            hvac_mode: 'off'
+      alias: Climate state is Off
+    - conditions:
+      - condition: template
+        value_template: '{{operation_mode == ''cool''}}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: >-
+            {{ is_state('climate.living_room', 'heat')
+               or (is_state('climate.living_room', 'auto') and state_attr('climate.living_room', 'hvac_action') | default('', true) == 'heating') }}
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.living_room
+          data:
+            hvac_mode: 'off'
+        alias: Turn off Heat
+      - if:
+        - condition: template
+          value_template: "{{ is_state('switch.150633094697190_power', 'off') }}"
+        then:
+        - action: switch.turn_on
+          target:
+            entity_id: switch.150633094697190_power
+        alias: Turn on AC power
+      - action: climate.set_temperature
+        target:
+          entity_id: climate.150633094697190_climate
+        data:
+          temperature: '{{ temperature }}'
+          hvac_mode: cool
+      alias: Climate state is Cool
+    - conditions:
+      - condition: template
+        value_template: '{{operation_mode == ''heat''}}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: "{{ is_state('switch.150633094697190_power', 'on') }}"
+        then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.150633094697190_power
+        alias: Turn off AC power
+      - if:
+        - condition: template
+          value_template: "{{ states('climate.150633094697190_climate') not in ['unknown', 'unavailable', 'none'] and states('climate.150633094697190_climate') != 'off' }}"
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.150633094697190_climate
+          data:
+            hvac_mode: 'off'
+        alias: Stop Midea climate
+      - if:
+        - condition: template
+          value_template: "{{ not is_state('climate.living_room', 'heat') }}"
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.living_room
+          data:
+            hvac_mode: heat
+        alias: Enable Nest heat mode
+      - action: climate.set_temperature
+        target:
+          entity_id: climate.living_room
+        data:
+          temperature: '{{ temperature }}'
+          hvac_mode: heat
+      alias: Climate state is Heat
+  alias: Control Climate
+  description: ''
+bhyve_start_selected_zone:
+  alias: BHyve Start Selected Zone
+  description: Start selected BHyve zone for selected duration.
+  mode: single
+  sequence:
+  - variables:
+      zone_entity: '{{ states(''sensor.bhyve_zone_entity'') }}'
+      duration_minutes: '{{ [1, ([states(''input_number.bhyve_manual_duration_minutes'') | int(10), 25] | min)] | max }}'
+  - condition: template
+    value_template: "{{ zone_entity not in ['unknown', 'unavailable', 'none', ''] }}"
+  - action: bhyve.start_watering
+    data:
+      entity_id: '{{ zone_entity }}'
+      minutes: '{{ duration_minutes | int(10) }}'
+bhyve_stop_selected_zone:
+  alias: BHyve Stop Selected Zone
+  description: Stop selected BHyve zone.
+  mode: single
+  sequence:
+  - variables:
+      zone_entity: '{{ states(''sensor.bhyve_zone_entity'') }}'
+  - condition: template
+    value_template: "{{ zone_entity not in ['unknown', 'unavailable', 'none', ''] }}"
+  - action: bhyve.stop_watering
+    data:
+      entity_id: '{{ zone_entity }}'
+bhyve_toggle_selected_zone:
+  alias: BHyve Toggle Selected Zone
+  description: Start/stop selected BHyve zone based on current zone state.
+  mode: single
+  sequence:
+  - variables:
+      zone_entity: '{{ states(''sensor.bhyve_zone_entity'') }}'
+      duration_minutes: '{{ [1, ([states(''input_number.bhyve_manual_duration_minutes'') | int(10), 25] | min)] | max }}'
+  - condition: template
+    value_template: "{{ zone_entity not in ['unknown', 'unavailable', 'none', ''] }}"
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ states(zone_entity) == ''on'' }}'
+      sequence:
+      - action: bhyve.stop_watering
+        data:
+          entity_id: '{{ zone_entity }}'
+    default:
+    - action: bhyve.start_watering
+      data:
+        entity_id: '{{ zone_entity }}'
+        minutes: '{{ duration_minutes | int(10) }}'

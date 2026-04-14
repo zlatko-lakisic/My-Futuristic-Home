@@ -15,10 +15,31 @@ if (-not (Test-Path $haRoot)) {
     throw "Expected repo folder not found: $haRoot"
 }
 
+$files = @(
+    'configuration.yaml',
+    'scripts.yaml',
+    'automations.yaml',
+    'templates.yaml',
+    'scenes.yaml',
+    'mqtt.yaml'
+)
+
+foreach ($f in $files) {
+    $srcPath = Join-Path $haRoot $f
+    if (-not (Test-Path $srcPath)) {
+        Write-Warning "Skip missing file: $srcPath"
+        continue
+    }
+    Copy-Item -Path $srcPath -Destination (Join-Path $ConfigRoot $f) -Force
+    Write-Host "[YAML root] $f -> $ConfigRoot"
+}
+
 $pair = @(
+    @{ Src = 'automations'; Note = 'Automations (!include_dir_merge_list automations/)' },
     @{ Src = 'dashboards'; Note = 'Lovelace dashboard YAML' },
     @{ Src = 'packages'; Note = 'Packages (!include_dir_named packages)' },
-    @{ Src = 'www'; Note = 'Static files (config www -> /local/)' }
+    @{ Src = 'www'; Note = 'Static files (config www -> /local/)' },
+    @{ Src = 'blueprints'; Note = 'Blueprints (optional)' }
 )
 
 foreach ($p in $pair) {

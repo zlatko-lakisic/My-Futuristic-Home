@@ -1,5 +1,6 @@
 # Ignore sensitive HA files
 homeassistant/secrets.yaml
+homeassistant/service_account.json
 homeassistant/.storage/
 homeassistant/*.db
 homeassistant/*.log

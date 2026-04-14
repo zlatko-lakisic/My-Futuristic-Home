@@ -1,12 +1,12 @@
 ---
-description: Deploy homeassistant dashboard/package edits to live HA config share
-globs: homeassistant/dashboards/**,homeassistant/packages/**,homeassistant/www/**
+description: Deploy homeassistant YAML from repo to live HA config share
+globs: homeassistant/configuration.yaml,homeassistant/scripts.yaml,homeassistant/automations/**,homeassistant/automations.yaml,homeassistant/templates.yaml,homeassistant/scenes.yaml,homeassistant/mqtt.yaml,homeassistant/dashboards/**,homeassistant/packages/**,homeassistant/www/**,homeassistant/blueprints/**
 alwaysApply: false
 ---
 
 # Sync Home Assistant config to the live share
 
-Edits under `homeassistant/dashboards/`, `homeassistant/packages/`, or `homeassistant/www/` (served as `/local/…`) are **not** read by Home Assistant until they exist on the HA host (`/config`). This repo treats **`\\192.168.89.25\config`** as that live tree (Samba).
+Edits under `homeassistant/` (root YAML, `automations/`, `dashboards/`, `packages/`, `www/`, `blueprints/`) are **not** read by Home Assistant until they exist on the HA host (`/config`). This repo treats **`\\192.168.89.25\config`** as that live tree (Samba).
 
 **After changing any file matched by the globs above, run from the repo root:**
 
