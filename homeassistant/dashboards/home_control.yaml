@@ -30,9 +30,9 @@ views:
             layout_type: custom:grid-layout
             layout:
               grid-template-columns: repeat(3, minmax(280px, 1fr))
-              grid-gap: 12px
+              grid-gap: 10px
               place-items: stretch
-              align-items: start
+              align-items: stretch
               mediaquery:
                 '(max-width: 1000px)':
                   grid-template-columns: 100%
@@ -181,7 +181,7 @@ views:
                           border: 1px solid rgba(255,255,255,0.1) !important;
                           border-radius: 14px !important;
                           box-shadow: none !important;
-                          padding: 12px 14px 12px 16px !important;
+                          padding: 12px !important;
                           overflow: visible !important;
                         }
                         ha-card stack-in-card ha-card,
@@ -255,7 +255,7 @@ views:
                           card:
                             - border-radius: 12px
                             - padding: 12px
-                            - margin-top: 8px
+                            - margin: 8px 0 0 0
                             - font-weight: 700
                             - background-color: |
                                 [[[
