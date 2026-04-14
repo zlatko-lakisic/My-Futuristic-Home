@@ -66,9 +66,11 @@ These physical dongles are passed through directly to the HAOS environment:
 * `/docs_ha`: Deep dives into specific radio protocols and mesh health.
 * `/packages`: Optional YAML merged into configuration when `homeassistant.packages: !include_dir_named packages` is set. Files here must be copied to **`/config/packages/`** on the HA machine (the repo copy is not used automatically).
 
-**Deploy dashboards + packages to the live Samba share:** from the repository root run `powershell -ExecutionPolicy Bypass -File scripts/sync_homeassistant_config.ps1` (default target `\\192.168.89.25\config`). Override with `-ConfigRoot` if needed.
+**Deploy (repo to live):** from the repository root run `powershell -ExecutionPolicy Bypass -File scripts/sync_homeassistant_config.ps1` (default target `\\192.168.89.25\config`). Override with `-ConfigRoot` if needed.
 
-The same script also pushes **root-level YAML** and the **`automations/`** tree from this repo to `/config`: `configuration.yaml`, `scripts.yaml`, `automations.yaml`, `templates.yaml`, `scenes.yaml`, `mqtt.yaml`, plus `automations/`, `dashboards/`, `packages/`, `www/`, and `blueprints/` when those folders exist here.
+**Pull live into the repo:** `powershell -ExecutionPolicy Bypass -File scripts/sync_homeassistant_config.ps1 -Direction Pull`
+
+The script syncs **root-level YAML** and these trees both ways: `configuration.yaml`, `scripts.yaml`, `automations.yaml`, `templates.yaml`, `scenes.yaml`, `mqtt.yaml`, plus `automations/`, `dashboards/`, `packages/`, `www/`, and `blueprints/`. Pull skips `secrets.yaml` and `service_account.json` so they are not copied from the host into Git. On **Pull**, `www/community`, `www/tmp`, and `www/snapshots` are skipped (HACS drops and ephemeral images stay on the HA host only).
 
 ### Runtime config in Git (2026-04 sync)
 The repository now tracks the live HA bundle under `homeassistant/` so changes can be reviewed in Git before deploy. Highlights from the consolidated sync:

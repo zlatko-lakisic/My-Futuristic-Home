@@ -70,6 +70,9 @@ influxdb:
   database: "home_assistant"
   username: "home_assistant"
   password: !secret influxdb_password
+  #token: "xRUvgiX73-jZ4dy9b3qdv_PrsYkKXHKINjOx0413MHxXBrSDABJ-JnNL0u6APWE6VGa8fJw0m2aV2U1XQ41w0w=="
+  #bucket: "home_assistant"
+  #organization: "e47d0762abd9c88b"
   max_retries: 3
 
 template: !include templates.yaml

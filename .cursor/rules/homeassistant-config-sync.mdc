@@ -14,6 +14,14 @@ Edits under `homeassistant/` (root YAML, `automations/`, `dashboards/`, `package
 powershell -ExecutionPolicy Bypass -File scripts/sync_homeassistant_config.ps1
 ```
 
+**To copy the live share back into this repo** (e.g. after editing on HA or Samba):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/sync_homeassistant_config.ps1 -Direction Pull
+```
+
 (PowerShell 7: `pwsh -File ...`.) Use another path only if the share moves: `-ConfigRoot '\\other\config'`.
+
+`Pull` never copies `secrets.yaml` or `service_account.json` from live (they stay gitignored on the host).
 
 Do **not** consider the task done for dashboard/package work until this script has been run successfully (or the user confirms they deploy another way).
