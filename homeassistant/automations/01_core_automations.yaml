@@ -1,0 +1,432 @@
+- id: '1668826477952'
+  alias: Sunrise Turn Off Lights
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: 0
+  condition: []
+  action:
+  - type: turn_off
+    device_id: fdc3987af116c65980ef4617f09d9df3
+    entity_id: switch.walkway_light
+    domain: switch
+  - type: turn_off
+    device_id: cf4d53e6824517d342c8293deacbb13a
+    entity_id: light.flood_lights
+    domain: light
+  - type: turn_off
+    device_id: 0f173166c6aec6f2858a48e5d44b477b
+    entity_id: a9f047ffc811408894023ee24464ea16
+    domain: switch
+  - type: turn_off
+    device_id: e8054316607285ec9a36a5ca71dd6f20
+    entity_id: 51d73db9362ea8ebdbedc5a63073ef4a
+    domain: switch
+  mode: single
+- id: '1668826550481'
+  alias: Sunset Turn On Lights
+  description: ''
+  triggers:
+  - event: sunset
+    offset: 0
+    trigger: sun
+  conditions: []
+  actions:
+  - type: turn_on
+    device_id: fdc3987af116c65980ef4617f09d9df3
+    entity_id: switch.walkway_light
+    domain: switch
+  - type: turn_on
+    device_id: 0f173166c6aec6f2858a48e5d44b477b
+    entity_id: a9f047ffc811408894023ee24464ea16
+    domain: switch
+  - type: turn_on
+    device_id: e8054316607285ec9a36a5ca71dd6f20
+    entity_id: 51d73db9362ea8ebdbedc5a63073ef4a
+    domain: switch
+  mode: single
+- id: '1687045171188'
+  alias: Front Door Open
+  description: ''
+  trigger:
+  - type: opened
+    platform: device
+    device_id: 3f6e1c5f626956fc036a2ff2faf8f612
+    entity_id: ab69544a178f574a3517848bfc53a2c9
+    domain: binary_sensor
+  condition: []
+  action:
+  - if:
+    - condition: device
+      device_id: 606b5c458c00c64e157be219fea700d9
+      domain: device_tracker
+      entity_id: device_tracker.zlatko_samsung
+      type: is_not_home
+    then:
+    - device_id: 606b5c458c00c64e157be219fea700d9
+      domain: mobile_app
+      type: notify
+      message: Front door open!
+      title: Home Alert
+  - if:
+    - condition: sun
+      before: sunrise
+      after: sunset
+    then:
+    - type: turn_on
+      device_id: 9c320fde2aa1f8056696a3415531833b
+      entity_id: switch.front_door_light
+      domain: switch
+  mode: single
+- id: '1687046353445'
+  alias: Front Door Closed
+  description: ''
+  trigger:
+  - type: not_opened
+    platform: device
+    device_id: 3f6e1c5f626956fc036a2ff2faf8f612
+    entity_id: ab69544a178f574a3517848bfc53a2c9
+    domain: binary_sensor
+  condition:
+  - condition: sun
+    before: sunrise
+    after: sunset
+  action:
+  - delay:
+      hours: 0
+      minutes: 5
+      seconds: 0
+      milliseconds: 0
+    enabled: true
+  - type: turn_off
+    device_id: 9c320fde2aa1f8056696a3415531833b
+    entity_id: switch.front_door_light
+    domain: switch
+  mode: single
+- id: '1687046424604'
+  alias: Back Door Open
+  description: ''
+  trigger:
+  - type: turned_on
+    platform: device
+    device_id: ba8672ab1b1c6c5a9930d4c2901d73b2
+    entity_id: binary_sensor.back_door_sensor_state_door_window
+    domain: binary_sensor
+  condition: []
+  action:
+  - if:
+    - condition: sun
+      before: sunrise
+      after: sunset
+    then:
+    - type: turn_on
+      device_id: 357be9e9a15f7c627e447c04ee7b9835
+      entity_id: switch.porch_light
+      domain: switch
+  - if:
+    - condition: device
+      device_id: 606b5c458c00c64e157be219fea700d9
+      domain: device_tracker
+      entity_id: device_tracker.zlatko_samsung
+      type: is_not_home
+    then:
+    - device_id: 606b5c458c00c64e157be219fea700d9
+      domain: mobile_app
+      type: notify
+      message: Alert back door open!
+  mode: single
+- id: '1687046459945'
+  alias: Back Door Closed
+  description: ''
+  trigger:
+  - type: turned_off
+    platform: device
+    device_id: ba8672ab1b1c6c5a9930d4c2901d73b2
+    entity_id: binary_sensor.back_door_sensor_state_door_window
+    domain: binary_sensor
+  condition:
+  - condition: sun
+    before: sunrise
+    after: sunset
+  action:
+  - delay:
+      hours: 0
+      minutes: 5
+      seconds: 0
+      milliseconds: 0
+    enabled: true
+  - type: turn_off
+    device_id: 357be9e9a15f7c627e447c04ee7b9835
+    entity_id: switch.porch_light
+    domain: switch
+  mode: single
+- id: '1687145316030'
+  alias: Office Door Open
+  description: ''
+  trigger:
+  - type: turned_on
+    platform: device
+    device_id: de901c2117458d58c2d4fbeb7aa643cc
+    entity_id: binary_sensor.office_door_sensor_state_door_window
+    domain: binary_sensor
+  condition: []
+  action:
+  - if:
+    - condition: device
+      device_id: 606b5c458c00c64e157be219fea700d9
+      domain: device_tracker
+      entity_id: device_tracker.zlatko_samsung
+      type: is_not_home
+    then:
+    - device_id: 606b5c458c00c64e157be219fea700d9
+      domain: mobile_app
+      type: notify
+      message: Front door open!
+      title: Home Alert
+  - if:
+    - condition: sun
+      after: sunset
+    then:
+    - type: turn_on
+      device_id: cf4d53e6824517d342c8293deacbb13a
+      entity_id: 2bafda7092452b6da72818e9d8468777
+      domain: light
+  mode: single
+- id: '1687145347983'
+  alias: Office Door Closed
+  description: ''
+  trigger:
+  - type: turned_off
+    platform: device
+    device_id: de901c2117458d58c2d4fbeb7aa643cc
+    entity_id: binary_sensor.office_door_sensor_state_door_window
+    domain: binary_sensor
+  condition: []
+  action:
+  - if:
+    - condition: device
+      device_id: 606b5c458c00c64e157be219fea700d9
+      domain: device_tracker
+      entity_id: device_tracker.zlatko_samsung
+      type: is_not_home
+    then:
+    - device_id: 606b5c458c00c64e157be219fea700d9
+      domain: mobile_app
+      type: notify
+      message: Front door open!
+      title: Home Alert
+  mode: single
+- id: '1692304746087'
+  alias: Watering
+  description: ''
+  trigger:
+  - platform: time
+    at: 02:00:00
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 766c9479c91091f885d75ed72323c9c1
+    entity_id: switch.garden_zone
+    domain: switch
+  - type: turn_on
+    device_id: 766c9479c91091f885d75ed72323c9c1
+    entity_id: switch.sprinkler_zone
+    domain: switch
+  - delay:
+      hours: 0
+      minutes: 30
+      seconds: 0
+      milliseconds: 0
+    enabled: true
+  - type: turn_off
+    device_id: 766c9479c91091f885d75ed72323c9c1
+    entity_id: switch.garden_zone
+    domain: switch
+    enabled: true
+  - type: turn_off
+    device_id: 766c9479c91091f885d75ed72323c9c1
+    entity_id: switch.sprinkler_zone
+    domain: switch
+    enabled: true
+  mode: single
+- id: '1698996485476'
+  alias: Turn on heat
+  description: ''
+  trigger:
+  - platform: time
+    at: 04:00:00
+  condition:
+  - type: is_temperature
+    condition: device
+    device_id: a7ad962c904a3dd38e3ca4ef68ccb444
+    entity_id: 00347ed876574514747d62587a95bcee
+    domain: sensor
+    below: 65
+  action:
+  - device_id: 6dc169ffa8db357663566d49da314dfb
+    domain: climate
+    entity_id: a0becc282c6f802dcd4e42bf3d0c2852
+    type: set_hvac_mode
+    hvac_mode: heat
+  - delay:
+      hours: 1
+      minutes: 0
+      seconds: 0
+      milliseconds: 0
+  - device_id: 6dc169ffa8db357663566d49da314dfb
+    domain: climate
+    entity_id: a0becc282c6f802dcd4e42bf3d0c2852
+    type: set_hvac_mode
+    hvac_mode: 'off'
+  mode: single
+- id: '1708888837703'
+  alias: Closet lught switch on
+  description: ''
+  trigger:
+  - device_id: efda6d151556ecbcd8002a10974f539b
+    domain: zha
+    platform: device
+    type: remote_button_short_press
+    subtype: turn_on
+  condition: []
+  action:
+  - service: light.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: light.closet_light
+  mode: single
+- id: '1708888865746'
+  alias: Closet light off
+  description: ''
+  trigger:
+  - device_id: efda6d151556ecbcd8002a10974f539b
+    domain: zha
+    platform: device
+    type: remote_button_short_press
+    subtype: turn_off
+  condition: []
+  action:
+  - service: light.turn_off
+    target:
+      entity_id:
+      - light.closet_light
+    data: {}
+  mode: single
+- id: '1710988769320'
+  alias: Kitchenette Light On
+  description: ''
+  trigger:
+  - device_id: a1ee20fa06c65d3aa03f2e709eba7bf3
+    domain: zha
+    platform: device
+    type: remote_button_short_press
+    subtype: turn_on
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 908b06ad351abe7b0355800169bb9755
+    entity_id: 70c17d9cee7990025d8b38f23ca2324c
+    domain: light
+  mode: single
+- id: '1710988797940'
+  alias: Kitchenette Light Off
+  description: ''
+  trigger:
+  - device_id: a1ee20fa06c65d3aa03f2e709eba7bf3
+    domain: zha
+    platform: device
+    type: remote_button_short_press
+    subtype: turn_off
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 908b06ad351abe7b0355800169bb9755
+    entity_id: 70c17d9cee7990025d8b38f23ca2324c
+    domain: light
+  mode: single
+- id: '1720360112664'
+  alias: Kitchen Countertop Light Off
+  description: ''
+  trigger:
+  - device_id: b9567fc4987b5a1367c3e246f6890be4
+    domain: zha
+    platform: device
+    type: remote_button_short_press
+    subtype: turn_off
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 9e182b345bd2f8f4d79736e20e86a4a0
+    entity_id: 29fd8af1a766377589ef37638adc2c2b
+    domain: light
+  mode: single
+- id: '1720360162309'
+  alias: Kitchen Countertop Lights On
+  description: ''
+  trigger:
+  - device_id: b9567fc4987b5a1367c3e246f6890be4
+    domain: zha
+    platform: device
+    type: remote_button_short_press
+    subtype: turn_on
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 9e182b345bd2f8f4d79736e20e86a4a0
+    entity_id: 29fd8af1a766377589ef37638adc2c2b
+    domain: light
+  mode: single
+- id: '1730946726556'
+  alias: Master Bedroom Closet Light Switch On
+  description: ''
+  triggers:
+  - device_id: 1ce914abba014013c6117625821096f0
+    domain: zha
+    type: remote_button_short_press
+    subtype: turn_on
+    trigger: device
+  conditions: []
+  actions:
+  - type: turn_on
+    device_id: 5d9e946aec1accfe3a90d9cf8f73a13d
+    entity_id: 54180bc88f602ca6c7422a7848dd71a3
+    domain: light
+  - type: turn_on
+    device_id: a75a227e05af0c59033e93502dc3a1c7
+    entity_id: 851a751d3125fe9d9fbcdaf97554a675
+    domain: light
+  mode: single
+- id: '1730946770308'
+  alias: Master Bedroom Closet Light Switch Off
+  description: ''
+  triggers:
+  - device_id: 1ce914abba014013c6117625821096f0
+    domain: zha
+    type: remote_button_short_press
+    subtype: turn_off
+    trigger: device
+  conditions: []
+  actions:
+  - type: turn_off
+    device_id: 5d9e946aec1accfe3a90d9cf8f73a13d
+    entity_id: 54180bc88f602ca6c7422a7848dd71a3
+    domain: light
+  - type: turn_off
+    device_id: a75a227e05af0c59033e93502dc3a1c7
+    entity_id: 851a751d3125fe9d9fbcdaf97554a675
+    domain: light
+  mode: single
+- id: '1740604141306'
+  alias: Master Bedroom Closet Motion Light
+  description: ''
+  use_blueprint:
+    path: homeassistant/motion_light.yaml
+    input:
+      motion_entity: binary_sensor.master_bedroom_closet_presence_sensor_motion
+      light_target:
+        device_id:
+        - 5d9e946aec1accfe3a90d9cf8f73a13d
+        - a75a227e05af0c59033e93502dc3a1c7
+      no_motion_wait: 5

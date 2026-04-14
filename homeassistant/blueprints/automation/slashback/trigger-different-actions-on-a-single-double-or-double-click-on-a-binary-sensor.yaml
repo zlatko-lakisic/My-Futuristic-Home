@@ -1,0 +1,71 @@
+blueprint:
+  name: Short long double click
+  description: Different Actions on Short, Long and Double click
+  domain: automation
+  input:
+    switch_id:
+      name: Binary sensor entity
+      description: The binary_sensor used to trigger the automation
+      selector:
+        entity:
+          domain:
+          - binary_sensor
+          multiple: false
+    long_click_action:
+      name: Long click action
+      description: The action(s) to launch for a long click
+      default: []
+      selector:
+        action: {}
+    short_click_action:
+      name: Short click action
+      description: The action(s) to launch for a single short click
+      default: []
+      selector:
+        action: {}
+    double_click_action:
+      name: Double click action
+      description: The action(s) to launch for a double click
+      default: []
+      selector:
+        action: {}
+    delay:
+      name: Delay in seconds
+      description: The time in seconds (can contain decimals) used as a delay for
+        the double or long click detection
+      default: 0.3
+      selector:
+        number:
+          min: 0.0
+          max: 10.0
+          unit_of_measurement: seconds
+          mode: slider
+          step: 1.0
+  source_url: https://community.home-assistant.io/t/trigger-different-actions-on-a-single-double-or-double-click-on-a-binary-sensor/255902
+trigger:
+- platform: state
+  entity_id: !input switch_id
+  to: 'on'
+mode: single
+action:
+- variables:
+    switch_id: !input switch_id
+    double_click_action: !input double_click_action
+- wait_template: '{{ is_state(switch_id, ''off'') }}'
+  timeout: !input delay
+  continue_on_timeout: true
+- choose:
+  - conditions: '{{ not wait.completed }}'
+    sequence: !input long_click_action
+  default:
+  - choose:
+    - conditions: '{{ double_click_action | length > 0 }}'
+      sequence:
+      - wait_template: '{{ is_state(switch_id, ''on'') }}'
+        timeout: !input delay
+        continue_on_timeout: true
+      - choose:
+        - conditions: '{{ not wait.completed }}'
+          sequence: !input short_click_action
+        default: !input double_click_action
+    default: !input short_click_action

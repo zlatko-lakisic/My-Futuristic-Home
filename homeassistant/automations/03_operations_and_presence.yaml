@@ -1,0 +1,385 @@
+- id: '1749373783674'
+  alias: Ping Z-wave Devices
+  description: ''
+  triggers:
+  - at: 06:05:00
+    trigger: time
+  - at: '14:05:00'
+    trigger: time
+  - at: '22:05:00'
+    trigger: time
+  actions:
+  - repeat:
+      for_each: "{% set ns = namespace(items=[]) %} {% for entity in integration_entities('zwave_js') %}\n  {% if entity.endswith('_ping') %}\n    {% if states(entity.replace('button.','sensor.').replace('_ping','_battery_level'))=='unknown' %}\n      {% set ns.items = ns.items + [entity] %}\n    {% endif %}\n  {% endif %}\n{% endfor %} {{ ns.items }}"
+      sequence:
+      - delay: 5
+      - target:
+          entity_id: '{{ repeat.item }}'
+        action: button.press
+  mode: single
+- id: '1751942398345'
+  alias: Turn on AC
+  description: ''
+  triggers:
+  - type: battery_level
+    device_id: a7ad962c904a3dd38e3ca4ef68ccb444
+    entity_id: d2ed72fad1a2371b60bd667f0554bd1d
+    domain: sensor
+    trigger: device
+    above: 85
+  conditions: []
+  actions:
+  - device_id: 1e830157843919268c06fd7ab501335c
+    domain: climate
+    entity_id: 6c3126b48ad07dcddec3c4067db47a2c
+    type: set_hvac_mode
+    hvac_mode: cool
+  mode: single
+- id: '1751942431229'
+  alias: Turn off AC
+  description: ''
+  triggers:
+  - type: battery_level
+    device_id: a7ad962c904a3dd38e3ca4ef68ccb444
+    entity_id: d2ed72fad1a2371b60bd667f0554bd1d
+    domain: sensor
+    trigger: device
+    below: 80
+  conditions: []
+  actions:
+  - device_id: 1e830157843919268c06fd7ab501335c
+    domain: climate
+    entity_id: 6c3126b48ad07dcddec3c4067db47a2c
+    type: set_hvac_mode
+    hvac_mode: 'off'
+  mode: single
+- id: '1757608292934'
+  alias: Front Door Motion Lights
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.front_door_motion
+    from: 'off'
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: sun
+    before: sunrise
+    after: sunset
+  actions:
+  - alias: Turn on the light
+    target:
+      device_id:
+      - 9c320fde2aa1f8056696a3415531833b
+      - 27bd8df3dd2ed23f150042578bbcad9e
+    action: light.turn_on
+    data: {}
+  - alias: Wait until there is no motion from device
+    wait_for_trigger:
+    - entity_id:
+      - binary_sensor.front_door_motion
+      from: 'on'
+      to: 'off'
+      trigger: state
+  - alias: Wait the number of seconds that has been set
+    delay: 120
+  - alias: Turn off the light
+    target:
+      device_id:
+      - 9c320fde2aa1f8056696a3415531833b
+      - 27bd8df3dd2ed23f150042578bbcad9e
+    action: light.turn_off
+  mode: restart
+  max_exceeded: silent
+- id: '1757608841738'
+  alias: Back Yard Motion Lights
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.back_yard_motion
+    - binary_sensor.west_side_motion
+    from: 'off'
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: sun
+    before: sunrise
+    after: sunset
+  actions:
+  - alias: Turn on the light
+    target:
+      device_id:
+      - 91fa988f26c762e2e92bdae04938b92f
+      - 357be9e9a15f7c627e447c04ee7b9835
+    action: light.turn_on
+    data: {}
+  - alias: Wait until there is no motion from device
+    wait_for_trigger:
+    - entity_id:
+      - binary_sensor.front_door_motion
+      - binary_sensor.west_side_motion
+      from: 'on'
+      to: 'off'
+      trigger: state
+  - alias: Wait the number of seconds that has been set
+    delay: 120
+  - alias: Turn off the light
+    target:
+      device_id:
+      - 91fa988f26c762e2e92bdae04938b92f
+      - 357be9e9a15f7c627e447c04ee7b9835
+    action: light.turn_off
+    data: {}
+  mode: restart
+  max_exceeded: silent
+- id: '1760313883267'
+  alias: Garage Door Opening Automation
+  description: ''
+  triggers:
+  - device_id: 0441b79130101418f06629246a2a3518
+    domain: cover
+    entity_id: 5addf5768cf122d3d48ca6a88d934a35
+    type: opening
+    trigger: device
+  conditions:
+  - condition: sun
+    before: sunrise
+    after: sunset
+  actions:
+  - action: light.turn_on
+    metadata: {}
+    data: {}
+    target:
+      device_id: cf4d53e6824517d342c8293deacbb13a
+  - delay:
+      hours: 0
+      minutes: 5
+      seconds: 0
+      milliseconds: 0
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      device_id: cf4d53e6824517d342c8293deacbb13a
+  mode: single
+- id: '1760406615453'
+  alias: Dim Bedroom Hallway Light
+  description: ''
+  triggers:
+  - trigger: time
+    at: '23:00:00'
+    weekday:
+    - sun
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+    - sat
+  conditions: []
+  actions:
+  - action: zwave_js.set_config_parameter
+    metadata: {}
+    data:
+      device_id:
+      - 68fb8648eda65f852bc632645218bb97
+      parameter: 11-112-0-2
+      value: '100'
+  - delay:
+      hours: 7
+      minutes: 0
+      seconds: 0
+      milliseconds: 0
+  - action: zwave_js.set_config_parameter
+    metadata: {}
+    data:
+      device_id:
+      - 68fb8648eda65f852bc632645218bb97
+      parameter: 11-112-0-2
+      value: '255'
+  mode: single
+- id: '1764182559207'
+  alias: Tag Back Door Tag is scanned
+  description: ''
+  triggers:
+  - trigger: tag
+    tag_id: 2ce8e282-cec0-497e-ad47-9703fdcbbc5e
+  conditions: []
+  actions:
+  - device_id: 3130bd25f1819c30bab40e60768abe89
+    domain: lock
+    entity_id: 64ae662ed0d8674706b017bd92ec3969
+    type: unlock
+  mode: single
+- id: '1764183702039'
+  alias: Tag Front Door is scanned
+  description: ''
+  triggers:
+  - trigger: tag
+    tag_id: 4158c449-4077-48ec-a99e-cc9b8da46fb3
+  conditions: []
+  actions:
+  - device_id: 3f6e1c5f626956fc036a2ff2faf8f612
+    domain: lock
+    entity_id: 85c7d20c161c51a442f9697c5168c60b
+    type: unlock
+  mode: single
+- id: '1764183946254'
+  alias: Tag Office Door Tag is scanned
+  description: ''
+  triggers:
+  - trigger: tag
+    tag_id: a99c18fd-0550-4d59-86c4-b1fba017e8fb
+  conditions: []
+  actions:
+  - device_id: 83811babaaed202191c8fb2ef54a4b80
+    domain: lock
+    entity_id: b3f1b167d5ac4498faa112019f9df26c
+    type: unlock
+  mode: single
+- id: '1764184085068'
+  alias: Tag Garage Door Tag is scanned
+  description: ''
+  triggers:
+  - trigger: tag
+    tag_id: ec19711a-66cf-447c-a131-924b7fc8796d
+  conditions:
+  - condition: device
+    device_id: 0441b79130101418f06629246a2a3518
+    domain: cover
+    entity_id: 5addf5768cf122d3d48ca6a88d934a35
+    type: is_closed
+  actions:
+  - device_id: 0441b79130101418f06629246a2a3518
+    domain: cover
+    entity_id: 5addf5768cf122d3d48ca6a88d934a35
+    type: open
+  mode: single
+- id: '1764186120015'
+  alias: Tag Door to Garage Tag is scanned
+  description: ''
+  triggers:
+  - trigger: tag
+    tag_id: f5db986e-949e-42c6-bbfb-2c01a30329c9
+  conditions: []
+  actions:
+  - device_id: 26f822fbcaf1ee8d7846e6d69df4829a
+    domain: lock
+    entity_id: ee09b78f380fcdcee4feec2c07eb7a18
+    type: unlock
+  mode: single
+- id: '1765224686845'
+  alias: Driveway Motion Activated Lights
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.driveway_motion
+    from:
+    - 'off'
+    to:
+    - 'on'
+    trigger: state
+  conditions:
+  - condition: sun
+    before: sunset
+    after: sunset
+  actions:
+  - alias: Turn on the light
+    target:
+      entity_id: light.flood_lights
+    action: light.turn_on
+  - alias: Wait until there is no motion from device
+    wait_for_trigger:
+      entity_id: binary_sensor.driveway_motion_2
+      from: 'on'
+      to: 'off'
+      trigger: state
+  - alias: Wait the number of seconds that has been set
+    delay: 120
+  - alias: Turn off the light
+    target:
+      entity_id: light.flood_lights
+    action: light.turn_off
+  mode: restart
+  max_exceeded: silent
+- id: '1766862194194'
+  alias: Boiler bucket full notificatiin
+  description: ''
+  triggers:
+  - type: problem
+    device_id: 1dd4ce3a252433b7244164afb033532a
+    entity_id: f5b3eb3bed03e707538e99874843c9d0
+    domain: binary_sensor
+    trigger: device
+  conditions: []
+  actions:
+  - action: notify.mobile_app_zlatko_fold_5
+    metadata: {}
+    data:
+      message: Boiler bucket full!
+  mode: single
+- id: '1771793860550'
+  alias: Open Garage - Car Arrived
+  description: ''
+  triggers:
+  - topic: frigate/events
+    trigger: mqtt
+  conditions:
+  - condition: state
+    entity_id: cover.garage_door_door
+    state: closed
+  - condition: template
+    value_template: "{% set data = trigger.payload_json %} {{ data['type'] == 'update'\n   and data['after']['label'] == 'car'\n   and data['after']['sub_label'] == 'KXS-9837'\n   and data['after']['score'] > 0.80\n   and 'near_driveway' in data['after']['current_zones']\n   and 'near_driveway' not in data['before']['current_zones'] }}\n"
+  actions:
+  - target:
+      entity_id: cover.garage_door_door
+    action: cover.open_cover
+  mode: single
+- id: '1771794032483'
+  alias: Close Garage - Car Left
+  triggers:
+  - topic: frigate/events
+    trigger: mqtt
+  conditions:
+  - condition: state
+    entity_id: cover.garage_door
+    state: open
+  - condition: template
+    value_template: "{% set data = trigger.payload_json %} {{ data['type'] == 'update'\n   and data['after']['label'] == 'car'\n   and data['after']['sub_label'] == 'KXS-9837'\n   and data['after']['score'] > 0.80\n   and 'near_driveway' not in data['after']['current_zones']\n   and 'near_driveway' in data['before']['current_zones'] }}\n"
+  actions:
+  - target:
+      entity_id: cover.garage_door_door
+    action: cover.close_cover
+  mode: single
+- id: '1773334654971'
+  alias: Basement Light Motion Sensor
+  description: ''
+  use_blueprint:
+    path: homeassistant/motion_light.yaml
+    input:
+      motion_entity: binary_sensor.presence_sensor_occupancy
+      light_target:
+        entity_id: light.basement_light
+      no_motion_wait: 30
+- id: '1776123456789'
+  alias: Restart Frigate and CodeProject AI on high inference speed
+  description: Restart both containers if deepstack inference speed stays above 1000 for 15 seconds.
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.frigate_deepstack_inference_speed
+    above: 1000
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 15
+  conditions:
+  - condition: template
+    value_template: '{{ this.attributes.last_triggered is none or (as_timestamp(now()) - as_timestamp(this.attributes.last_triggered)) > 600 }}'
+  actions:
+  - action: button.press
+    target:
+      entity_id: button.frigate_restart_container
+  - action: button.press
+    target:
+      entity_id: button.codeproject_ai_server_restart_container
+  mode: single

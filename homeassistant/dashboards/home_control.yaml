@@ -5,7 +5,7 @@
 #
 # Gaps / verify on your install:
 #   - Dining: no "dining" entities returned — placeholder markdown only.
-#   - Living room: no main ceiling light entity — add when you have one.
+#   - Living room: no main ceiling light entity — add when you have one. Climate card uses climate.new_livingroom_climate (Midea cool + Nest/oil heat).
 #   - Office: no office ceiling light — speaker + Nest Protect only.
 #   - Bedroom hallway main: light.light_switch (generic name; tied to dim_bedroom_hallway_light automation).
 #   - Guest closet: light.closet_light ("Closet") — confirm it is guest closet.
@@ -109,11 +109,12 @@ views:
                   - type: markdown
                     content: |
                       ### LIVING ROOM
+                      *Thermostat: Midea AC (cool) + Nest / oil hydronic (heat) via `climate.new_livingroom_climate`.*
                       *Main lights: add a `light.*` row when you have a ceiling/group entity.*
                   - type: media-control
                     entity: media_player.living_room_tv
                   - type: thermostat
-                    entity: climate.living_room
+                    entity: climate.new_livingroom_climate
                   - type: media-control
                     entity: media_player.living_room_speaker
 
@@ -168,3 +169,102 @@ views:
                         name: Motion / presence
                       - entity: binary_sensor.nest_protect_basement_smoke_status
                         name: Nest Protect smoke
+
+                  - type: custom:stack-in-card
+                    keep:
+                      margin: false
+                      outer_padding: false
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: #1c1c1c !important;
+                          border: 1px solid rgba(255,255,255,0.1) !important;
+                          border-radius: 14px !important;
+                          box-shadow: none !important;
+                          padding: 12px 14px 12px 16px !important;
+                          overflow: visible !important;
+                        }
+                        ha-card stack-in-card ha-card,
+                        stack-in-card ha-card {
+                          --ha-card-border-width: 0px !important;
+                          --ha-card-box-shadow: none !important;
+                          border: none !important;
+                          outline: none !important;
+                          box-shadow: none !important;
+                        }
+                        stack-in-card > div {
+                          border: none !important;
+                          box-shadow: none !important;
+                        }
+                    cards:
+                      - type: entities
+                        title: BHYVE MANUAL WATERING
+                        show_header_toggle: false
+                        state_color: true
+                        entities:
+                          - entity: input_select.bhyve_manual_zone
+                            name: Zone
+                      - type: entities
+                        show_header_toggle: false
+                        state_color: true
+                        card_mod:
+                          style: |
+                            [[[
+                              const eid = hass.states['sensor.bhyve_zone_entity']?.state;
+                              const locked = eid && eid !== 'unknown' && hass.states[eid]?.state === 'on';
+                              return locked
+                                ? ':host { cursor: not-allowed; } :host .card-content { pointer-events: none; opacity: 0.5; filter: grayscale(0.25); }'
+                                : '';
+                            ]]]
+                        entities:
+                          - entity: input_number.bhyve_manual_duration_minutes
+                            name: Watering time
+                      - type: custom:button-card
+                        triggers_update:
+                          - input_select.bhyve_manual_zone
+                          - sensor.bhyve_zone_entity
+                          - switch.east_lawn_timer_east_lawn_zone
+                          - switch.east_lawn_timer_flower_bed_zone
+                          - switch.flower_garden_back_lawn_time_2nd_tier_flowers_zone
+                          - switch.flower_garden_back_lawn_time_back_lawn_zone_zone
+                          - switch.front_yard_controller_front_yard_zone
+                          - switch.garden_zone
+                          - switch.unnamed_zone_zone_2
+                          - switch.vegitable_garden_timer_peppers_kale_zone_zone
+                          - switch.vegitable_garden_timer_tomato_zone_zone
+                          - switch.vegitable_garden_timer_top_zone_zone
+                          - switch.vegitable_garden_timer_zucchini_zone_zone
+                        name: |
+                          [[[
+                            const eid = states['sensor.bhyve_zone_entity']?.state;
+                            const running = eid && eid !== 'unknown' && states[eid]?.state === 'on';
+                            return running ? 'Stop' : 'Start';
+                          ]]]
+                        icon: |
+                          [[[
+                            const eid = states['sensor.bhyve_zone_entity']?.state;
+                            const running = eid && eid !== 'unknown' && states[eid]?.state === 'on';
+                            return running ? 'mdi:stop-circle' : 'mdi:play-circle';
+                          ]]]
+                        tap_action:
+                          action: call-service
+                          service: script.turn_on
+                          service_data:
+                            entity_id: script.bhyve_toggle_selected_zone
+                        styles:
+                          card:
+                            - border-radius: 12px
+                            - padding: 12px
+                            - margin-top: 8px
+                            - font-weight: 700
+                            - background-color: |
+                                [[[
+                                  const eid = states['sensor.bhyve_zone_entity']?.state;
+                                  const running = eid && eid !== 'unknown' && states[eid]?.state === 'on';
+                                  return running ? '#b71c1c' : '#1b5e20';
+                                ]]]
+                          name:
+                            - color: white
+                            - font-size: 15px
+                          icon:
+                            - color: white
