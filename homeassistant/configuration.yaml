@@ -157,18 +157,19 @@ mqtt: !include mqtt.yaml
 input_select:
   bhyve_manual_zone:
     name: BHyve Manual Zone
+    # Labels must match each switch entity's friendly_name (see Developer tools → States).
     options:
       - Cabbage zone
       - East Lawn
       - Flower Bed
-      - Flower Garden & Back Lawn Time Zone 4 zone
-      - Front Lawn
-      - Kitchen Lawn
       - Top Flowers
-      - Vegitable Garden Timer Peppers & Kale Zone zone
-      - Vegitable Garden Timer Tomato Zone zone
-      - Vegitable Garden Timer Top Zone zone
-      - Vegitable Garden Timer Zucchini Zone zone
+      - Kitchen Lawn
+      - Zone 4 zone
+      - Front Lawn
+      - Peppers & Kale Zone zone
+      - Tomato Zone zone
+      - Top Zone zone
+      - Zucchini Zone zone
     initial: Front Lawn
     icon: mdi:sprinkler-variant
 

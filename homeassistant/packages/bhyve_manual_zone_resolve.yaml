@@ -11,13 +11,13 @@ template:
             {{ label }}
           {% else %}
             {% set zones = [
+              'switch.garden_zone',
               'switch.east_lawn_timer_east_lawn_zone',
               'switch.east_lawn_timer_flower_bed_zone',
               'switch.flower_garden_back_lawn_time_2nd_tier_flowers_zone',
               'switch.flower_garden_back_lawn_time_back_lawn_zone_zone',
-              'switch.front_yard_controller_front_yard_zone',
-              'switch.garden_zone',
               'switch.unnamed_zone_zone_2',
+              'switch.front_yard_controller_front_yard_zone',
               'switch.vegitable_garden_timer_peppers_kale_zone_zone',
               'switch.vegitable_garden_timer_tomato_zone_zone',
               'switch.vegitable_garden_timer_top_zone_zone',

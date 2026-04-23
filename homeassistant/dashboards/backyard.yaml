@@ -60,7 +60,7 @@ views:
                         show_label: false
                         tap_action:
                           action: navigate
-                          navigation_path: /dashboard-backyard/backyard-frigate-people
+                          navigation_path: /dashboard-backyard-yaml/backyard-frigate-people
                         hold_action:
                           action: more-info
                         styles:
@@ -102,7 +102,7 @@ views:
                         show_label: false
                         tap_action:
                           action: navigate
-                          navigation_path: /dashboard-backyard/backyard-frigate-dogs
+                          navigation_path: /dashboard-backyard-yaml/backyard-frigate-dogs
                         hold_action:
                           action: more-info
                         styles:
@@ -144,7 +144,7 @@ views:
                         show_label: false
                         tap_action:
                           action: navigate
-                          navigation_path: /dashboard-backyard/backyard-frigate-faces
+                          navigation_path: /dashboard-backyard-yaml/backyard-frigate-faces
                         hold_action:
                           action: more-info
                         styles:
@@ -963,7 +963,7 @@ views:
                         cards:
                           - type: heading
                             heading_style: subtitle
-                            heading: GARDEN
+                            heading: FLOWER BEDS & LAWN
                           - type: custom:layout-card
                             layout_type: custom:grid-layout
                             layout:
@@ -976,28 +976,40 @@ views:
                                   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
                             cards:
                               - type: tile
-                                entity: switch.east_side_lawn_zone
+                                entity: switch.east_lawn_timer_east_lawn_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.unnamed_zone_zone_3
+                                entity: switch.east_lawn_timer_flower_bed_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.unnamed_zone_zone_4
+                                entity: switch.flower_garden_back_lawn_time_2nd_tier_flowers_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.unnamed_zone_zone_5
+                                entity: switch.flower_garden_back_lawn_time_back_lawn_zone_zone
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: switch.front_yard_controller_front_yard_zone
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: switch.unnamed_zone_zone_2
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: switch.garden_zone
                                 vertical: false
                                 features_position: bottom
                           - type: heading
                             heading_style: subtitle
-                            heading: LAWN
+                            heading: VEGETABLE GARDEN
                           - type: custom:layout-card
                             layout_type: custom:grid-layout
                             layout:
-                              grid-template-columns: repeat(3, minmax(0, 1fr))
+                              grid-template-columns: repeat(4, minmax(0, 1fr))
                               grid-gap: 8px
                               justify-items: stretch
                               place-items: stretch
@@ -1006,15 +1018,19 @@ views:
                                   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
                             cards:
                               - type: tile
-                                entity: switch.adna_s_flowers_zone
+                                entity: switch.vegitable_garden_timer_peppers_kale_zone_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.adna_s_roses_zone
+                                entity: switch.vegitable_garden_timer_tomato_zone_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.unnamed_zone_zone
+                                entity: switch.vegitable_garden_timer_top_zone_zone
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: switch.vegitable_garden_timer_zucchini_zone_zone
                                 vertical: false
                                 features_position: bottom
                         title: IRRIGATION ZONES
@@ -1028,7 +1044,7 @@ views:
                             show_label: false
                             tap_action:
                               action: navigate
-                              navigation_path: /dashboard-backyard/backyard-unifi-clients
+                              navigation_path: /dashboard-backyard-yaml/backyard-unifi-clients
                             hold_action:
                               action: more-info
                             styles:
@@ -1263,7 +1279,7 @@ views:
     path: backyard-unifi-clients
     icon: mdi:wifi
     subview: true
-    back_path: /dashboard-backyard
+    back_path: /dashboard-backyard-yaml
     cards:
       - type: markdown
         content: >
@@ -1312,7 +1328,7 @@ views:
     path: backyard-frigate-people
     icon: mdi:account-multiple
     subview: true
-    back_path: /dashboard-backyard/backyard
+    back_path: /dashboard-backyard-yaml/backyard
     cards:
       - type: markdown
         content: >
@@ -1351,7 +1367,7 @@ views:
     path: backyard-frigate-dogs
     icon: mdi:dog-side
     subview: true
-    back_path: /dashboard-backyard/backyard
+    back_path: /dashboard-backyard-yaml/backyard
     cards:
       - type: markdown
         content: >
@@ -1389,7 +1405,7 @@ views:
     path: backyard-frigate-faces
     icon: mdi:face-recognition
     subview: true
-    back_path: /dashboard-backyard/backyard
+    back_path: /dashboard-backyard-yaml/backyard
     cards:
       - type: markdown
         content: >
