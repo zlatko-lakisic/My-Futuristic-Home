@@ -33,6 +33,14 @@
         text:
       name: Notification Click URL
       required: true
+    notify_people:
+      selector:
+        entity:
+          domain:
+          - person
+          multiple: true
+      name: Notify People
+      required: false
     model:
       selector:
         text:
@@ -59,9 +67,37 @@
       message: '{{ai_prompt}}'
     response_variable: ai_response
   - variables:
-      ai_text: "{{ (ai_response.response_text\n    | default(ai_response.text, true)\n
+      ai_text_raw: "{{ (ai_response.response_text\n    | default(ai_response.text, true)\n
         \   | default('', true)) | trim }}"
-      ai_text_final: "{% if ai_text %}\n  {{ ai_text }}\n{% else %}\n  Empty LLM response.
+      ai_text_clean: >-
+        {{
+          ai_text_raw
+          | regex_replace('(?im)^\\s*line\\s*\\d+\\s*:\\s*', '')
+          | regex_replace('(?im)^\\s*line\\s*:\\s*', '')
+          | trim
+        }}
+      ai_summary: "{{ ai_text_clean | regex_replace('\\n+', ' ') | regex_replace('\\s+', ' ') | trim }}"
+      notification_title_final: >-
+        {% if ai_summary %}
+          {{ ai_summary[:72] }}{% if ai_summary | length > 72 %}…{% endif %}
+        {% else %}
+          {{ notification_title }}
+        {% endif %}
+      notify_services: >-
+        {% set ns = namespace(services=[]) %}
+        {% for p in notify_people | default([], true) %}
+          {% for dt in state_attr(p, 'device_trackers') | default([], true) %}
+            {% if dt is string and dt.startswith('device_tracker.') %}
+              {% set slug = dt | replace('device_tracker.', '') %}
+              {% set svc = 'notify.mobile_app_' ~ slug %}
+              {% if svc not in ns.services %}
+                {% set ns.services = ns.services + [svc] %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+        {{ ns.services | to_json }}
+      ai_text_final: "{% if ai_text_clean %}\n  {{ ai_text_clean }}\n{% else %}\n  Empty LLM response.
         key_frame: {{ ai_response.key_frame | default('n/a', true) }}\n{% endif %}"
   - if:
     - condition: template
@@ -69,24 +105,48 @@
     then:
     - action: persistent_notification.create
       data:
-        title: '{{ notification_title }}'
+        title: '{{ notification_title_final }}'
         message: '{{ ai_text_final }}
 
           ![image](/api/camera_proxy/{{ camera_id }})'
-  - action: notify.ALL_DEVICES
-    metadata: {}
-    data:
-      message: '{{ ai_text_final }} '
-      title: '{{ notification_title }}'
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ (notify_services | from_json | count) > 0 }}'
+      sequence:
+      - repeat:
+          for_each: '{{ notify_services | from_json }}'
+          sequence:
+          - action: '{{ repeat.item }}'
+            continue_on_error: true
+            metadata: {}
+            data:
+              message: '{{ ai_text_final }} '
+              title: '{{ notification_title_final }}'
+              data:
+                image: /api/camera_proxy/{{ camera_id }}
+                url: '{{ notification_click_url }}'
+                clickAction: '{{ notification_click_url }}'
+                push:
+                  sound:
+                    name: default
+                    critical: 1
+                    volume: 1
+    default:
+    - action: notify.ALL_DEVICES
+      metadata: {}
       data:
-        image: /api/camera_proxy/{{ camera_id }}
-        url: '{{ notification_click_url }}'
-        clickAction: '{{ notification_click_url }}'
-        push:
-          sound:
-            name: default
-            critical: 1
-            volume: 1
+        message: '{{ ai_text_final }} '
+        title: '{{ notification_title_final }}'
+        data:
+          image: /api/camera_proxy/{{ camera_id }}
+          url: '{{ notification_click_url }}'
+          clickAction: '{{ notification_click_url }}'
+          push:
+            sound:
+              name: default
+              critical: 1
+              volume: 1
   alias: Process AI Analysis and Notification
   description: ''
 control_climate:
