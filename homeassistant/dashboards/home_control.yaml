@@ -1,41 +1,16 @@
-# HOME CONTROL — Lovelace (YAML)
-#
-# Layout matches tablet mockup (dark shell, section bands, status chips).
-# Requires: layout-card, button-card, stack-in-card (same as infrastructure / torrents).
-#
-# Entity IDs: see entity_ids_snapshot.txt. Adjust tiles if you add living/dining lights.
-
+# Sections view: column_span values are summed; the grid width is min(viewport, that sum).
+# Using 6+2+2+2 made the layout fight a 4‑column viewport (default min column width).
+# max_columns: 3 + spans 3+1+1+1 keeps the three main bands equal width on typical tablets.
 views:
   - title: Home Control
     path: home-control
-    type: panel
     icon: mdi:home-automation
-    cards:
-      - type: vertical-stack
+    type: sections
+    max_columns: 3
+    dense_section_placement: false
+    sections:
+      - type: grid
         cards:
-          # ——— Top bar (title + status chips) ———
-          - type: custom:button-card
-            name: HOME CONTROL
-            show_icon: false
-            show_state: false
-            show_label: false
-            tap_action:
-              action: none
-            styles:
-              card:
-                - background: 'rgb(37, 99, 235)'
-                - color: white
-                - border-radius: 12px
-                - border: none
-                - box-shadow: none
-                - padding: 14px 18px
-                - font-size: 18px
-                - font-weight: 600
-                - letter-spacing: 0.04em
-                - text-transform: uppercase
-              name:
-                - justify-self: start
-
           - type: horizontal-stack
             cards:
               - type: custom:button-card
@@ -52,7 +27,7 @@ views:
                     - margin: 0 6px 0 0
                     - box-shadow: none
                     - border: 1px solid rgba(255, 255, 255, 0.12)
-                    - background: 'rgba(148, 163, 184, 0.2)'
+                    - background: rgba(148, 163, 184, 0.2)
                   state:
                     - font-size: 14px
                     - font-weight: 600
@@ -70,7 +45,7 @@ views:
                     - margin: 0 6px 0 0
                     - box-shadow: none
                     - border: 1px solid rgba(255, 255, 255, 0.12)
-                    - background: 'rgba(148, 163, 184, 0.2)'
+                    - background: rgba(148, 163, 184, 0.2)
                   state:
                     - font-size: 14px
                     - font-weight: 600
@@ -88,286 +63,232 @@ views:
                     - padding: 8px 14px
                     - box-shadow: none
                     - border: 1px solid rgba(255, 255, 255, 0.12)
-                    - background: 'rgba(148, 163, 184, 0.2)'
+                    - background: rgba(148, 163, 184, 0.2)
                   name:
                     - font-size: 12px
                     - opacity: 0.9
                   state:
                     - font-size: 14px
                     - font-weight: 600
-
-          - type: custom:layout-card
-            layout_type: custom:grid-layout
-            layout:
-              grid-template-columns: repeat(3, minmax(260px, 1fr))
-              grid-gap: 16px
-              place-items: stretch
-              align-items: start
-              mediaquery:
-                '(max-width: 1100px)':
-                  grid-template-columns: 100%
+        column_span: 3
+      - type: grid
+        cards:
+          - type: heading
+            heading: CLIMATE & COMFORT
+            heading_style: title
+          - type: thermostat
+            entity: climate.new_livingroom_climate
             grid_options:
               columns: full
-            cards:
-              # ——— Column 1: Climate & comfort ———
-              - type: vertical-stack
-                cards:
-                  - type: heading
-                    heading_style: subtitle
-                    icon: mdi:thermometer
-                    heading: Climate & comfort
-                  - type: markdown
-                    content: |
-                      **Living room** — combined Nest heat + Midea cool (`climate.new_livingroom_climate`).
-                  - type: thermostat
-                    entity: climate.new_livingroom_climate
-                  - type: markdown
-                    content: |
-                      **Bedroom hallway fan** — on/off only (no speed entity). Add a `fan.*` if you wire a controllable fan.
-                  - type: tile
-                    entity: switch.house_fan
-                    name: Hallway fan
-                    icon: mdi:fan
-                    vertical: false
-                    features:
-                      - type: toggle
-
-              # ——— Column 2: Living areas ———
-              - type: vertical-stack
-                cards:
-                  - type: heading
-                    heading_style: subtitle
-                    icon: mdi:sofa-outline
-                    heading: Living areas
-                  - type: grid
-                    columns: 2
-                    square: false
-                    cards:
-                      - type: tile
-                        entity: light.in_wall_paddle_dimmer_no_ntrl_700s
-                        name: Living / middle
-                        features:
-                          - type: light-brightness
-                      - type: tile
-                        entity: light.kitchenette_light
-                        name: Kitchen main
-                        features:
-                          - type: light-brightness
-                      - type: tile
-                        entity: light.kitchen_countertop_lights_light
-                        name: Countertop
-                        features:
-                          - type: light-brightness
-                      - type: custom:button-card
-                        name: Dining
-                        icon: mdi:ceiling-light-multiple-outline
-                        show_name: true
-                        show_state: false
-                        show_icon: true
-                        tap_action:
-                          action: none
-                        styles:
-                          card:
-                            - aspect-ratio: 1
-                            - min-height: 120px
-                            - opacity: 0.9
-                            - border: 1px dashed rgba(255, 255, 255, 0.25)
-                          name:
-                            - font-size: 14px
-                  - type: markdown
-                    content: |
-                      *Kitchenette under-cabinet: `light.kitchenette_counter_light_light` — add to this grid if you prefer it here.*
-                  - type: media-control
-                    entity: media_player.living_room_tv
-
-              # ——— Column 3: Bedrooms & utility ———
-              - type: vertical-stack
-                cards:
-                  - type: heading
-                    heading_style: subtitle
-                    icon: mdi:bed-king-outline
-                    heading: Bedrooms & utility
-                  - type: tile
-                    entity: switch.master_bedroom_light_switch
-                    name: Master main
-                    features:
-                      - type: toggle
-                  - type: horizontal-stack
-                    cards:
-                      - type: tile
-                        entity: light.master_bedroom_closet_lights_top_light
-                        name: Closet
-                        features:
-                          - type: light-brightness
-                      - type: tile
-                        entity: switch.vanity
-                        name: Vanity
-                        features:
-                          - type: toggle
-                  - type: custom:layout-card
-                    layout_type: custom:grid-layout
-                    layout:
-                      grid-template-columns: 1fr 1fr
-                      grid-gap: 10px
-                      place-items: stretch
-                    grid_options:
-                      columns: full
-                    cards:
-                      - type: markdown
-                        content: |
-                          **Office main** — add a `light.*` when available.
-                      - type: tile
-                        entity: light.basement_light
-                        name: Basement
-                        features:
-                          - type: light-brightness
-                  - type: entities
-                    title: Motion & status
-                    show_header_toggle: false
-                    state_color: true
-                    entities:
-                      - entity: binary_sensor.light_switch_motion_detection
-                        name: Hallway motion
-                      - entity: binary_sensor.presence_sensor
-                        name: Basement motion
-                      - entity: binary_sensor.garage_hallway_light_switch_motion_detection
-                        name: Garage motion
-                  - type: custom:stack-in-card
-                    keep:
-                      margin: false
-                      outer_padding: false
-                    card_mod:
-                      style: |
-                        ha-card {
-                          background: #1c1c1c !important;
-                          border: 1px solid rgba(255,255,255,0.1) !important;
-                          border-radius: 14px !important;
-                          box-shadow: none !important;
-                          padding: 12px !important;
-                          overflow: visible !important;
-                        }
-                        ha-card stack-in-card ha-card,
-                        stack-in-card ha-card {
-                          --ha-card-border-width: 0px !important;
-                          --ha-card-box-shadow: none !important;
-                          border: none !important;
-                          outline: none !important;
-                          box-shadow: none !important;
-                        }
-                        stack-in-card > div {
-                          border: none !important;
-                          box-shadow: none !important;
-                        }
-                    cards:
-                      - type: entities
-                        title: BHyve manual watering
-                        show_header_toggle: false
-                        state_color: true
-                        entities:
-                          - entity: input_select.bhyve_manual_zone
-                            name: Zone
-                      - type: entities
-                        show_header_toggle: false
-                        state_color: true
-                        card_mod:
-                          style: |
-                            [[[
-                              const eid = hass.states['sensor.bhyve_zone_entity']?.state;
-                              const locked = eid && eid !== 'unknown' && hass.states[eid]?.state === 'on';
-                              return locked
-                                ? ':host { cursor: not-allowed; } :host .card-content { pointer-events: none; opacity: 0.5; filter: grayscale(0.25); }'
-                                : '';
-                            ]]]
-                        entities:
-                          - entity: input_number.bhyve_manual_duration_minutes
-                            name: Watering time
-                      - type: custom:button-card
-                        triggers_update:
-                          - input_select.bhyve_manual_zone
-                          - sensor.bhyve_zone_entity
-                          - switch.east_lawn_timer_east_lawn_zone
-                          - switch.east_lawn_timer_flower_bed_zone
-                          - switch.flower_garden_back_lawn_time_2nd_tier_flowers_zone
-                          - switch.flower_garden_back_lawn_time_back_lawn_zone_zone
-                          - switch.front_yard_controller_front_yard_zone
-                          - switch.garden_zone
-                          - switch.unnamed_zone_zone_2
-                          - switch.vegitable_garden_timer_peppers_kale_zone_zone
-                          - switch.vegitable_garden_timer_tomato_zone_zone
-                          - switch.vegitable_garden_timer_top_zone_zone
-                          - switch.vegitable_garden_timer_zucchini_zone_zone
-                        name: |
-                          [[[
-                            const eid = states['sensor.bhyve_zone_entity']?.state;
-                            const running = eid && eid !== 'unknown' && states[eid]?.state === 'on';
-                            return running ? 'Stop' : 'Start';
-                          ]]]
-                        icon: |
-                          [[[
-                            const eid = states['sensor.bhyve_zone_entity']?.state;
-                            const running = eid && eid !== 'unknown' && states[eid]?.state === 'on';
-                            return running ? 'mdi:stop-circle' : 'mdi:play-circle';
-                          ]]]
-                        tap_action:
-                          action: call-service
-                          service: script.turn_on
-                          service_data:
-                            entity_id: script.bhyve_toggle_selected_zone
-                        styles:
-                          card:
-                            - border-radius: 12px
-                            - padding: 12px
-                            - margin: 8px 0 0 0
-                            - font-weight: 700
-                            - background-color: |
-                                [[[
-                                  const eid = states['sensor.bhyve_zone_entity']?.state;
-                                  const running = eid && eid !== 'unknown' && states[eid]?.state === 'on';
-                                  return running ? '#b71c1c' : '#1b5e20';
-                                ]]]
-                          name:
-                            - color: white
-                            - font-size: 15px
-                          icon:
-                            - color: white
-
-          # ——— Full width: other rooms & media ———
+          - type: tile
+            entity: switch.house_fan
+            name: Hallway fan
+            icon: mdi:fan
+            vertical: false
+            features:
+              - type: toggle
+            grid_options:
+              columns: full
+        column_span: 1
+      - type: grid
+        cards:
           - type: heading
-            heading_style: subtitle
-            icon: mdi:door-sliding-open
-            heading: Other rooms & doors
+            heading_style: title
+            heading: LIVING AREAS
+          - type: grid
+            square: false
+            columns: 2
+            cards:
+              - type: tile
+                entity: light.in_wall_paddle_dimmer_no_ntrl_700s
+                name: Living / middle
+                features:
+                  - type: light-brightness
+              - type: tile
+                entity: light.kitchenette_light
+                name: Kitchen main
+                features:
+                  - type: light-brightness
+              - type: tile
+                entity: light.kitchen_countertop_lights_light
+                name: Countertop
+                features:
+                  - type: light-brightness
+              - type: custom:button-card
+                name: Dining
+                icon: mdi:ceiling-light-multiple-outline
+                show_name: true
+                show_state: false
+                show_icon: true
+                tap_action:
+                  action: none
+                styles:
+                  card:
+                    - opacity: 0.9
+                    - border: 1px dashed rgba(255, 255, 255, 0.25)
+                  name:
+                    - font-size: 14px
+            grid_options:
+              columns: full
+              rows: auto
+          - type: media-control
+            entity: media_player.living_room_tv
+            grid_options:
+              columns: full
+        column_span: 1
+      - type: grid
+        cards:
+          - type: heading
+            heading: BEDROOMS & UTILITY
+            heading_style: title
           - type: horizontal-stack
             cards:
-              - type: media-control
-                entity: media_player.master_bedroom_tv
-              - type: media-control
-                entity: media_player.master_bedroom_speaker
+              - type: tile
+                entity: switch.master_bedroom_light_switch
+                name: Master main
+                features:
+                  - type: toggle
+              - type: tile
+                entity: light.master_bedroom_closet_lights_top_light
+                name: Closet
+                features:
+                  - type: light-brightness
+              - type: tile
+                entity: switch.vanity
+                name: Vanity
+                features:
+                  - type: toggle
+            title: Master Suite
+            grid_options:
+              columns: full
           - type: horizontal-stack
             cards:
-              - type: media-control
-                entity: media_player.living_room_speaker
-              - type: media-control
-                entity: media_player.office_speaker
+              - type: tile
+                entity: light.steps_light_switch
+                vertical: false
+                tap_action:
+                  action: toggle
+                features_position: inline
+              - type: tile
+                entity: light.basement_light
+                vertical: false
+                tap_action:
+                  action: toggle
+                features_position: inline
+            title: Other Areas
+            grid_options:
+              columns: full
           - type: entities
-            title: Hallways, doors, guests
+            title: Motion & status
             show_header_toggle: false
             state_color: true
             entities:
-              - entity: light.light_switch
-                name: Bedroom hallway main
-              - entity: binary_sensor.nest_protect_hallway_smoke_status
-                name: Nest Protect hallway
-              - entity: switch.front_door_light
-                name: Front door lights
-              - entity: light.garage_hallway_light_switch
-                name: Garage hallway lights
-              - entity: switch.light_switch_2
-                name: Guest room main
-              - entity: light.closet_light
-                name: Guest closet
-              - entity: binary_sensor.nest_protect_office_smoke_status
-                name: Nest Protect office
-              - entity: binary_sensor.nest_protect_basement_smoke_status
-                name: Nest Protect basement
-              - entity: binary_sensor.master_bedroom_closet_presence_sensor_motion
-                name: Master closet motion
+              - entity: binary_sensor.light_switch_motion_detection
+                name: Hallway motion
+              - entity: binary_sensor.presence_sensor
+                name: Basement motion
+              - entity: binary_sensor.garage_hallway_light_switch_motion_detection
+                name: Garage motion
+            grid_options:
+              columns: full
+          - type: custom:stack-in-card
+            grid_options:
+              columns: full
+            keep:
+              margin: false
+              outer_padding: false
+            card_mod:
+              style: |
+                ha-card {
+                  background: #1c1c1c !important;
+                  border: 1px solid rgba(255,255,255,0.1) !important;
+                  border-radius: 14px !important;
+                  box-shadow: none !important;
+                  padding: 12px !important;
+                  overflow: visible !important;
+                }
+                ha-card stack-in-card ha-card,
+                stack-in-card ha-card {
+                  --ha-card-border-width: 0px !important;
+                  --ha-card-box-shadow: none !important;
+                  border: none !important;
+                  outline: none !important;
+                  box-shadow: none !important;
+                }
+                stack-in-card > div {
+                  border: none !important;
+                  box-shadow: none !important;
+                }
+            cards:
+              - type: entities
+                title: BHyve manual watering
+                show_header_toggle: false
+                state_color: true
+                entities:
+                  - entity: input_select.bhyve_manual_zone
+                    name: Zone
+              - type: entities
+                show_header_toggle: false
+                state_color: true
+                card_mod:
+                  style: |
+                    [[[
+                      const eid = hass.states['sensor.bhyve_zone_entity']?.state;
+                      const locked = eid && eid !== 'unknown' && hass.states[eid]?.state === 'on';
+                      return locked
+                        ? ':host { cursor: not-allowed; } :host .card-content { pointer-events: none; opacity: 0.5; filter: grayscale(0.25); }'
+                        : '';
+                    ]]]
+                entities:
+                  - entity: input_number.bhyve_manual_duration_minutes
+                    name: Watering time
+              - type: custom:button-card
+                triggers_update:
+                  - input_select.bhyve_manual_zone
+                  - sensor.bhyve_zone_entity
+                  - switch.garden_zone
+                  - switch.east_lawn_timer_east_lawn_zone
+                  - switch.east_lawn_timer_flower_bed_zone
+                  - switch.flower_garden_back_lawn_time_2nd_tier_flowers_zone
+                  - switch.flower_garden_back_lawn_time_back_lawn_zone_zone
+                  - switch.unnamed_zone_zone_2
+                  - switch.front_yard_controller_front_yard_zone
+                  - switch.vegitable_garden_timer_peppers_kale_zone_zone
+                  - switch.vegitable_garden_timer_tomato_zone_zone
+                  - switch.vegitable_garden_timer_top_zone_zone
+                  - switch.vegitable_garden_timer_zucchini_zone_zone
+                name: |
+                  [[[
+                    const eid = states['sensor.bhyve_zone_entity']?.state;
+                    const running = eid && eid !== 'unknown' && states[eid]?.state === 'on';
+                    return running ? 'Stop' : 'Start';
+                  ]]]
+                icon: |
+                  [[[
+                    const eid = states['sensor.bhyve_zone_entity']?.state;
+                    const running = eid && eid !== 'unknown' && states[eid]?.state === 'on';
+                    return running ? 'mdi:stop-circle' : 'mdi:play-circle';
+                  ]]]
+                tap_action:
+                  action: call-service
+                  service: script.turn_on
+                  service_data:
+                    entity_id: script.bhyve_toggle_selected_zone
+                styles:
+                  card:
+                    - border-radius: 12px
+                    - padding: 12px
+                    - margin: 8px 0 0 0
+                    - font-weight: 700
+                    - background-color: |
+                        [[[
+                          const eid = states['sensor.bhyve_zone_entity']?.state;
+                          const running = eid && eid !== 'unknown' && states[eid]?.state === 'on';
+                          return running ? '#b71c1c' : '#1b5e20';
+                        ]]]
+                  name:
+                    - color: white
+                    - font-size: 15px
+                  icon:
+                    - color: white
+        column_span: 1

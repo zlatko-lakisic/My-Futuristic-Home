@@ -25,71 +25,57 @@
       title: Front Camera Motion
       message: '{{response.response_text}}'
   mode: single
-- id: '1757609105003'
+- id: gate_open_llm_east
   alias: East Gate Open AI Analysis
-  description: Snapshot east camera, analyze via CodeProject AI (LLM Vision → omega-ollama), notify sidebar + Fold 5 when people are seen.
-  triggers:
-  - type: opened
-    device_id: e88a17f24dde3dee2b920427434ab2e7
-    entity_id: b45e9e153db0d69b27ce925264d33a7b
-    domain: binary_sensor
-    trigger: device
-  conditions: []
-  variables:
-    snapshot_timestamp: '{{ now().strftime("%Y%m%d-%H%M%S") }}'
-    snapshot_rel: 'tmp/east_gate_{{ snapshot_timestamp }}.jpg'
-    snapshot_path: '/config/www/{{ snapshot_rel }}'
-    public_image_url: 'https://ha.mostardesigns.com/local/{{ snapshot_rel }}'
-  actions:
-  - action: camera.snapshot
-    target:
-      entity_id: camera.east_side
-    data:
-      filename: '{{ snapshot_path }}'
-  - action: llmvision.image_analyzer
-    data:
-      provider: 01KKJ9BPA7D9QH8GM33N18P7C1
-      model: omega-ollama
-      image_file: '{{ snapshot_path }}'
-      include_filename: false
-      store_in_timeline: false
-      use_memory: false
-      max_tokens: 500
-      generate_title: false
-      expose_images: false
+  description: Blueprint gate_open_llm_vision_people — east gate.
+  use_blueprint:
+    path: gate_open_llm_vision_people.yaml
+    input:
+      gate_name: East gate
+      gate_slug: east_gate
+      gate_sensor: binary_sensor.east_side_door_door
+      gate_open_state: 'on'
+      camera: camera.east_side
+      llmvision_provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      llmvision_model: omega-ollama
       target_width: 1280
-      message: "You are viewing one still frame from the east gate security camera.\nAnswer in exactly 3 lines (no text before line 1):\nLine 1: exactly PEOPLE if any person is clearly visible, otherwise exactly NOPEOPLE.\nLine 2: a clear description for a home log (2–4 sentences).\nLine 3: at most 8 words for a phone alert."
-    response_variable: ai_response
-  - variables:
-      reply: '{{ ai_response.response_text | default("") | trim }}'
-      log_description: "{% set sl = reply.splitlines() %}{% if sl | length > 1 %}{{ sl[1] | trim }}{% else %}{{ reply }}{% endif %}"
-      mobile_short: "{% set sl = reply.splitlines() %}{% if sl | length > 2 %}{{ sl[2] | trim }}{% elif sl | length > 1 %}{{ sl[1] | truncate(80, true, '') }}{% else %}East gate{% endif %}"
-  - if:
-    - condition: template
-      value_template: "{% set g = (ai_response.response_text | default('') | trim).splitlines() | first | default('', true) | trim %} {% set tok = g.split()[0] | upper if g else 'NOPEOPLE' %} {{ tok == 'PEOPLE' }}"
-    then:
-    - action: persistent_notification.create
-      data:
-        notification_id: east_gate_ai_{{ snapshot_timestamp }}
-        title: East gate — people — {{ now().strftime('%Y-%m-%d %H:%M:%S') }}
-        message: |
-          {{ log_description }}
-
-          ![East gate](/local/{{ snapshot_rel }})
-    - action: notify.mobile_app_zlatko_fold_5
-      data:
-        title: East gate — people
-        message: '{{ mobile_short }}'
-        data:
-          image: '{{ public_image_url }}'
-          url: /back-yard/east-gate
-          clickAction: /back-yard/east-gate
-          push:
-            sound:
-              name: default
-              critical: 1
-              volume: 1
-  mode: single
+      public_base_url: 'https://ha.mostardesigns.com/local/'
+      notification_click_path: /dashboard-backyard/backyard-east-side
+      notify_service: notify.mobile_app_zlatko_fold_5
+- id: gate_open_llm_west
+  alias: West Gate Open AI Analysis
+  description: Blueprint gate_open_llm_vision_people — west gate.
+  use_blueprint:
+    path: gate_open_llm_vision_people.yaml
+    input:
+      gate_name: West gate
+      gate_slug: west_gate
+      gate_sensor: binary_sensor.west_side_door_door
+      gate_open_state: 'on'
+      camera: camera.west_side
+      llmvision_provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      llmvision_model: omega-ollama
+      target_width: 1280
+      public_base_url: 'https://ha.mostardesigns.com/local/'
+      notification_click_path: /dashboard-backyard/backyard-west-side
+      notify_service: notify.mobile_app_zlatko_fold_5
+- id: gate_open_llm_back_yard_gate
+  alias: Back Yard Gate Open AI Analysis
+  description: Blueprint gate_open_llm_vision_people — fence / back yard gate.
+  use_blueprint:
+    path: gate_open_llm_vision_people.yaml
+    input:
+      gate_name: Back yard gate
+      gate_slug: back_yard_gate
+      gate_sensor: binary_sensor.fence_gate_door
+      gate_open_state: 'on'
+      camera: camera.back_yard
+      llmvision_provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      llmvision_model: omega-ollama
+      target_width: 1280
+      public_base_url: 'https://ha.mostardesigns.com/local/'
+      notification_click_path: /dashboard-backyard/backyard-back-yard
+      notify_service: notify.mobile_app_zlatko_fold_5
 - id: '1757732558171'
   alias: East Gate Open Notification
   description: ''
