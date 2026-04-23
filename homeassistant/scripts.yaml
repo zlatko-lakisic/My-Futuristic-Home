@@ -1,4 +1,4 @@
-process_ai_analysis_and_notification:
+﻿process_ai_analysis_and_notification:
   mode: parallel
   fields:
     camera_id:
@@ -21,7 +21,7 @@ process_ai_analysis_and_notification:
         intervals. Focus only on moving subjects such as people, vehicles, and other
         active elements. Ignore static objects and scenery. Provide a clear and concise
         account of movements and interactions. Do not mention or imply the existence
-        of images—present the information as if directly observing the events. If
+        of imagesâ€”present the information as if directly observing the events. If
         no movement is detected, respond with: ''No activity observed.'''
     notification_title:
       selector:
@@ -53,7 +53,7 @@ process_ai_analysis_and_notification:
       max_tokens: 1000
       generate_title: false
       expose_images: true
-      provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      provider: 01KPW6YJ00E65E4HXM9Q53093Q
       model: '{{ model }}'
       image_entity: '{{ camera_id }}'
       message: '{{ai_prompt}}'
@@ -266,3 +266,4 @@ bhyve_toggle_selected_zone:
       data:
         entity_id: '{{ zone_entity }}'
         minutes: '{{ duration_minutes | int(10) }}'
+
