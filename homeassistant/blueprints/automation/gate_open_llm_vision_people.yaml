@@ -1,0 +1,187 @@
+blueprint:
+  name: Gate open — LLM Vision people alert
+  description: |
+    When a gate contact opens, take a camera snapshot, run LLM Vision (e.g. CodeProject AI / Ollama),
+    and notify when the model classifies **PEOPLE** on line 1. Frigate-fed cameras: if analysis fails,
+    restart Frigate/go2rtc first.
+
+    Configure one automation per gate (east, west, back yard) with its sensor, camera, and dashboard path.
+  domain: automation
+  homeassistant:
+    min_version: '2024.6.0'
+  input:
+    gate_name:
+      name: Gate name
+      description: Shown in notifications and in the LLM prompt (e.g. East gate, West gate).
+      selector:
+        text:
+    gate_slug:
+      name: Snapshot file slug
+      description: Safe prefix for /config/www/tmp/<slug>_timestamp.jpg (e.g. east_gate, west_gate).
+      default: gate
+      selector:
+        text:
+    gate_sensor:
+      name: Gate door sensor
+      description: Binary sensor that indicates the gate is open (see Gate open state).
+      selector:
+        entity:
+          domain: binary_sensor
+    gate_open_state:
+      name: Gate open state
+      description: State value when the gate is open (often "on").
+      default: "on"
+      selector:
+        text:
+    camera:
+      name: Camera
+      selector:
+        entity:
+          domain: camera
+    llmvision_provider:
+      name: LLM Vision provider
+      description: Config entry for your CodeProject / OpenAI-compatible provider.
+      selector:
+        config_entry:
+          integration: llmvision
+    llmvision_model:
+      name: Vision model
+      default: omega-ollama
+      selector:
+        text:
+    target_width:
+      name: Target image width (px)
+      description: Downscale width sent to the model (smaller = faster upload).
+      default: 1280
+      selector:
+        number:
+          min: 512
+          max: 1920
+          step: 64
+          mode: slider
+    public_base_url:
+      name: Public image URL base
+      description: Must end with / — prepended to the snapshot path for the mobile image (e.g. https://example.com/local/).
+      default: "https://ha.mostardesigns.com/local/"
+      selector:
+        text:
+    notification_click_path:
+      name: Dashboard path (tap / click action)
+      description: Lovelace path opened from the mobile notification (url / clickAction), e.g. /dashboard-backyard/backyard-east-side.
+      default: /dashboard-backyard/backyard
+      selector:
+        text:
+    notify_service:
+      name: Notify service
+      description: Home Assistant notify service for the phone (e.g. notify.mobile_app_my_phone).
+      default: notify.mobile_app_zlatko_fold_5
+      selector:
+        text:
+    notify_people:
+      name: Notify people
+      description: Send to all mobile-app devices registered to selected people.
+      selector:
+        entity:
+          domain: person
+          multiple: true
+
+mode: single
+variables:
+  gate_name: !input gate_name
+  gate_slug: !input gate_slug
+  snapshot_timestamp: '{{ now().strftime("%Y%m%d-%H%M%S") }}'
+  snapshot_rel: 'tmp/{{ gate_slug }}_{{ snapshot_timestamp }}.jpg'
+  snapshot_path: '/config/www/{{ snapshot_rel }}'
+  public_base_url: !input public_base_url
+  public_image_url: '{{ public_base_url }}{{ snapshot_rel }}'
+triggers:
+  - trigger: state
+    entity_id: !input gate_sensor
+    to: !input gate_open_state
+actions:
+  - action: camera.snapshot
+    target:
+      entity_id: !input camera
+    data:
+      filename: '{{ snapshot_path }}'
+  - action: llmvision.image_analyzer
+    data:
+      provider: !input llmvision_provider
+      model: !input llmvision_model
+      image_file: '{{ snapshot_path }}'
+      include_filename: false
+      store_in_timeline: false
+      use_memory: false
+      max_tokens: 500
+      generate_title: false
+      expose_images: false
+      target_width: !input target_width
+      message: "You are viewing one still frame from the {{ gate_name }} security camera.\nYour reply must be exactly 3 lines and nothing else: no title, no preamble, no blank lines, no markdown, no numbering. The very first character of your reply must be the letter P or N (the start of PEOPLE or NOPEOPLE).\n\nLine 1 — classification (this line is used by automation; format matters): output ONLY the single word PEOPLE if any human is visible anywhere (foreground or background, partial or small figures count). Otherwise ONLY the single word NOPEOPLE. No other words or punctuation on line 1.\n\nLine 2 — home log (standalone; do not mention lines or instructions): concrete observation — how many people if any, where they are, what they are doing, notable clothing or objects. Do not write \"this image\", \"the photo\", \"the frame\", or \"the camera\". Max 240 characters, one paragraph.\n\nLine 3 — phone alert (standalone; must not refer to other lines): write a shorter summary of the scene using only factual words. Max 120 characters. Do not write \"line 1\", \"line 2\", \"line 3\", \"same as\", \"see above\", \"as before\", or any meta text. Do not quote or paraphrase these instructions."
+    response_variable: ai_response
+  - variables:
+      reply: '{{ ai_response.response_text | default("") | trim }}'
+      gate_class_idx: "{% set sl = reply.splitlines() %}{% set ns = namespace(idx=-1) %}{% for i in range(sl | length) %}{% if ns.idx < 0 %}{% set line = sl[i] %}{% set cleaned = line | regex_replace('(?i)^[\\s*_`]*(?:line\\s*1\\s*[:.)-]*)?\\s*', '') | trim %}{% set cleaned = cleaned | regex_replace('(?i)^(?:\\d+\\s*[.)\\-])?\\s*', '') | trim %}{% set parts = cleaned.split() %}{% set w = parts[0] if parts | length > 0 else '' %}{% set tok = w | regex_replace('[^A-Za-z]', '') | upper %}{% if tok == 'PEOPLE' or tok == 'NOPEOPLE' %}{% set ns.idx = i %}{% endif %}{% endif %}{% endfor %}{{ ns.idx }}"
+      log_description: "{% set sl = reply.splitlines() %}{% set idx = gate_class_idx | default(-1) | int %}{% if idx >= 0 and idx + 1 < sl | length %}{{ sl[idx + 1] | trim | truncate(240, true, '...') }}{% elif sl | length > 1 %}{{ sl[1] | trim | truncate(240, true, '...') }}{% else %}{{ reply | truncate(240, true, '...') }}{% endif %}"
+      mobile_short: "{% set sl = reply.splitlines() %}{% set idx = gate_class_idx | default(-1) | int %}{% if idx >= 0 and idx + 2 < sl | length %}{{ sl[idx + 2] | trim | truncate(120, true, '...') }}{% elif idx >= 0 and idx + 1 < sl | length %}{{ sl[idx + 1] | trim | truncate(120, true, '...') }}{% elif sl | length > 2 %}{{ sl[2] | trim | truncate(120, true, '...') }}{% elif sl | length > 1 %}{{ sl[1] | trim | truncate(120, true, '...') }}{% else %}Person at {{ gate_name }}{% endif %}"
+      notify_services: >-
+        {% set ns = namespace(services=[]) %}
+        {% for p in (notify_people | default([], true)) %}
+          {% for dt in state_attr(p, 'device_trackers') | default([], true) %}
+            {% if dt is string and dt.startswith('device_tracker.') %}
+              {% set slug = dt | replace('device_tracker.', '') %}
+              {% set svc = 'notify.mobile_app_' ~ slug %}
+              {% if svc not in ns.services %}
+                {% set ns.services = ns.services + [svc] %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+        {{ ns.services | to_json }}
+  - if:
+    - condition: template
+      value_template: "{% set sl = reply.splitlines() %}{% set idx = gate_class_idx | default(-1) | int %}{% if idx < 0 %}false{% else %}{% set line = sl[idx] %}{% set cleaned = line | regex_replace('(?i)^[\\s*_`]*(?:line\\s*1\\s*[:.)-]*)?\\s*', '') | trim %}{% set cleaned = cleaned | regex_replace('(?i)^(?:\\d+\\s*[.)\\-])?\\s*', '') | trim %}{% set parts = cleaned.split() %}{% set w = parts[0] if parts | length > 0 else '' %}{% set tok = w | regex_replace('[^A-Za-z]', '') | upper %}{{ tok == 'PEOPLE' }}{% endif %}"
+    then:
+    - action: persistent_notification.create
+      data:
+        notification_id: '{{ gate_slug }}_ai_{{ snapshot_timestamp }}'
+        title: '{{ gate_name }} · {{ log_description | truncate(65, true, ''...'') }}'
+        message: |
+          {{ log_description }}
+
+          ![{{ gate_name }}](/local/{{ snapshot_rel }})
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ (notify_services | from_json | count) > 0 }}'
+        sequence:
+        - repeat:
+            for_each: '{{ notify_services | from_json }}'
+            sequence:
+            - action: '{{ repeat.item }}'
+              continue_on_error: true
+              data:
+                title: '{{ gate_name }} · {{ mobile_short | truncate(48, true, ''...'') }}'
+                message: '{{ mobile_short }}'
+                data:
+                  image: '{{ public_image_url }}'
+                  url: !input notification_click_path
+                  clickAction: !input notification_click_path
+                  push:
+                    sound:
+                      name: default
+                      critical: 1
+                      volume: 1
+      default:
+      - action: !input notify_service
+        data:
+          title: '{{ gate_name }} · {{ mobile_short | truncate(48, true, ''...'') }}'
+          message: '{{ mobile_short }}'
+          data:
+            image: '{{ public_image_url }}'
+            url: !input notification_click_path
+            clickAction: !input notification_click_path
+            push:
+              sound:
+                name: default
+                critical: 1
+                volume: 1

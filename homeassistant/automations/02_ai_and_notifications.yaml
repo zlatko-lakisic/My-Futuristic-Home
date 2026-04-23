@@ -41,6 +41,8 @@
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /dashboard-backyard/backyard-east-side
+      notify_people:
+      - person.zlatko_lakisic
       notify_service: notify.mobile_app_zlatko_fold_5
 - id: gate_open_llm_west
   alias: West Gate Open AI Analysis
@@ -58,6 +60,8 @@
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /dashboard-backyard/backyard-west-side
+      notify_people:
+      - person.zlatko_lakisic
       notify_service: notify.mobile_app_zlatko_fold_5
 - id: gate_open_llm_back_yard_gate
   alias: Back Yard Gate Open AI Analysis
@@ -75,6 +79,8 @@
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /dashboard-backyard/backyard-back-yard
+      notify_people:
+      - person.zlatko_lakisic
       notify_service: notify.mobile_app_zlatko_fold_5
 - id: '1757732558171'
   alias: East Gate Open Notification
