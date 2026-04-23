@@ -40,7 +40,7 @@
       llmvision_model: omega-ollama
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
-      notification_click_path: /dashboard-backyard/backyard-east-side
+      notification_click_path: /backyard-yaml/backyard-east-side
       notify_people:
       - person.zlatko_lakisic
       notify_service: notify.mobile_app_zlatko_fold_5
@@ -59,7 +59,7 @@
       llmvision_model: omega-ollama
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
-      notification_click_path: /dashboard-backyard/backyard-west-side
+      notification_click_path: /backyard-yaml/backyard-west-side
       notify_people:
       - person.zlatko_lakisic
       notify_service: notify.mobile_app_zlatko_fold_5
@@ -78,7 +78,7 @@
       llmvision_model: omega-ollama
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
-      notification_click_path: /dashboard-backyard/backyard-back-yard
+      notification_click_path: /backyard-yaml/backyard-back-yard
       notify_people:
       - person.zlatko_lakisic
       notify_service: notify.mobile_app_zlatko_fold_5

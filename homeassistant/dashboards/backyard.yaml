@@ -60,7 +60,7 @@ views:
                         show_label: false
                         tap_action:
                           action: navigate
-                          navigation_path: /dashboard-backyard-yaml/backyard-frigate-people
+                          navigation_path: /backyard-yaml/backyard-frigate-people
                         hold_action:
                           action: more-info
                         styles:
@@ -102,7 +102,7 @@ views:
                         show_label: false
                         tap_action:
                           action: navigate
-                          navigation_path: /dashboard-backyard-yaml/backyard-frigate-dogs
+                          navigation_path: /backyard-yaml/backyard-frigate-dogs
                         hold_action:
                           action: more-info
                         styles:
@@ -144,7 +144,7 @@ views:
                         show_label: false
                         tap_action:
                           action: navigate
-                          navigation_path: /dashboard-backyard-yaml/backyard-frigate-faces
+                          navigation_path: /backyard-yaml/backyard-frigate-faces
                         hold_action:
                           action: more-info
                         styles:
@@ -1044,7 +1044,7 @@ views:
                             show_label: false
                             tap_action:
                               action: navigate
-                              navigation_path: /dashboard-backyard-yaml/backyard-unifi-clients
+                              navigation_path: /backyard-yaml/backyard-unifi-clients
                             hold_action:
                               action: more-info
                             styles:
@@ -1279,7 +1279,7 @@ views:
     path: backyard-unifi-clients
     icon: mdi:wifi
     subview: true
-    back_path: /dashboard-backyard-yaml
+    back_path: /backyard-yaml
     cards:
       - type: markdown
         content: >
@@ -1328,7 +1328,7 @@ views:
     path: backyard-frigate-people
     icon: mdi:account-multiple
     subview: true
-    back_path: /dashboard-backyard-yaml/backyard
+    back_path: /backyard-yaml/backyard
     cards:
       - type: markdown
         content: >
@@ -1367,7 +1367,7 @@ views:
     path: backyard-frigate-dogs
     icon: mdi:dog-side
     subview: true
-    back_path: /dashboard-backyard-yaml/backyard
+    back_path: /backyard-yaml/backyard
     cards:
       - type: markdown
         content: >
@@ -1405,7 +1405,7 @@ views:
     path: backyard-frigate-faces
     icon: mdi:face-recognition
     subview: true
-    back_path: /dashboard-backyard-yaml/backyard
+    back_path: /backyard-yaml/backyard
     cards:
       - type: markdown
         content: >

@@ -67,8 +67,8 @@ blueprint:
         text:
     notification_click_path:
       name: Dashboard path (tap / click action)
-      description: Lovelace path opened from the mobile notification (url / clickAction), e.g. /dashboard-backyard/backyard-east-side.
-      default: /dashboard-backyard/backyard
+      description: Lovelace path opened from the mobile notification (url / clickAction), e.g. /backyard-yaml/backyard-east-side.
+      default: /backyard-yaml/backyard
       selector:
         text:
     notify_service:
