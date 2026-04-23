@@ -1,4 +1,4 @@
-- id: '1748680509520'
+﻿- id: '1748680509520'
   alias: LLM Testing
   description: ''
   triggers: []
@@ -27,7 +27,7 @@
   mode: single
 - id: gate_open_llm_east
   alias: East Gate Open AI Analysis
-  description: Blueprint gate_open_llm_vision_people — east gate.
+  description: Blueprint gate_open_llm_vision_people â€” east gate.
   use_blueprint:
     path: gate_open_llm_vision_people.yaml
     input:
@@ -36,7 +36,7 @@
       gate_sensor: binary_sensor.east_side_door_door
       gate_open_state: 'on'
       camera: camera.east_side
-      llmvision_provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      llmvision_provider: 01KPW6YJ00E65E4HXM9Q53093Q
       llmvision_model: omega-ollama
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
@@ -44,7 +44,7 @@
       notify_service: notify.mobile_app_zlatko_fold_5
 - id: gate_open_llm_west
   alias: West Gate Open AI Analysis
-  description: Blueprint gate_open_llm_vision_people — west gate.
+  description: Blueprint gate_open_llm_vision_people â€” west gate.
   use_blueprint:
     path: gate_open_llm_vision_people.yaml
     input:
@@ -53,7 +53,7 @@
       gate_sensor: binary_sensor.west_side_door_door
       gate_open_state: 'on'
       camera: camera.west_side
-      llmvision_provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      llmvision_provider: 01KPW6YJ00E65E4HXM9Q53093Q
       llmvision_model: omega-ollama
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
@@ -61,7 +61,7 @@
       notify_service: notify.mobile_app_zlatko_fold_5
 - id: gate_open_llm_back_yard_gate
   alias: Back Yard Gate Open AI Analysis
-  description: Blueprint gate_open_llm_vision_people — fence / back yard gate.
+  description: Blueprint gate_open_llm_vision_people â€” fence / back yard gate.
   use_blueprint:
     path: gate_open_llm_vision_people.yaml
     input:
@@ -70,7 +70,7 @@
       gate_sensor: binary_sensor.fence_gate_door
       gate_open_state: 'on'
       camera: camera.back_yard
-      llmvision_provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      llmvision_provider: 01KPW6YJ00E65E4HXM9Q53093Q
       llmvision_model: omega-ollama
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
@@ -101,7 +101,7 @@
       camera_id: camera.east_side
       notification_title: East Gate Open Notification
       notification_click_url: /back-yard/east-gate
-      ai_prompt: 'Summarize the events based on a series of images captured at short intervals. Focus only on moving subjects such as people, vehicles, and other active elements. Ignore static objects and scenery. Provide a clear and concise account of movements and interactions. Do not mention or imply the existence of images—present the information as if directly observing the events. If no movement is detected, respond with: ''No activity observed.'''
+      ai_prompt: 'Summarize the events based on a series of images captured at short intervals. Focus only on moving subjects such as people, vehicles, and other active elements. Ignore static objects and scenery. Provide a clear and concise account of movements and interactions. Do not mention or imply the existence of imagesâ€”present the information as if directly observing the events. If no movement is detected, respond with: ''No activity observed.'''
   mode: single
 - id: '1757732652729'
   alias: West Gate Open Notification
@@ -162,7 +162,7 @@
       - camera.east_side
       motion_sensors:
       - binary_sensor.east_side_motion
-      provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      provider: 01KPW6YJ00E65E4HXM9Q53093Q
       model: omega-ollama
       notify: true
       notify_device:
@@ -185,9 +185,10 @@
       - camera.garden_north
       motion_sensors:
       - binary_sensor.garden_north_all_occupancy
-      provider: 01KKJ9BPA7D9QH8GM33N18P7C1
+      provider: 01KPW6YJ00E65E4HXM9Q53093Q
       notify_device:
       - 3cab96ade88a859c680543da3cbc807e
       file_path: /media/local/snapshots/{{ camera_file_path }}/last_motion.jpg
       notification_channel: '{{ camera }} snapshot'
       model: omega-ollama
+
