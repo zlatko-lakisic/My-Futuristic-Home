@@ -1,5 +1,7 @@
 # 🚀 My Futuristic Home
 
+![My Futuristic Home Banner](./assets/banner.png)
+
 Welcome to the central documentation for my smart home ecosystem. This repository tracks the configuration, hardware inventory, and infrastructure layout for a high-performance, locally-controlled automation environment.
 
 ## 📂 Documentation Directory
