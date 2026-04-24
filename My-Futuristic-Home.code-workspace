@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "\\\\192.168.89.25\\config"
+		},
+		{
+			"path": "../My-Futuristic-Home.wiki"
 		}
 	],
 	"settings": {}
