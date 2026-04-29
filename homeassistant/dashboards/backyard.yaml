@@ -538,17 +538,18 @@ views:
                           {% endif %}
                         tap_action:
                           action: more-info
+                  # Snapshot-style soil moisture bars (current values), not time history.
                   - type: custom:statistics-graph-chart-card
                     card_header: SOIL MOISTURE
                     card_icon_position: left
-                    show_grid: true
-                    show_tooltip: false
-                    show_tooltip_total: true
+                    show_grid: false
+                    show_tooltip: true
+                    show_tooltip_total: false
                     show_legend: false
-                    show_y_axis: true
-                    show_y2_axis: true
+                    show_y_axis: false
+                    show_y2_axis: false
                     show_y_axis_label: false
-                    show_x_axis: true
+                    show_x_axis: false
                     show_x_ticks: false
                     show_y_ticks: false
                     logarithmic: false
@@ -556,289 +557,52 @@ views:
                     animate_graph: false
                     stacked: false
                     sparkline: false
-                    scroll_mode: scrollbar
+                    scroll_mode: hidden
                     show_interval_picker: false
                     interval_picker_position: left
                     show_attribute_list: false
                     attribute_list_position: left
-                    hours_to_show: 24
-                    points_per_hour: 2
+                    hours_to_show: 1
+                    points_per_hour: 1
                     auto_scale_points: false
-                    height: 150
+                    height: 180
                     show_full_period: false
+                    bar_spacing: 8
+                    lower_bound: "0"
+                    upper_bound: "100"
+                    datetime_format: system
                     tooltip_sync: false
                     energy_date_sync: false
                     align_header: left
-                    state_layout: horizontal
+                    state_layout: default
                     group_by: interval
                     chart_mode: ranking
-                    y_axis_color: '#ffffff'
-                    pie_label_color: '#ffffff'
-                    card_mod:
-                      style: |
-                        :host {
-                          --primary-text-color: #ffffff !important;
-                          --secondary-text-color: rgba(255, 255, 255, 0.92) !important;
-                        }
-                        ha-card {
-                          --primary-text-color: #ffffff !important;
-                          --secondary-text-color: rgba(255, 255, 255, 0.92) !important;
-                        }
                     entities:
                       - entity: sensor.garden_controller_soil_moisture_1
-                        statistic_id: null
                         name: Cabbage
-                        icon: null
-                        icon_color: null
-                        color: '#ff4757'
-                        y_axis: primary
+                        color: "#db3f58"
                         graph_type: bar
-                        line_width: 2.5
-                        points_per_hour: null
-                        show_state: false
-                        show_state_last: false
-                        state_adaptive_color: false
                         show_graph: true
-                        show_in_legend: false
-                        legend_stats:
-                          - min
-                          - avg
-                          - max
-                        show_points: false
-                        point_colors: null
-                        show_line: true
-                        show_fill: true
-                        show_range_band: false
-                        gradient: true
-                        smooth: true
-                        decimals: 1
-                        aggregate_func: last
-                        number_format: system
-                        trend_period_hours: 1
-                        show_trend_icon: false
-                        rise_fall_colors: null
-                        color_thresholds: null
-                        lower_bound: null
-                        upper_bound: null
-                        show_extrema: click
-                        show_average: false
-                        name_size: null
-                        icon_size: null
-                        state_size: null
-                        state_color: '#ffffff'
-                        trend_icon_size: null
-                        value_factor: 0
-                        value_transform: null
-                        fixed_value: false
-                        offset: 0
-                        state_map: null
-                        align_state: left
-                        stack_group: null
-                        tap_action: null
-                      - entity: sensor.garden_controller_soil_moisture_4
-                        statistic_id: null
-                        name: Tomatoes
-                        icon: null
-                        icon_color: null
-                        color: '#2ecc71'
-                        y_axis: primary
-                        graph_type: line
-                        line_width: 2.5
-                        points_per_hour: null
-                        show_state: false
-                        show_state_last: false
-                        state_adaptive_color: false
-                        show_graph: true
-                        show_in_legend: false
-                        legend_stats:
-                          - min
-                          - avg
-                          - max
-                        show_points: false
-                        point_colors: null
-                        show_line: true
-                        show_fill: true
-                        show_range_band: false
-                        gradient: true
-                        smooth: true
-                        decimals: 1
-                        aggregate_func: last
-                        number_format: system
-                        trend_period_hours: 1
-                        show_trend_icon: false
-                        rise_fall_colors: null
-                        color_thresholds: null
-                        lower_bound: null
-                        upper_bound: null
-                        show_extrema: click
-                        show_average: false
-                        name_size: null
-                        icon_size: null
-                        state_size: null
-                        state_color: '#ffffff'
-                        trend_icon_size: null
-                        attribute: null
-                        value_factor: 0
-                        value_transform: null
-                        fixed_value: false
-                        offset: 0
-                        state_map: null
-                        align_state: left
-                        stack_group: null
-                        tap_action: null
-                      - entity: sensor.garden_controller_soil_moisture_6
-                        statistic_id: null
-                        name: Zucchini
-                        icon: null
-                        icon_color: null
-                        color: '#f39c12'
-                        y_axis: primary
-                        graph_type: line
-                        line_width: 2.5
-                        points_per_hour: null
-                        show_state: false
-                        show_state_last: false
-                        state_adaptive_color: false
-                        show_graph: true
-                        show_in_legend: false
-                        legend_stats:
-                          - min
-                          - avg
-                          - max
-                        show_points: false
-                        point_colors: null
-                        show_line: true
-                        show_fill: true
-                        show_range_band: false
-                        gradient: true
-                        smooth: true
-                        decimals: 1
-                        aggregate_func: last
-                        number_format: system
-                        trend_period_hours: 1
-                        show_trend_icon: false
-                        rise_fall_colors: null
-                        color_thresholds: null
-                        lower_bound: null
-                        upper_bound: null
-                        show_extrema: click
-                        show_average: false
-                        name_size: null
-                        icon_size: null
-                        state_size: null
-                        state_color: '#ffffff'
-                        trend_icon_size: null
-                        attribute: null
-                        value_factor: 0
-                        value_transform: null
-                        fixed_value: false
-                        offset: 0
-                        state_map: null
-                        align_state: left
-                        stack_group: null
-                        tap_action: null
-                      - entity: sensor.garden_controller_soil_moisture_2
-                        statistic_id: null
-                        name: Flower Bed
-                        icon: null
-                        icon_color: null
-                        color: '#9b59b6'
-                        y_axis: primary
-                        graph_type: line
-                        line_width: 2.5
-                        points_per_hour: null
-                        show_state: false
-                        show_state_last: false
-                        state_adaptive_color: false
-                        show_graph: true
-                        show_in_legend: false
-                        legend_stats:
-                          - min
-                          - avg
-                          - max
-                        show_points: false
-                        point_colors: null
-                        show_line: true
-                        show_fill: true
-                        show_range_band: false
-                        gradient: true
-                        smooth: true
-                        decimals: 1
-                        aggregate_func: last
-                        number_format: system
-                        trend_period_hours: 1
-                        show_trend_icon: false
-                        rise_fall_colors: null
-                        color_thresholds: null
-                        lower_bound: null
-                        upper_bound: null
-                        show_extrema: click
-                        show_average: false
-                        name_size: null
-                        icon_size: null
-                        state_size: null
-                        state_color: '#ffffff'
-                        trend_icon_size: null
-                        attribute: null
-                        value_factor: 0
-                        value_transform: null
-                        fixed_value: false
-                        offset: 0
-                        state_map: null
-                        align_state: left
-                        stack_group: null
-                        tap_action: null
                       - entity: sensor.garden_controller_soil_moisture_3
-                        statistic_id: null
                         name: Slope Kitchen Left
-                        icon: null
-                        icon_color: null
-                        color: '#1abc9c'
-                        y_axis: primary
-                        graph_type: line
-                        line_width: 2.5
-                        points_per_hour: null
-                        show_state: false
-                        show_state_last: false
-                        state_adaptive_color: false
+                        color: "#18a999"
+                        graph_type: bar
                         show_graph: true
-                        show_in_legend: false
-                        legend_stats:
-                          - min
-                          - avg
-                          - max
-                        show_points: false
-                        point_colors: null
-                        show_line: true
-                        show_fill: true
-                        show_range_band: false
-                        gradient: true
-                        smooth: true
-                        decimals: 1
-                        aggregate_func: last
-                        number_format: system
-                        trend_period_hours: 1
-                        show_trend_icon: false
-                        rise_fall_colors: null
-                        color_thresholds: null
-                        lower_bound: null
-                        upper_bound: null
-                        show_extrema: click
-                        show_average: false
-                        name_size: null
-                        icon_size: null
-                        state_size: null
-                        state_color: '#ffffff'
-                        trend_icon_size: null
-                        attribute: null
-                        value_factor: 0
-                        value_transform: null
-                        fixed_value: false
-                        offset: 0
-                        state_map: null
-                        align_state: left
-                        stack_group: null
-                        tap_action: null
+                      - entity: sensor.garden_controller_soil_moisture_2
+                        name: Flower Bed
+                        color: "#9b59b6"
+                        graph_type: bar
+                        show_graph: true
+                      - entity: sensor.garden_controller_soil_moisture_6
+                        name: Zucchini
+                        color: "#f39c12"
+                        graph_type: bar
+                        show_graph: true
+                      - entity: sensor.garden_controller_soil_moisture_4
+                        name: Tomatoes
+                        color: "#2ecc71"
+                        graph_type: bar
+                        show_graph: true
                     annotations: []
                     state_map: null
               - type: vertical-stack
