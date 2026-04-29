@@ -60,6 +60,8 @@ homeassistant:
     qbittorrent_speed_k: !include packages/qbittorrent_speed_k.yaml
     axis_frigate_gauge_sensors: !include packages/axis_frigate_gauge_sensors.yaml
     bhyve_manual_zone_resolve: !include packages/bhyve_manual_zone_resolve.yaml
+    rest_command_ai_watering: !include packages/rest_command_ai_watering.yaml
+    ai_dusk_sequential_watering_script: !include packages/ai_dusk_sequential_watering_script.yaml
 
 influxdb:
   api_version: "1"
@@ -157,19 +159,18 @@ mqtt: !include mqtt.yaml
 input_select:
   bhyve_manual_zone:
     name: BHyve Manual Zone
-    # Labels must match each switch entity's friendly_name (see Developer tools → States).
+    # Labels must match each valve entity's friendly_name (Developer tools → States).
     options:
       - Cabbage zone
       - East Lawn
       - Flower Bed
-      - Top Flowers
-      - Kitchen Lawn
-      - Zone 4 zone
+      - Flower Garden & Back Lawn Time Zone 4 zone
       - Front Lawn
-      - Peppers & Kale Zone zone
-      - Tomato Zone zone
-      - Top Zone zone
-      - Zucchini Zone zone
+      - Kitchen Lawn
+      - Flower Garden & Back Lawn Time Slope Kitchen Left zone
+      - Vegitable Garden Timer Peppers & Kale Zone zone
+      - Vegitable Garden Timer Tomato Zone zone
+      - Vegitable Garden Timer Zucchini Zone zone
     initial: Front Lawn
     icon: mdi:sprinkler-variant
 

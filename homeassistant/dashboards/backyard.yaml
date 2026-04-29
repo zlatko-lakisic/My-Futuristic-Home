@@ -572,6 +572,7 @@ views:
                     state_layout: horizontal
                     group_by: interval
                     chart_mode: ranking
+                    y_axis_color: '#e8eaed'
                     entities:
                       - entity: sensor.garden_controller_soil_moisture_1
                         statistic_id: null
@@ -613,59 +614,8 @@ views:
                         name_size: null
                         icon_size: null
                         state_size: null
-                        state_color: null
+                        state_color: '#e8eaed'
                         trend_icon_size: null
-                        value_factor: 0
-                        value_transform: null
-                        fixed_value: false
-                        offset: 0
-                        state_map: null
-                        align_state: left
-                        stack_group: null
-                        tap_action: null
-                      - entity: sensor.garden_controller_soil_moisture_5
-                        statistic_id: null
-                        name: Peppers
-                        icon: null
-                        icon_color: null
-                        color: '#378ADD'
-                        y_axis: primary
-                        graph_type: line
-                        line_width: 2.5
-                        points_per_hour: null
-                        show_state: false
-                        show_state_last: false
-                        state_adaptive_color: false
-                        show_graph: true
-                        show_in_legend: false
-                        legend_stats:
-                          - min
-                          - avg
-                          - max
-                        show_points: false
-                        point_colors: null
-                        show_line: true
-                        show_fill: true
-                        show_range_band: false
-                        gradient: true
-                        smooth: true
-                        decimals: 1
-                        aggregate_func: last
-                        number_format: system
-                        trend_period_hours: 1
-                        show_trend_icon: false
-                        rise_fall_colors: null
-                        color_thresholds: null
-                        lower_bound: null
-                        upper_bound: null
-                        show_extrema: click
-                        show_average: false
-                        name_size: null
-                        icon_size: null
-                        state_size: null
-                        state_color: null
-                        trend_icon_size: null
-                        attribute: null
                         value_factor: 0
                         value_transform: null
                         fixed_value: false
@@ -714,7 +664,7 @@ views:
                         name_size: null
                         icon_size: null
                         state_size: null
-                        state_color: null
+                        state_color: '#e8eaed'
                         trend_icon_size: null
                         attribute: null
                         value_factor: 0
@@ -765,7 +715,7 @@ views:
                         name_size: null
                         icon_size: null
                         state_size: null
-                        state_color: null
+                        state_color: '#e8eaed'
                         trend_icon_size: null
                         attribute: null
                         value_factor: 0
@@ -816,7 +766,7 @@ views:
                         name_size: null
                         icon_size: null
                         state_size: null
-                        state_color: null
+                        state_color: '#e8eaed'
                         trend_icon_size: null
                         attribute: null
                         value_factor: 0
@@ -829,7 +779,7 @@ views:
                         tap_action: null
                       - entity: sensor.garden_controller_soil_moisture_3
                         statistic_id: null
-                        name: Upper Bed
+                        name: Slope Kitchen Left
                         icon: null
                         icon_color: null
                         color: '#1abc9c'
@@ -867,7 +817,7 @@ views:
                         name_size: null
                         icon_size: null
                         state_size: null
-                        state_color: null
+                        state_color: '#e8eaed'
                         trend_icon_size: null
                         attribute: null
                         value_factor: 0
@@ -976,31 +926,35 @@ views:
                                   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
                             cards:
                               - type: tile
-                                entity: switch.east_lawn_timer_east_lawn_zone
+                                entity: valve.east_lawn_timer_east_lawn_zone_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.east_lawn_timer_flower_bed_zone
+                                entity: valve.east_lawn_timer_flower_bed_zone_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.flower_garden_back_lawn_time_2nd_tier_flowers_zone
+                                entity: valve.flower_garden_back_lawn_time_2nd_tier_flowers_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.flower_garden_back_lawn_time_back_lawn_zone_zone
+                                entity: valve.flower_garden_back_lawn_time_back_lawn_zone_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.front_yard_controller_front_yard_zone
+                                entity: valve.flower_garden_back_lawn_time_slope_kitchen_left_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.unnamed_zone_zone_2
+                                entity: valve.front_yard_controller_front_yard_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.garden_zone
+                                entity: valve.unnamed_zone_zone_2
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: valve.garden_zone
                                 vertical: false
                                 features_position: bottom
                           - type: heading
@@ -1009,7 +963,7 @@ views:
                           - type: custom:layout-card
                             layout_type: custom:grid-layout
                             layout:
-                              grid-template-columns: repeat(4, minmax(0, 1fr))
+                              grid-template-columns: repeat(3, minmax(0, 1fr))
                               grid-gap: 8px
                               justify-items: stretch
                               place-items: stretch
@@ -1018,19 +972,15 @@ views:
                                   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
                             cards:
                               - type: tile
-                                entity: switch.vegitable_garden_timer_peppers_kale_zone_zone
+                                entity: valve.vegitable_garden_timer_peppers_kale_zone_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.vegitable_garden_timer_tomato_zone_zone
+                                entity: valve.vegitable_garden_timer_tomato_zone_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.vegitable_garden_timer_top_zone_zone
-                                vertical: false
-                                features_position: bottom
-                              - type: tile
-                                entity: switch.vegitable_garden_timer_zucchini_zone_zone
+                                entity: valve.vegitable_garden_timer_zucchini_zone_zone
                                 vertical: false
                                 features_position: bottom
                         title: IRRIGATION ZONES

@@ -1,0 +1,458 @@
+script:
+  ai_dusk_sequential_watering:
+    alias: AI Dusk Sequential Watering
+    description: Ask Ollama for per-zone run times and water zones sequentially at dusk.
+    fields:
+      simulate:
+        name: Simulate only
+        description: If enabled, fetch weather and LLM plan but do not open valves—notification shows planned minutes per zone.
+        required: false
+        default: false
+        selector:
+          boolean:
+    mode: single
+    sequence:
+    - variables:
+        simulate_mode: '{{ simulate | default(false) | bool }}'
+    - variables:
+        zones:
+        - label: East Lawn
+          entity_id: valve.east_lawn_timer_east_lawn_zone_zone
+          area_sqm: 60
+          sun_exposure: 35 percent shade / partial sun, 65 percent sun
+          plant_profile: Tall fescue lawn grass
+          irrigation_hardware: Two Orbit H2O-Six style gear-drive sprinklers, spaced apart, each about 180 degree arc
+          estimated_flow_gpm: 3.0-6.0 combined
+          notes: Adjustable 25-360 degree arc, typical operating pressure 15-65 psi
+          soil_sensor: ''
+        - label: Flower Bed
+          entity_id: valve.east_lawn_timer_flower_bed_zone_zone
+          area_sqm: 6
+          sun_exposure: Partial sun morning, near full sun evening
+          plant_profile: 13 hosta plants and mint in mulched bed
+          irrigation_hardware: Drip hose about 5 meters long in a U pattern around the bed
+          estimated_flow_gpm: 0.15-0.30
+          notes: Flow estimate based on typical dripline emitter rates around 0.6-1.0 GPH at roughly 12 inch spacing over 5 meters
+          soil_sensor: sensor.garden_controller_soil_moisture_2
+        - label: Front Lawn
+          entity_id: valve.front_yard_controller_front_yard_zone
+          area_sqm: 36
+          sun_exposure: Predominantly shady, with sun in the morning through after midday
+          plant_profile: Tall fescue grass
+          irrigation_hardware: One Orbit H2O-Six style gear-drive sprinkler at about 90 degree pattern
+          estimated_flow_gpm: 1.0-2.0
+          notes: Same Orbit H2O-Six type as East Lawn, single head with narrower 90 degree arc
+          soil_sensor: ''
+        - label: Slope Kitchen Left
+          entity_id: valve.flower_garden_back_lawn_time_slope_kitchen_left_zone
+          area_sqm: 9
+          sun_exposure: Full sun throughout the day
+          plant_profile: Mixed ornamental flowers and spring bulbs on a mulched slope
+          irrigation_hardware: Micro-irrigation similar to the zucchini zone (spray stakes / low-flow emitters); tune after observing coverage on the slope
+          estimated_flow_gpm: 1.2-2.0
+          notes: Mulched slope—water can move downhill; prefer avoiding runoff (consider shorter cycles if needed). Area roughly ~9 m² square-ish footprint.
+          soil_sensor: sensor.garden_controller_soil_moisture_3
+        - label: Peppers and Kale
+          entity_id: valve.vegitable_garden_timer_peppers_kale_zone_zone
+          area_sqm: 6.1
+          sun_exposure: Full sun throughout the day
+          plant_profile: Basil, parsley, kale, and peppers
+          irrigation_hardware: Long soaker hose, about 30 feet
+          estimated_flow_gpm: 0.25-0.50
+          notes: Zone dimensions are about 22ft x 3ft, black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
+          soil_sensor: sensor.garden_controller_soil_moisture_5
+        - label: Tomato
+          entity_id: valve.vegitable_garden_timer_tomato_zone_zone
+          area_sqm: 6.1
+          sun_exposure: Full sun throughout the day
+          plant_profile: 8 tomato plants
+          irrigation_hardware: Long soaker hose, about 30 feet
+          estimated_flow_gpm: 0.25-0.50
+          notes: Same setup style as Peppers and Kale zone; black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
+          soil_sensor: sensor.garden_controller_soil_moisture_4
+        - label: Zucchini
+          entity_id: valve.vegitable_garden_timer_zucchini_zone_zone
+          area_sqm: null
+          sun_exposure: Full sun throughout the day
+          plant_profile: 8 zucchini plants, 8 pea plants, and 8 eggplant plants
+          irrigation_hardware: Amazon B0F174M21Y watering setup with 12 spray stake nozzles and 4 misters (for peas)
+          estimated_flow_gpm: 1.2-2.0
+          notes: Approximate combined flow estimated from common micro-irrigation ranges (spray stakes plus low-flow misters); tune after observing pressure and runoff
+          soil_sensor: sensor.garden_controller_soil_moisture_6
+        - label: Kitchen Lawn
+          entity_id: valve.flower_garden_back_lawn_time_zone_4_zone
+          area_sqm: 36
+          sun_exposure: Full sun
+          plant_profile: Two lawn sections, mostly grass with a few lilies between
+          irrigation_hardware: Two sprinklers connected in sequence (Amazon B0C6FLH75D, Melnor MiniMax style oscillating sprinklers)
+          estimated_flow_gpm: 2.5-4.5 combined
+          notes: Two lawns about 18m squared each; in-series setup tends to give more flow at first head and reduced pressure/flow at second head
+          soil_sensor: ''
+        ecowitt_temp: '{{ states(''sensor.garden_controller_indoor_temperature'') }}'
+        ecowitt_dewpoint: '{{ states(''sensor.garden_controller_indoor_dewpoint'') }}'
+        # Chat completions model id for http://10.0.10.16:8080/v1/chat/completions — not the LLMVision alias omega-ollama.
+        ollama_chat_model: !secret ollama_chat_model
+    - service: rest_command.openweathermap_5day_forecast
+      data:
+        api_key: !secret openweathermap_api_key
+      response_variable: owm_response
+    - service: rest_command.open_meteo_precipitation_past_24h
+      response_variable: meteo_past_response
+    - service: rest_command.homeassistant_history_garden_24h
+      response_variable: ha_history_response
+    - service: rest_command.homeassistant_history_irrigation_valves
+      response_variable: ha_valve_history_response
+    - variables:
+        # Parse OpenWeather response once here — do not store JSON then |from_json again (HA wraps/chokes on round-trip).
+        forecast_short: >-
+          {% set raw = owm_response.content | default(none) %}
+          {% set owm = raw if raw is mapping else (raw | trim | from_json(default={}) if raw is string and raw | trim else {}) %}
+          {% set forecast_items = owm.list | default([]) %}
+          {% set ns = namespace(items=[]) %}
+          {% for f in forecast_items[:8] %}
+            {% set ns.items = ns.items + [{
+              'time': f.dt_txt | default('', true),
+              'temp_f': f.main.temp | default(none, true),
+              'humidity_pct': f.main.humidity | default(none, true),
+              'weather': (f.weather[0].description if f.weather is defined and f.weather | count > 0 else ''),
+              'rain_mm_3h': (f.rain['3h'] if f.rain is defined and f.rain['3h'] is defined else 0)
+            }] %}
+          {% endfor %}
+          {{ ns.items | to_json }}
+        open_meteo_past_rain_for_llm: >-
+          {% set raw = meteo_past_response.content | default('') %}
+          {% set st = meteo_past_response.status | default(0) %}
+          {% if st != 200 %}
+          {{ {'error': 'open_meteo_http_' ~ st} | to_json }}
+          {% else %}
+          {% set j = raw if raw is mapping else (raw | trim | from_json(default={}) if raw is string and raw | trim else {}) %}
+          {% set hourly = j.get('hourly', {}) if j is mapping else {} %}
+          {% set times = hourly.get('time') if hourly is mapping else none %}
+          {% set precs = hourly.get('precipitation') if hourly is mapping else none %}
+          {% if times is string or times is not sequence %}
+            {% set times = [] %}
+          {% endif %}
+          {% if precs is string or precs is not sequence %}
+            {% set precs = [] %}
+          {% endif %}
+          {% set ns = namespace(total=0.0, mx=0.0, hourly=[]) %}
+          {% set cnt = [times | length, precs | length] | min %}
+          {% for i in range(cnt) %}
+            {% set p = precs[i] | float(0) %}
+            {% set ns.total = ns.total + p %}
+            {% if p > ns.mx %}
+              {% set ns.mx = p %}
+            {% endif %}
+            {% set ns.hourly = ns.hourly + [{'t': times[i], 'mm': (precs[i] | float(0)) | round(3)}] %}
+          {% endfor %}
+          {{
+            {
+              'source': 'open_meteo_hourly_grid',
+              'hours': cnt,
+              'precipitation_mm_sum': ns.total | round(3),
+              'max_hourly_precipitation_mm': ns.mx | round(3),
+              'rained_in_past_24h_estimate': ns.total >= 0.1,
+              'hourly_mm': ns.hourly
+            } | to_json
+          }}
+          {% endif %}
+        sensor_history_24h_for_llm: >-
+          {% set raw = ha_history_response.content | default('') %}
+          {% set st = ha_history_response.status | default(0) %}
+          {% if st != 200 %}
+          {{
+            {
+              'error': 'recorder_history_http_' ~ st,
+              'hint': 'Profile → Security → Long-lived access token (JWT only). Paste into helper input_text.ai_watering_ha_api_token (Settings → Helpers → AI watering Recorder API token).'
+            } | to_json
+          }}
+          {% else %}
+          {% set outer = raw | trim | from_json(default=[]) %}
+          {% set accum = namespace(items=[]) %}
+          {% for series in outer %}
+            {% if series | length > 0 %}
+              {% set eid = series[0].entity_id | default('', true) %}
+              {% set ns = namespace(minv=none, maxv=none, samples=[]) %}
+              {% set n = series | length %}
+              {% set stride = ([((n - 1) / 71) | round(0,'ceil') | int, 1] | max) if n > 72 else 1 %}
+              {% for pt in series %}
+                {% set fv = pt.state | float(none) %}
+                {% if fv is not none %}
+                  {% if ns.minv is none or fv < ns.minv %}
+                    {% set ns.minv = fv %}
+                  {% endif %}
+                  {% if ns.maxv is none or fv > ns.maxv %}
+                    {% set ns.maxv = fv %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+              {% for pt in series %}
+                {% if loop.first or loop.last or ((not loop.first) and (not loop.last) and (loop.index0 % stride == 0)) %}
+                  {% set ns.samples = ns.samples + [{'t': pt.last_changed | default(pt.last_updated), 'state': pt.state}] %}
+                {% endif %}
+              {% endfor %}
+              {% set fc = series[0].state %}
+              {% set lc = series[-1].state %}
+              {% set accum.items = accum.items + [{
+                'entity_id': eid,
+                'points': n,
+                'first': fc,
+                'last': lc,
+                'min_numeric': ns.minv,
+                'max_numeric': ns.maxv,
+                'samples': ns.samples
+              }] %}
+            {% endif %}
+          {% endfor %}
+          {{
+            {
+              'period_hours': 24,
+              'recorder_end': now().isoformat(),
+              'soil_moisture_index': 'sensor.garden_controller_soil_moisture_1=Cabbage,_2=Flower_Bed,_3=Slope_Kitchen_Left,_4=Tomato,_5=Peppers_Kale,_6=Zucchini',
+              'entities': accum.items
+            } | to_json
+          }}
+          {% endif %}
+        valve_last_watering_for_llm: >-
+          {% set raw = ha_valve_history_response.content | default('') %}
+          {% set st = ha_valve_history_response.status | default(0) %}
+          {% if st != 200 %}
+          {{ {'error': 'valve_history_http_' ~ st} | to_json }}
+          {% else %}
+          {% set outer = raw | trim | from_json(default=[]) %}
+          {% set root = namespace(rows=[]) %}
+          {% for series in outer %}
+            {% if series | length > 0 %}
+              {% set eid = series[0].entity_id | default('', true) %}
+              {% set L = series | length %}
+              {% set win = namespace(start=none, end=none, mins=none, note='') %}
+              {% if L >= 2 %}
+                {% for j in range(L - 1) %}
+                  {% set s0 = series[j].state | lower | trim %}
+                  {% set s1 = series[j + 1].state | lower | trim %}
+                  {% if (s0 in ['open', 'on', 'opening']) and (s1 in ['closed', 'off', 'closing']) %}
+                    {% set win.start = series[j].last_changed | default(series[j].last_updated, true) %}
+                    {% set win.end = series[j + 1].last_changed | default(series[j + 1].last_updated, true) %}
+                  {% endif %}
+                {% endfor %}
+                {% if win.start is not none and win.end is not none %}
+                  {% set win.mins = (((win.end | as_timestamp(0)) - (win.start | as_timestamp(0))) / 60) | round(1) %}
+                {% endif %}
+              {% endif %}
+              {% if win.start is none and L >= 1 %}
+                {% set sl = series[-1].state | lower | trim %}
+                {% if sl in ['open', 'on', 'opening'] %}
+                  {% set win.start = series[-1].last_changed | default(series[-1].last_updated, true) %}
+                  {% set win.note = 'still_open_in_window_duration_vs_now_approximate' %}
+                  {% set win.mins = (((now() | as_timestamp) - (win.start | as_timestamp(0))) / 60) | round(1) %}
+                {% endif %}
+              {% endif %}
+              {% set root.rows = root.rows + [{
+                'entity_id': eid,
+                'last_watering_start': win.start,
+                'last_watering_end': win.end,
+                'last_watering_duration_minutes': win.mins,
+                'note': win.note
+              }] %}
+            {% endif %}
+          {% endfor %}
+          {{ {'lookback_days': 30, 'valves': root.rows} | to_json }}
+          {% endif %}
+        zone_context: >-
+          {% set vw = valve_last_watering_for_llm | trim | from_json(default={'valves': []}) %}
+          {% set vlist = vw.valves | default([]) %}
+          {% set ns = namespace(items=[]) %}
+          {% for z in zones %}
+            {% set soil = states(z.soil_sensor) if z.soil_sensor else 'n/a' %}
+            {% set row = namespace(v=none) %}
+            {% for r in vlist %}
+              {% if r.entity_id == z.entity_id %}
+                {% set row.v = r %}
+              {% endif %}
+            {% endfor %}
+            {% set ns.items = ns.items + [{
+              'label': z.label,
+              'entity_id': z.entity_id,
+              'area_sqm': z.area_sqm,
+              'sun_exposure': z.sun_exposure,
+              'plant_profile': z.plant_profile,
+              'irrigation_hardware': z.irrigation_hardware,
+              'estimated_flow_gpm': z.estimated_flow_gpm,
+              'notes': z.notes,
+              'soil_sensor': z.soil_sensor,
+              'soil_moisture_pct': soil,
+              'ecowitt_temp_f': ecowitt_temp,
+              'ecowitt_dewpoint_f': ecowitt_dewpoint,
+              'last_watering_start': row.v.last_watering_start | default(none, true) if row.v else none,
+              'last_watering_end': row.v.last_watering_end | default(none, true) if row.v else none,
+              'last_watering_duration_minutes': row.v.last_watering_duration_minutes | default(none, true) if row.v else none,
+              'last_watering_note': row.v.note | default('', true) if row.v else ''
+            }] %}
+          {% endfor %}
+          {{ ns.items | to_json }}
+        llm_prompt: >-
+          You are an irrigation planner for a residential yard.
+          Return ONLY strict JSON with this exact shape:
+          {"zones":[{"label":"East Lawn","minutes":10},{"label":"Flower Bed","minutes":8},{"label":"Front Lawn","minutes":10},{"label":"Slope Kitchen Left","minutes":8},{"label":"Peppers and Kale","minutes":8},{"label":"Tomato","minutes":8},{"label":"Zucchini","minutes":8},{"label":"Kitchen Lawn","minutes":8}]}
+          Use label strings exactly as in zone data (same spelling/capitalization).
+          Data sources:
+          - Zone snapshot + current soil % (where sensors exist), plus per-zone last watering start/end/duration_minutes from Home Assistant valve history (30-day lookback): zone_context JSON.
+          - Past ~24h precipitation at this location (model grid): open_meteo_past_rain JSON — use precipitation_mm_sum and rained_in_past_24h_estimate for whether meaningful rain reached the yard recently (OpenWeatherMap forecast API does not include verified historical rainfall).
+          - Past ~24h indoor/garden sensor trends from Home Assistant recorder (sampled if many points): sensor_history JSON — soil moisture entity ids map to beds (see soil_moisture_index inside JSON).
+          - Next ~24h forecast: OpenWeatherMap forecast_short JSON.
+          Rules:
+          - Use integer minutes only.
+          - Clamp each zone to 1-25 minutes.
+          - Weight soil trends and recent rain heavily; prefer shorter runs if it already rained materially or soil stayed high; prefer moderate increases if soil dried steadily.
+          - Prefer shorter durations if significant rain is forecast soon or soil moisture is already high.
+          - Keep all listed zones in the response, no extra fields.
+          Zone data JSON: {{ zone_context }}
+          Open-Meteo past 24h precipitation (hourly_mm): {{ open_meteo_past_rain_for_llm }}
+          Home Assistant past 24h sensor series: {{ sensor_history_24h_for_llm }}
+          OpenWeatherMap forecast JSON (next ~24h): {{ forecast_short }}
+        llm_payload: >-
+          {{
+            {
+              'model': ollama_chat_model,
+              'temperature': 0.2,
+              'messages': [
+                {'role': 'system', 'content': 'Respond with strict JSON only, no markdown.'},
+                {'role': 'user', 'content': llm_prompt}
+              ]
+            } | to_json
+          }}
+    - service: rest_command.ollama_chat_completions
+      data:
+        payload: '{{ llm_payload }}'
+      response_variable: llm_response
+    - variables:
+        llm_http_status: '{{ llm_response.status | default(-1) }}'
+        llm_raw_snippet: >-
+          {% set raw = llm_response.content | default(none) %}
+          {% if raw is string %}
+            {{ raw[:1200] }}
+          {% elif raw is mapping %}
+            {{ (raw | to_json)[:1200] }}
+          {% else %}
+            {{ '' }}
+          {% endif %}
+        llm_raw_text: >-
+          {% set raw = llm_response.content | default(none) %}
+          {% set lj = raw if raw is mapping else (raw | trim | from_json(default={}) if raw is string and raw | trim else {}) %}
+          {% set ns = namespace(txt='') %}
+          {% if lj is mapping %}
+            {% if lj.choices is defined and lj.choices | count > 0 %}
+              {% set ch = lj.choices[0] %}
+              {% if ch.message is mapping and ch.message.content is defined %}
+                {% set ns.txt = ch.message.content | default('', true) %}
+              {% elif ch.message is string %}
+                {% set ns.txt = ch.message %}
+              {% elif ch.text is defined %}
+                {% set ns.txt = ch.text | default('', true) %}
+              {% endif %}
+            {% endif %}
+          {% endif %}
+          {{ ns.txt }}
+        llm_clean_text: >-
+          {{
+            llm_raw_text
+            | regex_replace('^```json\\s*', '')
+            | regex_replace('^```\\s*', '')
+            | regex_replace('\\s*```$', '')
+            | trim
+          }}
+        llm_zone_map: >-
+          {% set ct = llm_clean_text | default(none) %}
+          {% if ct is mapping %}
+            {% set lp = ct %}
+          {% elif ct is string and ct | trim | length > 0 %}
+            {% set lp = ct | trim | from_json(default={}) %}
+          {% else %}
+            {% set lp = {} %}
+          {% endif %}
+          {% set ns = namespace(m={}) %}
+          {% if lp is mapping and lp.zones is defined %}
+            {% for item in lp.zones %}
+              {% set label = item.label | default('', true) %}
+              {% set mins = item.minutes | default(0, true) | int(0) %}
+              {% if label %}
+                {% set ns.m = dict(ns.m, **{label: mins}) %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {{ ns.m | to_json }}
+        simulate_summary: >-
+          {% set raw = llm_zone_map | default(none) %}
+          {% if raw is mapping %}
+            {% set m = raw %}
+          {% elif raw is string and raw | trim | length > 0 %}
+            {% set m = raw | trim | from_json(default={}) %}
+          {% else %}
+            {% set m = {} %}
+          {% endif %}
+          {% set ns = namespace(lines=[]) %}
+          {% for z in zones %}
+            {% set lm = m.get(z.label, 10) | int(10) %}
+            {% set rm = [1, [lm, 25] | min] | max %}
+            {% set ns.lines = ns.lines + [
+              z.label ~ ': ' ~ rm ~ ' min → ' ~ z.entity_id
+            ] %}
+          {% endfor %}
+          {{ ns.lines | join('\n') }}
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: "{{ not simulate_mode }}"
+        sequence:
+        - repeat:
+            for_each: '{{ zones }}'
+            sequence:
+            - variables:
+                zone_label: '{{ repeat.item.label }}'
+                zone_entity: '{{ repeat.item.entity_id }}'
+                llm_minutes: >-
+                  {% set raw = llm_zone_map | default(none) %}
+                  {% if raw is mapping %}
+                    {% set m = raw %}
+                  {% elif raw is string and raw | trim | length > 0 %}
+                    {% set m = raw | trim | from_json(default={}) %}
+                  {% else %}
+                    {% set m = {} %}
+                  {% endif %}
+                  {{ m.get(zone_label, 10) | int(10) }}
+                run_minutes: '{{ [1, [llm_minutes, 25] | min] | max }}'
+            - if:
+              - condition: template
+                value_template: "{{ states(zone_entity) not in ['unknown', 'unavailable', 'none', ''] }}"
+              then:
+              - action: bhyve.start_watering
+                data:
+                  entity_id: '{{ zone_entity }}'
+                  minutes: '{{ run_minutes }}'
+              - delay:
+                  hours: 0
+                  minutes: '{{ run_minutes }}'
+                  seconds: 10
+                  milliseconds: 0
+              - action: bhyve.stop_watering
+                data:
+                  entity_id: '{{ zone_entity }}'
+    - action: persistent_notification.create
+      data:
+        title: "{{ 'AI dusk watering simulation (dry run)' if simulate_mode else 'BHyve dusk watering complete' }}"
+        message: >-
+          {% if simulate_mode %}
+          Planned minutes per zone (valves not activated):
+          {{ simulate_summary }}
+
+          Raw LLM JSON:
+          {{ llm_clean_text | default('n/a', true) }}
+          {% if not (llm_clean_text | default('', true) | trim | length) %}
+          ---
+          HTTP {{ llm_http_status }}. Response (debug):
+          {{ llm_raw_snippet | default('n/a', true) }}
+          {% endif %}
+          {% else %}
+          Completed sequential AI watering plan.
+          LLM plan: {{ llm_clean_text | default('n/a', true) }}
+          {% endif %}
