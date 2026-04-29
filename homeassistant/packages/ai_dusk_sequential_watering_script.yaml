@@ -1,3 +1,40 @@
+input_boolean:
+  ai_dusk_watering_in_progress:
+    name: AI Dusk Watering In Progress
+    icon: mdi:sprinkler-variant
+
+input_number:
+  ai_dusk_watering_next_index:
+    name: AI Dusk Watering Next Zone Index
+    min: 1
+    max: 8
+    step: 1
+    mode: box
+    icon: mdi:format-list-numbered
+
+automation:
+  - id: ai_dusk_watering_resume_after_restart
+    alias: AI Dusk Watering Resume After Restart
+    description: Resume remaining dusk zones after Home Assistant startup if previous run was interrupted.
+    mode: single
+    triggers:
+      - trigger: homeassistant
+        event: start
+    conditions:
+      - condition: state
+        entity_id: input_boolean.ai_dusk_watering_in_progress
+        state: "on"
+    actions:
+      - action: persistent_notification.create
+        data:
+          title: AI dusk watering resume
+          message: >-
+            Home Assistant restarted during watering. Resuming at zone index {{
+            states('input_number.ai_dusk_watering_next_index') | int(1) }}.
+      - action: script.ai_dusk_sequential_watering
+        data:
+          start_index: "{{ states('input_number.ai_dusk_watering_next_index') | int(1) }}"
+
 script:
   ai_dusk_sequential_watering:
     alias: AI Dusk Sequential Watering
@@ -10,10 +47,23 @@ script:
         default: false
         selector:
           boolean:
-    mode: single
+      start_index:
+        name: Start index
+        description: 1-based zone index used for resume workflows (normally leave as 1).
+        required: false
+        default: 1
+        selector:
+          number:
+            min: 1
+            max: 8
+            mode: box
+    mode: queued
+    max: 2
     sequence:
     - variables:
         simulate_mode: '{{ simulate | default(false) | bool }}'
+        start_index_raw: '{{ start_index | default(1) | int(1) }}'
+        start_index_clamped: '{{ [1, [start_index_raw, 8] | min] | max }}'
     - variables:
         zones:
         - label: East Lawn
@@ -431,21 +481,43 @@ script:
           Estimated wall time about {{ eta }} total (watering plus ~55 seconds after each station so the hub can switch valves safely).
 
           Any unavailable valve will be skipped — actual runtime may be shorter.
+        pending_zones: >-
+          {% set idx = start_index_clamped | int(1) %}
+          {% set ns = namespace(items=[]) %}
+          {% for z in zones %}
+            {% if loop.index >= idx %}
+              {% set ns.items = ns.items + [z] %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.items }}
     - choose:
       - conditions:
         - condition: template
           value_template: "{{ not simulate_mode }}"
         sequence:
+        - action: input_boolean.turn_on
+          data:
+            entity_id: input_boolean.ai_dusk_watering_in_progress
+        - action: input_number.set_value
+          data:
+            entity_id: input_number.ai_dusk_watering_next_index
+            value: "{{ start_index_clamped | int(1) }}"
         - action: persistent_notification.create
           data:
             title: Dusk watering started
-            message: "{{ irrigation_start_summary }}"
+            message: >-
+              {% if start_index_clamped | int(1) > 1 %}
+              Resuming interrupted run at zone index {{ start_index_clamped }}.
+
+              {% endif %}
+              {{ irrigation_start_summary }}
         - repeat:
-            for_each: '{{ zones }}'
+            for_each: '{{ pending_zones }}'
             sequence:
             - variables:
                 zone_label: '{{ repeat.item.label }}'
                 zone_entity: '{{ repeat.item.entity_id }}'
+                zone_index: '{{ (start_index_clamped | int(1) + repeat.index - 1) | int }}'
                 llm_minutes: >-
                   {% set raw = llm_zone_map | default(none) %}
                   {% if raw is mapping %}
@@ -476,12 +548,27 @@ script:
               # Same hub often hosts multiple stations (e.g. East Lawn + Flower Bed). Immediate start/stop on another station fails silently until manual mode clears.
               - delay:
                   seconds: 45
+              - action: input_number.set_value
+                data:
+                  entity_id: input_number.ai_dusk_watering_next_index
+                  value: "{{ [zone_index + 1, 8] | min }}"
               else:
               - action: persistent_notification.create
                 data:
                   title: AI dusk watering — zone skipped
                   message: >-
                     Skipped {{ zone_label }} ({{ zone_entity }}); valve state was {{ states(zone_entity) }} (unknown/unavailable).
+              - action: input_number.set_value
+                data:
+                  entity_id: input_number.ai_dusk_watering_next_index
+                  value: "{{ [zone_index + 1, 8] | min }}"
+        - action: input_boolean.turn_off
+          data:
+            entity_id: input_boolean.ai_dusk_watering_in_progress
+        - action: input_number.set_value
+          data:
+            entity_id: input_number.ai_dusk_watering_next_index
+            value: 1
     - action: persistent_notification.create
       data:
         title: "{{ 'AI dusk watering simulation (dry run)' if simulate_mode else 'BHyve dusk watering complete' }}"
