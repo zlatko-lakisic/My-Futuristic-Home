@@ -399,11 +399,47 @@ script:
             ] %}
           {% endfor %}
           {{ ns.lines | join('\n') }}
+        irrigation_start_summary: >-
+          {% set raw = llm_zone_map | default(none) %}
+          {% if raw is mapping %}
+            {% set m = raw %}
+          {% elif raw is string and raw | trim | length > 0 %}
+            {% set m = raw | trim | from_json(default={}) %}
+          {% else %}
+            {% set m = {} %}
+          {% endif %}
+          {% set ns = namespace(lines=[], sec=0) %}
+          {% for z in zones %}
+            {% set lm = m.get(z.label, 10) | int(10) %}
+            {% set rm = [1, [lm, 25] | min] | max %}
+            {% set ns.lines = ns.lines + [('• ' ~ z.label ~ ' — ' ~ rm ~ ' min')] %}
+            {% set ns.sec = ns.sec + (rm * 60) + 55 %}
+          {% endfor %}
+          {% set h = (ns.sec // 3600) | int %}
+          {% set mi = ((ns.sec % 3600) // 60) | int %}
+          {% if h > 0 %}
+            {% set eta = (h ~ ' hr ' ~ mi ~ ' min') %}
+          {% elif mi > 0 %}
+            {% set eta = (mi ~ ' min') %}
+          {% else %}
+            {% set eta = 'under a minute' %}
+          {% endif %}
+          Dusk watering has started. Below is each station's planned run time, then a rough total duration.
+
+          {{ ns.lines | join('\n') }}
+
+          Estimated wall time about {{ eta }} total (watering plus ~55 seconds after each station so the hub can switch valves safely).
+
+          Any unavailable valve will be skipped — actual runtime may be shorter.
     - choose:
       - conditions:
         - condition: template
           value_template: "{{ not simulate_mode }}"
         sequence:
+        - action: persistent_notification.create
+          data:
+            title: Dusk watering started
+            message: "{{ irrigation_start_summary }}"
         - repeat:
             for_each: '{{ zones }}'
             sequence:
