@@ -572,7 +572,18 @@ views:
                     state_layout: horizontal
                     group_by: interval
                     chart_mode: ranking
-                    y_axis_color: '#e8eaed'
+                    y_axis_color: '#ffffff'
+                    pie_label_color: '#ffffff'
+                    card_mod:
+                      style: |
+                        :host {
+                          --primary-text-color: #ffffff !important;
+                          --secondary-text-color: rgba(255, 255, 255, 0.92) !important;
+                        }
+                        ha-card {
+                          --primary-text-color: #ffffff !important;
+                          --secondary-text-color: rgba(255, 255, 255, 0.92) !important;
+                        }
                     entities:
                       - entity: sensor.garden_controller_soil_moisture_1
                         statistic_id: null
@@ -614,7 +625,7 @@ views:
                         name_size: null
                         icon_size: null
                         state_size: null
-                        state_color: '#e8eaed'
+                        state_color: '#ffffff'
                         trend_icon_size: null
                         value_factor: 0
                         value_transform: null
@@ -664,7 +675,7 @@ views:
                         name_size: null
                         icon_size: null
                         state_size: null
-                        state_color: '#e8eaed'
+                        state_color: '#ffffff'
                         trend_icon_size: null
                         attribute: null
                         value_factor: 0
@@ -715,7 +726,7 @@ views:
                         name_size: null
                         icon_size: null
                         state_size: null
-                        state_color: '#e8eaed'
+                        state_color: '#ffffff'
                         trend_icon_size: null
                         attribute: null
                         value_factor: 0
@@ -766,7 +777,7 @@ views:
                         name_size: null
                         icon_size: null
                         state_size: null
-                        state_color: '#e8eaed'
+                        state_color: '#ffffff'
                         trend_icon_size: null
                         attribute: null
                         value_factor: 0
@@ -817,7 +828,7 @@ views:
                         name_size: null
                         icon_size: null
                         state_size: null
-                        state_color: '#e8eaed'
+                        state_color: '#ffffff'
                         trend_icon_size: null
                         attribute: null
                         value_factor: 0

@@ -428,15 +428,24 @@ script:
               - action: bhyve.start_watering
                 data:
                   entity_id: '{{ zone_entity }}'
-                  minutes: '{{ run_minutes }}'
+                  minutes: '{{ run_minutes | int(10) }}'
               - delay:
                   hours: 0
-                  minutes: '{{ run_minutes }}'
+                  minutes: '{{ run_minutes | int(10) }}'
                   seconds: 10
                   milliseconds: 0
               - action: bhyve.stop_watering
                 data:
                   entity_id: '{{ zone_entity }}'
+              # Same hub often hosts multiple stations (e.g. East Lawn + Flower Bed). Immediate start/stop on another station fails silently until manual mode clears.
+              - delay:
+                  seconds: 45
+              else:
+              - action: persistent_notification.create
+                data:
+                  title: AI dusk watering — zone skipped
+                  message: >-
+                    Skipped {{ zone_label }} ({{ zone_entity }}); valve state was {{ states(zone_entity) }} (unknown/unavailable).
     - action: persistent_notification.create
       data:
         title: "{{ 'AI dusk watering simulation (dry run)' if simulate_mode else 'BHyve dusk watering complete' }}"
