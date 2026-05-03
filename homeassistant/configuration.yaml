@@ -75,6 +75,12 @@ influxdb:
   # InfluxDB v2: use secrets / UI for token, bucket, and organization — never commit them.
   max_retries: 3
 
+# Home Assistant native history retention (History/Logbook UI).
+# InfluxDB long-term storage is configured separately by Influx retention policy.
+recorder:
+  purge_keep_days: 365
+  auto_purge: true
+
 template: !include templates.yaml
     
 climate:
@@ -170,7 +176,7 @@ input_select:
       - Flower Garden & Back Lawn Time Slope Kitchen Left zone
       - Vegitable Garden Timer Peppers & Kale Zone zone
       - Vegitable Garden Timer Tomato Zone zone
-      - Vegitable Garden Timer Zucchini Zone zone
+      - Vegitable Garden Timer Top Zone zone
     initial: Front Lawn
     icon: mdi:sprinkler-variant
 
@@ -184,6 +190,27 @@ input_number:
     unit_of_measurement: min
     initial: 10
     icon: mdi:timer-outline
+
+input_text:
+  gate_ai_last_gate:
+    name: Gate AI Last Gate
+    max: 100
+  gate_ai_last_classification:
+    name: Gate AI Last Classification
+    max: 32
+  gate_ai_last_summary:
+    name: Gate AI Last Summary
+    max: 255
+  livingroom_climate_state:
+    name: Livingroom Climate State
+  livingroom_climate_target_temperature:
+    name: Livingroom Climate Target Temperature
+
+input_datetime:
+  gate_ai_last_analysis_time:
+    name: Gate AI Last Analysis Time
+    has_date: true
+    has_time: true
 
 http:
   ip_ban_enabled: true
