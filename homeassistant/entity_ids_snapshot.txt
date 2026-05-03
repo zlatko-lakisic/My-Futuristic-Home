@@ -346,7 +346,7 @@ binary_sensor.west_side_all_occupancy
 binary_sensor.west_side_bark_sound
 binary_sensor.west_side_cat_occupancy
 binary_sensor.west_side_dog_occupancy
-binary_sensor.west_side_door_door
+binary_sensor.west_side_gate_door
 binary_sensor.west_side_fire_alarm_sound
 binary_sensor.west_side_motion_2
 binary_sensor.west_side_mouse_occupancy

@@ -16,7 +16,7 @@
       expose_images: true
       model: gemini-2.0-flash
       image_entity:
-      - camera.driveway
+      - camera.driveway_2
       - image.driveway_car
     response_variable: response
   - action: persistent_notification.create
@@ -35,6 +35,7 @@
       gate_slug: east_gate
       gate_sensor: binary_sensor.east_side_door_door
       gate_open_state: 'on'
+      # No camera.east_side_2 (AXIS) on this host; Frigate entity for snapshots.
       camera: camera.east_side
       llmvision_provider: 01KPW6YJ00E65E4HXM9Q53093Q
       llmvision_model: omega-ollama
@@ -52,9 +53,9 @@
     input:
       gate_name: West gate
       gate_slug: west_gate
-      gate_sensor: binary_sensor.west_side_door_door
+      gate_sensor: binary_sensor.west_side_gate_door
       gate_open_state: 'on'
-      camera: camera.west_side
+      camera: camera.west_side_2
       llmvision_provider: 01KPW6YJ00E65E4HXM9Q53093Q
       llmvision_model: omega-ollama
       target_width: 1280
@@ -73,7 +74,7 @@
       gate_slug: back_yard_gate
       gate_sensor: binary_sensor.fence_gate_door
       gate_open_state: 'on'
-      camera: camera.back_yard
+      camera: camera.back_yard_2
       llmvision_provider: 01KPW6YJ00E65E4HXM9Q53093Q
       llmvision_model: omega-ollama
       target_width: 1280
@@ -113,11 +114,10 @@
   alias: West Gate Open Notification
   description: ''
   triggers:
-  - type: opened
-    device_id: 32a8dc1724bc53e1a79ff9d8d9b15f2e
-    entity_id: 9346377e6bc669e8c01737efb30d0a3e
-    domain: binary_sensor
-    trigger: device
+  - trigger: state
+    entity_id:
+      - binary_sensor.west_side_gate_door
+    to: 'on'
   conditions:
   - condition: device
     device_id: 3cab96ade88a859c680543da3cbc807e
@@ -130,7 +130,7 @@
     metadata: {}
     data:
       write_persistent_notification: true
-      camera_id: camera.west_side
+      camera_id: camera.west_side_2
       notification_title: West Gate Open Notification
       notification_click_url: /back-yard/west-gate
   mode: single
@@ -153,7 +153,7 @@
     metadata: {}
     data:
       write_persistent_notification: true
-      camera_id: camera.driveway
+      camera_id: camera.driveway_2
       ai_prompt: 'Summarize the events based on a series of images captured at short intervals. If a vehicle is present describe it, including the make, model, color style, and provide the license plate. If there are any people, describe them and what they are doing. Otherwise respond with: ''No activity observed.'''
       notification_title: Driveway Car Notification
       notification_click_url: /dashboard-garage/driveway
@@ -188,7 +188,7 @@
     path: valentinfrlch/event_summary.yaml
     input:
       camera_entities:
-      - camera.garden_north
+      - camera.garden_north_2
       motion_sensors:
       - binary_sensor.garden_north_all_occupancy
       provider: 01KPW6YJ00E65E4HXM9Q53093Q

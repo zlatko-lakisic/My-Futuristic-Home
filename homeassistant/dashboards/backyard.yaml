@@ -24,27 +24,15 @@ views:
               - square: false
                 type: grid
                 cards:
-                  - type: custom:advanced-camera-card
-                    cameras:
-                      - camera_entity: camera.back_yard
-                        dimensions:
-                          layout:
-                            fit: cover
-                            position:
-                              x: 50
-                              'y': 50
-                    dimensions:
-                      aspect_ratio_mode: static
-                      aspect_ratio: '16:7'
-                    live:
-                      preload: false
-                    status_bar:
-                      position: top
-                      popup_seconds: 60
-                      style: overlay
-                      height: 30
-                    menu:
-                      style: none
+                  - type: picture-entity
+                    entity: camera.back_yard_2
+                    camera_view: auto
+                    show_state: false
+                    show_name: true
+                    name: Back Yard
+                    tap_action:
+                      action: navigate
+                      navigation_path: /backyard-yaml/backyard-frigate-details
                   - type: custom:layout-card
                     layout_type: custom:grid-layout
                     layout:
@@ -60,7 +48,7 @@ views:
                         show_label: false
                         tap_action:
                           action: navigate
-                          navigation_path: /backyard-yaml/backyard-frigate-people
+                          navigation_path: /backyard-yaml/backyard-frigate-details
                         hold_action:
                           action: more-info
                         styles:
@@ -102,7 +90,7 @@ views:
                         show_label: false
                         tap_action:
                           action: navigate
-                          navigation_path: /backyard-yaml/backyard-frigate-dogs
+                          navigation_path: /backyard-yaml/backyard-frigate-details
                         hold_action:
                           action: more-info
                         styles:
@@ -144,7 +132,7 @@ views:
                         show_label: false
                         tap_action:
                           action: navigate
-                          navigation_path: /backyard-yaml/backyard-frigate-faces
+                          navigation_path: /backyard-yaml/backyard-frigate-details
                         hold_action:
                           action: more-info
                         styles:
@@ -187,78 +175,42 @@ views:
                       grid-gap: 8px
                       place-items: stretch
                     cards:
-                      - type: custom:advanced-camera-card
-                        cameras:
-                          - camera_entity: camera.east_side
-                            dimensions:
-                              layout:
-                                fit: cover
-                                position:
-                                  x: 50
-                                  'y': 50
-                        live:
-                          preload: false
-                        dimensions:
-                          aspect_ratio_mode: static
-                          aspect_ratio: '4:3'
-                        status_bar:
-                          style: overlay
-                          position: bottom
-                          popup_seconds: 60
-                      - type: custom:advanced-camera-card
-                        cameras:
-                          - camera_entity: camera.west_side
-                            dimensions:
-                              layout:
-                                fit: cover
-                                position:
-                                  x: 50
-                                  'y': 50
-                        live:
-                          preload: false
-                        dimensions:
-                          aspect_ratio_mode: static
-                          aspect_ratio: '4:3'
-                        status_bar:
-                          style: overlay
-                          position: bottom
-                          popup_seconds: 60
-                      - type: custom:advanced-camera-card
-                        cameras:
-                          - camera_entity: camera.garden_south
-                            dimensions:
-                              layout:
-                                fit: cover
-                                position:
-                                  x: 50
-                                  'y': 50
-                        live:
-                          preload: false
-                        dimensions:
-                          aspect_ratio_mode: static
-                          aspect_ratio: '4:3'
-                        status_bar:
-                          style: overlay
-                          position: bottom
-                          popup_seconds: 60
-                      - type: custom:advanced-camera-card
-                        cameras:
-                          - camera_entity: camera.garden_north
-                            dimensions:
-                              layout:
-                                fit: cover
-                                position:
-                                  x: 50
-                                  'y': 50
-                        live:
-                          preload: false
-                        dimensions:
-                          aspect_ratio_mode: static
-                          aspect_ratio: '4:3'
-                        status_bar:
-                          style: overlay
-                          position: bottom
-                          popup_seconds: 60
+                      - type: picture-entity
+                        entity: camera.east_side
+                        camera_view: auto
+                        show_state: false
+                        show_name: true
+                        name: East Side
+                        tap_action:
+                          action: navigate
+                          navigation_path: /backyard-yaml/backyard-east-side-details
+                      - type: picture-entity
+                        entity: camera.west_side_2
+                        camera_view: auto
+                        show_state: false
+                        show_name: true
+                        name: West Side
+                        tap_action:
+                          action: navigate
+                          navigation_path: /backyard-yaml/backyard-west-side-details
+                      - type: picture-entity
+                        entity: camera.garden_south_2
+                        camera_view: auto
+                        show_state: false
+                        show_name: true
+                        name: Garden South
+                        tap_action:
+                          action: navigate
+                          navigation_path: /backyard-yaml/backyard-garden-south-details
+                      - type: picture-entity
+                        entity: camera.garden_north_2
+                        camera_view: auto
+                        show_state: false
+                        show_name: true
+                        name: Garden North
+                        tap_action:
+                          action: navigate
+                          navigation_path: /backyard-yaml/backyard-garden-north-details
                   - type: custom:layout-card
                     layout_type: custom:grid-layout
                     layout:
@@ -273,7 +225,8 @@ views:
                         show_state: false
                         show_label: false
                         tap_action:
-                          action: more-info
+                          action: navigate
+                          navigation_path: /backyard-yaml/backyard-east-side-details
                         styles:
                           card:
                             - background-color: '#1c1c1c'
@@ -309,13 +262,14 @@ views:
                               </div>`;
                             ]]]
                       - type: custom:button-card
-                        entity: binary_sensor.west_side_door_door
+                        entity: binary_sensor.west_side_gate_door
                         show_icon: false
                         show_name: false
                         show_state: false
                         show_label: false
                         tap_action:
-                          action: more-info
+                          action: navigate
+                          navigation_path: /backyard-yaml/backyard-west-side-details
                         styles:
                           card:
                             - background-color: '#1c1c1c'
@@ -579,12 +533,12 @@ views:
                     chart_mode: ranking
                     entities:
                       - entity: sensor.garden_controller_soil_moisture_1
-                        name: Cabbage
+                        name: Eggplant
                         color: "#db3f58"
                         graph_type: bar
                         show_graph: true
                       - entity: sensor.garden_controller_soil_moisture_3
-                        name: Slope Kitchen Left
+                        name: Peppers and Kale
                         color: "#18a999"
                         graph_type: bar
                         show_graph: true
@@ -755,7 +709,7 @@ views:
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: valve.vegitable_garden_timer_zucchini_zone_zone
+                                entity: valve.vegitable_garden_timer_top_zone_zone
                                 vertical: false
                                 features_position: bottom
                         title: IRRIGATION ZONES
@@ -1049,120 +1003,233 @@ views:
           ignore_case: true
         show_empty: true
 
-  - title: Back Yard — People
-    path: backyard-frigate-people
-    icon: mdi:account-multiple
+  - title: Back Yard — Details
+    path: backyard-frigate-details
+    icon: mdi:cctv
     subview: true
     back_path: /backyard-yaml/backyard
     cards:
-      - type: markdown
-        content: >
-          **Back Yard** live view and Frigate **person** events. Use the camera card menu (⋮) to open clips / snapshots /
-          timeline if the default view is live only. If `image.back_yard_person` is missing, confirm Frigate labels and
-          entity names under **Settings → Devices** for this camera.
-      - type: custom:advanced-camera-card
-        cameras:
-          - camera_entity: camera.back_yard
-            frigate:
-              camera_name: back_yard
-              labels:
-                - person
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: >
+              **Back Yard details**: Frigate live stream (HD) plus latest detections for people, dogs, and faces.
+          - type: custom:advanced-camera-card
+            cameras:
+              - camera_entity: camera.back_yard
+                frigate:
+                  camera_name: back_yard
+                dimensions:
+                  layout:
+                    fit: cover
+                    position:
+                      x: 50
+                      'y': 50
             dimensions:
-              layout:
-                fit: cover
-                position:
-                  x: 50
-                  'y': 50
-        dimensions:
-          aspect_ratio_mode: static
-          aspect_ratio: '16/9'
-        live:
-          preload: false
-        menu:
-          style: outside
-          position: top
-      - type: entities
-        title: Latest person crop (Frigate image entity)
-        show_header_toggle: false
-        entities:
-          - entity: image.back_yard_person
-            name: Most recent person detection
+              aspect_ratio_mode: static
+              aspect_ratio: '16/9'
+            live:
+              preload: false
+            menu:
+              style: outside
+              position: top
+          - type: entities
+            title: Detections
+            show_header_toggle: false
+            entities:
+              - entity: sensor.back_yard_person_count
+                name: People detected
+              - entity: image.back_yard_person
+                name: Latest person detection
+              - entity: sensor.back_yard_dog_count
+                name: Dogs detected
+              - entity: image.back_yard_dog
+                name: Latest dog detection
+              - entity: image.back_yard_face
+                name: Latest face crop (Frigate)
+              - entity: sensor.back_yard_last_recognized_face
+                name: Last recognized name
 
-  - title: Back Yard — Dogs
-    path: backyard-frigate-dogs
-    icon: mdi:dog-side
+  - title: East Side — Details
+    path: backyard-east-side-details
+    icon: mdi:cctv
     subview: true
     back_path: /backyard-yaml/backyard
     cards:
-      - type: markdown
-        content: >
-          **Back Yard** live view and Frigate **dog** events. Open the card menu for clips and snapshots. Ensure your
-          Frigate model tracks `dog` on this camera; otherwise adjust `labels` in this dashboard YAML.
-      - type: custom:advanced-camera-card
-        cameras:
-          - camera_entity: camera.back_yard
-            frigate:
-              camera_name: back_yard
-              labels:
-                - dog
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: >
+              **East Side details**: Frigate live stream (HD) plus latest detections for people, dogs, and face matches.
+          - type: custom:advanced-camera-card
+            cameras:
+              - camera_entity: camera.east_side
+                frigate:
+                  camera_name: east_side
+                dimensions:
+                  layout:
+                    fit: cover
+                    position:
+                      x: 50
+                      'y': 50
             dimensions:
-              layout:
-                fit: cover
-                position:
-                  x: 50
-                  'y': 50
-        dimensions:
-          aspect_ratio_mode: static
-          aspect_ratio: '16/9'
-        live:
-          preload: false
-        menu:
-          style: outside
-          position: top
-      - type: entities
-        title: Latest dog crop (Frigate image entity)
-        show_header_toggle: false
-        entities:
-          - entity: image.back_yard_dog
-            name: Most recent dog detection
+              aspect_ratio_mode: static
+              aspect_ratio: '16/9'
+            live:
+              preload: false
+            menu:
+              style: outside
+              position: top
+          - type: entities
+            title: Detections
+            show_header_toggle: false
+            entities:
+              - entity: binary_sensor.east_side_door_door
+                name: Gate status
+              - entity: sensor.east_side_person_count
+                name: Gate people detected
+              - entity: image.east_side_person
+                name: Latest person detection
+              - entity: sensor.east_side_dog_count
+                name: Dogs detected
+              - entity: image.east_side_dog
+                name: Latest dog detection
+              - entity: sensor.east_side_last_recognized_face
+                name: Last recognized name
 
-  - title: Back Yard — Faces
-    path: backyard-frigate-faces
-    icon: mdi:face-recognition
+  - title: West Side — Details
+    path: backyard-west-side-details
+    icon: mdi:cctv
     subview: true
     back_path: /backyard-yaml/backyard
     cards:
-      - type: markdown
-        content: >
-          **Face recognition** depends on your stack: Frigate native **face** objects use the `face` label below. If you
-          use **Double Take** or only `person` detections, change `labels` in YAML (e.g. to `person`) or bind different
-          image entities in the list at the bottom.
-      - type: custom:advanced-camera-card
-        cameras:
-          - camera_entity: camera.back_yard
-            frigate:
-              camera_name: back_yard
-              labels:
-                - face
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: >
+              **West Side details**: Frigate live stream (HD) plus latest detections for people, dogs, and face matches.
+          - type: custom:advanced-camera-card
+            cameras:
+              - camera_entity: camera.west_side
+                frigate:
+                  camera_name: west_side
+                dimensions:
+                  layout:
+                    fit: cover
+                    position:
+                      x: 50
+                      'y': 50
             dimensions:
-              layout:
-                fit: cover
-                position:
-                  x: 50
-                  'y': 50
-        dimensions:
-          aspect_ratio_mode: static
-          aspect_ratio: '16/9'
-        live:
-          preload: false
-        menu:
-          style: outside
-          position: top
-      - type: entities
-        title: Face snapshot & last match
-        show_header_toggle: false
-        entities:
-          - entity: image.back_yard_face
-            name: Latest face crop (Frigate)
-          - entity: sensor.back_yard_last_recognized_face
-            name: Last recognized name
+              aspect_ratio_mode: static
+              aspect_ratio: '16/9'
+            live:
+              preload: false
+            menu:
+              style: outside
+              position: top
+          - type: entities
+            title: Detections
+            show_header_toggle: false
+            entities:
+              - entity: binary_sensor.west_side_gate_door
+                name: Gate status
+              - entity: sensor.west_side_person_count
+                name: Gate people detected
+              - entity: image.west_side_person
+                name: Latest person detection
+              - entity: sensor.west_side_dog_count
+                name: Dogs detected
+              - entity: image.west_side_dog
+                name: Latest dog detection
+              - entity: sensor.west_side_last_recognized_face
+                name: Last recognized name
+
+  - title: Garden South — Details
+    path: backyard-garden-south-details
+    icon: mdi:cctv
+    subview: true
+    back_path: /backyard-yaml/backyard
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: >
+              **Garden South details**: Frigate live stream (HD) plus latest detections for people, dogs, and face matches.
+          - type: custom:advanced-camera-card
+            cameras:
+              - camera_entity: camera.garden_south
+                frigate:
+                  camera_name: garden_south
+                dimensions:
+                  layout:
+                    fit: cover
+                    position:
+                      x: 50
+                      'y': 50
+            dimensions:
+              aspect_ratio_mode: static
+              aspect_ratio: '16/9'
+            live:
+              preload: false
+            menu:
+              style: outside
+              position: top
+          - type: entities
+            title: Detections
+            show_header_toggle: false
+            entities:
+              - entity: sensor.garden_south_person_count
+                name: People detected
+              - entity: image.garden_south_person
+                name: Latest person detection
+              - entity: sensor.garden_south_dog_count
+                name: Dogs detected
+              - entity: image.garden_south_dog
+                name: Latest dog detection
+              - entity: sensor.garden_south_last_recognized_face
+                name: Last recognized name
+
+  - title: Garden North — Details
+    path: backyard-garden-north-details
+    icon: mdi:cctv
+    subview: true
+    back_path: /backyard-yaml/backyard
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: >
+              **Garden North details**: Frigate live stream (HD) plus latest detections for people, dogs, and face matches.
+          - type: custom:advanced-camera-card
+            cameras:
+              - camera_entity: camera.garden_north
+                frigate:
+                  camera_name: garden_north
+                dimensions:
+                  layout:
+                    fit: cover
+                    position:
+                      x: 50
+                      'y': 50
+            dimensions:
+              aspect_ratio_mode: static
+              aspect_ratio: '16/9'
+            live:
+              preload: false
+            menu:
+              style: outside
+              position: top
+          - type: entities
+            title: Detections
+            show_header_toggle: false
+            entities:
+              - entity: sensor.garden_north_person_count
+                name: People detected
+              - entity: image.garden_north_person
+                name: Latest person detection
+              - entity: sensor.garden_north_dog_count
+                name: Dogs detected
+              - entity: image.garden_north_dog
+                name: Latest dog detection
+              - entity: sensor.garden_north_last_recognized_face
+                name: Last recognized name

@@ -257,7 +257,7 @@ views:
                   - valve.unnamed_zone_zone_2
                   - valve.vegitable_garden_timer_peppers_kale_zone_zone
                   - valve.vegitable_garden_timer_tomato_zone_zone
-                  - valve.vegitable_garden_timer_zucchini_zone_zone
+                  - valve.vegitable_garden_timer_top_zone_zone
                 name: |
                   [[[
                     const eid = states['sensor.bhyve_zone_entity']?.state;

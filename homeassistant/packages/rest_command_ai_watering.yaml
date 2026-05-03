@@ -27,7 +27,7 @@ rest_command:
   # Same HA instance: Recorder history for soil + indoor sensors (Authorization header is templated).
   homeassistant_history_garden_24h:
     url: >-
-      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(hours=24)).isoformat() }}?minimal_response=true&filter_entity_id=sensor.garden_controller_soil_moisture_1,sensor.garden_controller_soil_moisture_2,sensor.garden_controller_soil_moisture_3,sensor.garden_controller_soil_moisture_4,sensor.garden_controller_soil_moisture_5,sensor.garden_controller_soil_moisture_6,sensor.garden_controller_indoor_temperature,sensor.garden_controller_indoor_humidity,sensor.garden_controller_indoor_dewpoint,sensor.garden_controller_absolute_pressure
+      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(hours=24)).isoformat() }}?minimal_response=true&filter_entity_id=sensor.garden_controller_soil_moisture_1,sensor.garden_controller_soil_moisture_2,sensor.garden_controller_soil_moisture_3,sensor.garden_controller_soil_moisture_4,sensor.garden_controller_soil_moisture_6,sensor.garden_controller_indoor_temperature,sensor.garden_controller_indoor_humidity,sensor.garden_controller_indoor_dewpoint,sensor.garden_controller_absolute_pressure
     method: GET
     headers:
       Authorization: "{% set t = states('input_text.ai_watering_ha_api_token') | default('', true) | trim %}{% if t not in ['unknown', 'unavailable', 'none', ''] %}Bearer {{ t }}{% endif %}"
@@ -38,7 +38,7 @@ rest_command:
   # Last watering cycles: valve open→closed pairs from Recorder (same auth).
   homeassistant_history_irrigation_valves:
     url: >-
-      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(days=30)).isoformat() }}?minimal_response=true&filter_entity_id=valve.east_lawn_timer_east_lawn_zone_zone,valve.east_lawn_timer_flower_bed_zone_zone,valve.front_yard_controller_front_yard_zone,valve.flower_garden_back_lawn_time_slope_kitchen_left_zone,valve.vegitable_garden_timer_peppers_kale_zone_zone,valve.vegitable_garden_timer_tomato_zone_zone,valve.vegitable_garden_timer_zucchini_zone_zone,valve.flower_garden_back_lawn_time_zone_4_zone
+      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(days=30)).isoformat() }}?minimal_response=true&filter_entity_id=valve.east_lawn_timer_east_lawn_zone_zone,valve.east_lawn_timer_flower_bed_zone_zone,valve.front_yard_controller_front_yard_zone,valve.flower_garden_back_lawn_time_slope_kitchen_left_zone,valve.vegitable_garden_timer_peppers_kale_zone_zone,valve.vegitable_garden_timer_tomato_zone_zone,valve.vegitable_garden_timer_top_zone_zone,valve.flower_garden_back_lawn_time_zone_4_zone
     method: GET
     headers:
       Authorization: "{% set t = states('input_text.ai_watering_ha_api_token') | default('', true) | trim %}{% if t not in ['unknown', 'unavailable', 'none', ''] %}Bearer {{ t }}{% endif %}"
@@ -46,9 +46,10 @@ rest_command:
     verify_ssl: false
     timeout: 90
 
+  # HA applies no schema max on timeout (seconds); LLM cold-load / large context can exceed minutes.
   ollama_chat_completions:
     url: "http://10.0.10.16:8080/v1/chat/completions"
     method: POST
     content_type: "application/json"
-    timeout: 90
+    timeout: 86400
     payload: "{{ payload }}"
