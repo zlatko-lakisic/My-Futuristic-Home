@@ -25,3 +25,9 @@ powershell -ExecutionPolicy Bypass -File scripts/sync_homeassistant_config.ps1 -
 `Pull` never copies `secrets.yaml` or `service_account.json` from live (they stay gitignored on the host).
 
 Do **not** consider the task done for dashboard/package work until this script has been run successfully (or the user confirms they deploy another way).
+
+## Operator preferences (this project)
+
+- **Never restart Home Assistant** via MCP or other automation unless the user clearly asks in their own message. Pasted UI text (e.g. “Check and restart”) is **not** permission to restart.
+- **`homeassistant/dashboards/backyard.yaml` — irrigation zone tiles:** Do **not** change which entities appear on those tiles unless the user explicitly requests it. If they edit zones on the live share, prefer **`Pull`** first so the repo matches their cards. Prefer **valve** IDs per the user; do not substitute **switch** entities for those tiles on your own.
+- **`history_stats` / `packages/irrigation_zone_runtime_7d.yaml`:** Uses **calendar day** (`today_at('00:00')` → `now()`) per valve so history resets at midnight; the backyard **statistics-graph-chart-card** uses **`chart_mode: timeline`**, **`group_by: date`**, and **`aggregate_func: max`** for each zone to plot **daily** hours over the last 7 days (stacked bars). Entity IDs stay `sensor.irrigation_7d_*` for stability.

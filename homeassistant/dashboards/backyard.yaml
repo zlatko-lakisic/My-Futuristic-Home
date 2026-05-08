@@ -537,26 +537,31 @@ views:
                         color: "#db3f58"
                         graph_type: bar
                         show_graph: true
+                        show_state: false
                       - entity: sensor.garden_controller_soil_moisture_3
                         name: Peppers and Kale
                         color: "#18a999"
                         graph_type: bar
                         show_graph: true
+                        show_state: false
                       - entity: sensor.garden_controller_soil_moisture_2
                         name: Flower Bed
                         color: "#9b59b6"
                         graph_type: bar
                         show_graph: true
+                        show_state: false
                       - entity: sensor.garden_controller_soil_moisture_6
                         name: Zucchini
                         color: "#f39c12"
                         graph_type: bar
                         show_graph: true
+                        show_state: false
                       - entity: sensor.garden_controller_soil_moisture_4
                         name: Tomatoes
                         color: "#2ecc71"
                         graph_type: bar
                         show_graph: true
+                        show_state: false
                     annotations: []
                     state_map: null
               - type: vertical-stack
@@ -646,7 +651,7 @@ views:
                           - type: custom:layout-card
                             layout_type: custom:grid-layout
                             layout:
-                              grid-template-columns: repeat(4, minmax(0, 1fr))
+                              grid-template-columns: repeat(3, minmax(0, 1fr))
                               grid-gap: 8px
                               justify-items: stretch
                               place-items: stretch
@@ -656,26 +661,27 @@ views:
                             cards:
                               - type: tile
                                 entity: valve.east_lawn_timer_east_lawn_zone_zone
+                                name: East lawn
                                 vertical: false
                                 features_position: bottom
                               - type: tile
                                 entity: valve.east_lawn_timer_flower_bed_zone_zone
+                                name: East flower bed
                                 vertical: false
                                 features_position: bottom
                               - type: tile
                                 entity: valve.flower_garden_back_lawn_time_back_lawn_zone_zone
-                                vertical: false
-                                features_position: bottom
-                              - type: tile
-                                entity: valve.flower_garden_back_lawn_time_back_lawn_zone_zone
+                                name: Back lawn
                                 vertical: false
                                 features_position: bottom
                               - type: tile
                                 entity: valve.flower_garden_back_lawn_time_slope_kitchen_left_zone
+                                name: Slope kitchen left
                                 vertical: false
                                 features_position: bottom
                               - type: tile
                                 entity: valve.front_yard_controller_front_yard_zone
+                                name: Front yard
                                 vertical: false
                                 features_position: bottom
                           - type: heading
@@ -694,16 +700,152 @@ views:
                             cards:
                               - type: tile
                                 entity: valve.vegitable_garden_timer_peppers_kale_zone_zone
+                                name: Peppers & kale
                                 vertical: false
                                 features_position: bottom
                               - type: tile
                                 entity: valve.vegitable_garden_timer_tomato_zone_zone
+                                name: Tomato
                                 vertical: false
                                 features_position: bottom
                               - type: tile
                                 entity: valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone
+                                name: Zucchini & eggplant
                                 vertical: false
                                 features_position: bottom
+                          - type: heading
+                            heading_style: subtitle
+                            heading: DAILY WATERING BY ZONE — LAST 7 DAYS
+                          # history_stats below = today 00:00→now (hours open). Per calendar day the value is
+                          # monotonic until midnight reset; group_by: date + aggregate max = that day’s total minutes.
+                          # Chart the history_stats sources (not template *_minutes) so daily buckets aren’t flattened.
+                          - type: custom:statistics-graph-chart-card
+                            card_header: All zones — open time (min, 7 days)
+                            card_icon_position: left
+                            show_grid: true
+                            show_tooltip: true
+                            show_legend: true
+                            legend_position: center
+                            show_y_axis: true
+                            show_y2_axis: false
+                            show_y_axis_label: false
+                            show_x_axis: true
+                            show_x_ticks: false
+                            show_y_ticks: true
+                            logarithmic: false
+                            cache: true
+                            animate_graph: false
+                            stacked: false
+                            sparkline: false
+                            scroll_mode: hidden
+                            hours_to_show: 168
+                            auto_scale_points: false
+                            height: 240
+                            lower_bound: "0"
+                            upper_bound: ""
+                            align_header: left
+                            state_layout: default
+                            group_by: date
+                            chart_mode: timeline
+                            entities:
+                              - entity: sensor.irrigation_7d_east_lawn
+                                name: East lawn
+                                color: "#3498db"
+                                graph_type: line
+                                line_width: 2
+                                show_fill: false
+                                smooth: false
+                                decimals: 0
+                                unit: min
+                                value_transform: "return x * 60;"
+                                aggregate_func: max
+                                show_state: false
+                              - entity: sensor.irrigation_7d_east_flower_bed
+                                name: East flower bed
+                                color: "#2980b9"
+                                graph_type: line
+                                line_width: 2
+                                show_fill: false
+                                smooth: false
+                                decimals: 0
+                                unit: min
+                                value_transform: "return x * 60;"
+                                aggregate_func: max
+                                show_state: false
+                              - entity: sensor.irrigation_7d_back_lawn
+                                name: Back lawn
+                                color: "#1abc9c"
+                                graph_type: line
+                                line_width: 2
+                                show_fill: false
+                                smooth: false
+                                decimals: 0
+                                unit: min
+                                value_transform: "return x * 60;"
+                                aggregate_func: max
+                                show_state: false
+                              - entity: sensor.irrigation_7d_slope_kitchen_left
+                                name: Slope kitchen left
+                                color: "#16a085"
+                                graph_type: line
+                                line_width: 2
+                                show_fill: false
+                                smooth: false
+                                decimals: 0
+                                unit: min
+                                value_transform: "return x * 60;"
+                                aggregate_func: max
+                                show_state: false
+                              - entity: sensor.irrigation_7d_front_yard
+                                name: Front yard
+                                color: "#27ae60"
+                                graph_type: line
+                                line_width: 2
+                                show_fill: false
+                                smooth: false
+                                decimals: 0
+                                unit: min
+                                value_transform: "return x * 60;"
+                                aggregate_func: max
+                                show_state: false
+                              - entity: sensor.irrigation_7d_peppers_kale
+                                name: Peppers & kale
+                                color: "#e67e22"
+                                graph_type: line
+                                line_width: 2
+                                show_fill: false
+                                smooth: false
+                                decimals: 0
+                                unit: min
+                                value_transform: "return x * 60;"
+                                aggregate_func: max
+                                show_state: false
+                              - entity: sensor.irrigation_7d_tomato
+                                name: Tomato
+                                color: "#d35400"
+                                graph_type: line
+                                line_width: 2
+                                show_fill: false
+                                smooth: false
+                                decimals: 0
+                                unit: min
+                                value_transform: "return x * 60;"
+                                aggregate_func: max
+                                show_state: false
+                              - entity: sensor.irrigation_7d_zucchini_eggplant
+                                name: Zucchini & eggplant
+                                color: "#f39c12"
+                                graph_type: line
+                                line_width: 2
+                                show_fill: false
+                                smooth: false
+                                decimals: 0
+                                unit: min
+                                value_transform: "return x * 60;"
+                                aggregate_func: max
+                                show_state: false
+                            annotations: []
+                            state_map: null
                         title: IRRIGATION ZONES
                       - type: vertical-stack
                         cards:
@@ -1037,8 +1179,6 @@ views:
                 name: Dogs detected
               - entity: image.back_yard_dog
                 name: Latest dog detection
-              - entity: image.back_yard_face
-                name: Latest face crop (Frigate)
               - entity: sensor.back_yard_last_recognized_face
                 name: Last recognized name
 
