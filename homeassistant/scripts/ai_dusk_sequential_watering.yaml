@@ -1,0 +1,15 @@
+ai_dusk_sequential_watering:
+  alias: AI Dusk Sequential Watering (Legacy Wrapper)
+  description: Backward-compatible wrapper. Use script.ai_sequential_watering.
+  fields:
+    simulate:
+      name: Simulate only
+      required: false
+      default: false
+      selector:
+        boolean: {}
+  mode: single
+  sequence:
+  - action: script.ai_sequential_watering
+    data:
+      simulate: "{{ simulate | default(false) | bool }}"

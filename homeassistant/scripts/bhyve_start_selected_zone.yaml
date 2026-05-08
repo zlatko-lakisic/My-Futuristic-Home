@@ -1,0 +1,14 @@
+bhyve_start_selected_zone:
+  alias: BHyve Start Selected Zone
+  description: Start selected BHyve zone for selected duration.
+  mode: single
+  sequence:
+  - variables:
+      zone_entity: '{{ states(''sensor.bhyve_zone_entity'') }}'
+      duration_minutes: '{{ [1, ([states(''input_number.bhyve_manual_duration_minutes'') | int(10), 25] | min)] | max }}'
+  - condition: template
+    value_template: "{{ zone_entity not in ['unknown', 'unavailable', 'none', ''] }}"
+  - action: bhyve.start_watering
+    data:
+      entity_id: '{{ zone_entity }}'
+      minutes: '{{ duration_minutes | int(10) }}'

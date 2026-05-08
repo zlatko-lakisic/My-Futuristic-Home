@@ -1,0 +1,13 @@
+- id: ai_sequential_watering
+  alias: AI Sequential Watering
+  description: Run at dusk and water selected zones sequentially using AI runtime recommendations.
+  initial_state: false
+  triggers:
+  - trigger: sun
+    event: sunset
+    offset: 00:00:00
+  conditions: []
+  actions:
+  - action: script.ai_sequential_watering
+    data: {}
+  mode: single

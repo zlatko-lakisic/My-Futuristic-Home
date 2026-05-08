@@ -1,0 +1,23 @@
+bhyve_toggle_selected_zone:
+  alias: BHyve Toggle Selected Zone
+  description: Start/stop selected BHyve zone based on current zone state.
+  mode: single
+  sequence:
+  - variables:
+      zone_entity: '{{ states(''sensor.bhyve_zone_entity'') }}'
+      duration_minutes: '{{ [1, ([states(''input_number.bhyve_manual_duration_minutes'') | int(10), 25] | min)] | max }}'
+  - condition: template
+    value_template: "{{ zone_entity not in ['unknown', 'unavailable', 'none', ''] }}"
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ states(zone_entity) == ''on'' }}'
+      sequence:
+      - action: bhyve.stop_watering
+        data:
+          entity_id: '{{ zone_entity }}'
+    default:
+    - action: bhyve.start_watering
+      data:
+        entity_id: '{{ zone_entity }}'
+        minutes: '{{ duration_minutes | int(10) }}'
