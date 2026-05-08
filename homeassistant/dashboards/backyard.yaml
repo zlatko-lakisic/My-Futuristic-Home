@@ -663,7 +663,7 @@ views:
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: switch.flower_garden_back_lawn_time_top_flowers
+                                entity: valve.flower_garden_back_lawn_time_back_lawn_zone_zone
                                 vertical: false
                                 features_position: bottom
                               - type: tile
@@ -676,10 +676,6 @@ views:
                                 features_position: bottom
                               - type: tile
                                 entity: valve.front_yard_controller_front_yard_zone
-                                vertical: false
-                                features_position: bottom
-                              - type: tile
-                                entity: switch.flower_garden_back_lawn_time_zone_4_zone
                                 vertical: false
                                 features_position: bottom
                           - type: heading
