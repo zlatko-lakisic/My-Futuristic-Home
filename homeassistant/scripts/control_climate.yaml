@@ -1,0 +1,128 @@
+control_climate:
+  mode: single
+  fields:
+    temperature:
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+      name: Temperature
+      required: true
+    operation_mode:
+      selector:
+        select:
+          mode: dropdown
+          options:
+          - label: 'Off'
+            value: 'off'
+          - label: Cool
+            value: cool
+          - label: Heat
+            value: heat
+      name: Operation Mode
+      required: true
+  sequence:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{operation_mode == ''off''}}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: "{{ states('climate.150633094697190_climate') not in ['unknown', 'unavailable', 'none'] and states('climate.150633094697190_climate') != 'off' }}"
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.150633094697190_climate
+          data:
+            hvac_mode: 'off'
+      - if:
+        - condition: template
+          value_template: "{{ is_state('switch.150633094697190_power', 'on') }}"
+        then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.150633094697190_power
+      - if:
+        - condition: template
+          value_template: "{{ states('climate.living_room') not in ['unknown', 'unavailable', 'none'] and states('climate.living_room') != 'off' }}"
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.living_room
+          data:
+            hvac_mode: 'off'
+      alias: Climate state is Off
+    - conditions:
+      - condition: template
+        value_template: '{{operation_mode == ''cool''}}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: >-
+            {{ is_state('climate.living_room', 'heat')
+               or (is_state('climate.living_room', 'auto') and state_attr('climate.living_room', 'hvac_action') | default('', true) == 'heating') }}
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.living_room
+          data:
+            hvac_mode: 'off'
+        alias: Turn off Heat
+      - if:
+        - condition: template
+          value_template: "{{ is_state('switch.150633094697190_power', 'off') }}"
+        then:
+        - action: switch.turn_on
+          target:
+            entity_id: switch.150633094697190_power
+        alias: Turn on AC power
+      - action: climate.set_temperature
+        target:
+          entity_id: climate.150633094697190_climate
+        data:
+          temperature: '{{ temperature }}'
+          hvac_mode: cool
+      alias: Climate state is Cool
+    - conditions:
+      - condition: template
+        value_template: '{{operation_mode == ''heat''}}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: "{{ is_state('switch.150633094697190_power', 'on') }}"
+        then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.150633094697190_power
+        alias: Turn off AC power
+      - if:
+        - condition: template
+          value_template: "{{ states('climate.150633094697190_climate') not in ['unknown', 'unavailable', 'none'] and states('climate.150633094697190_climate') != 'off' }}"
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.150633094697190_climate
+          data:
+            hvac_mode: 'off'
+        alias: Stop Midea climate
+      - if:
+        - condition: template
+          value_template: "{{ not is_state('climate.living_room', 'heat') }}"
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.living_room
+          data:
+            hvac_mode: heat
+        alias: Enable Nest heat mode
+      - action: climate.set_temperature
+        target:
+          entity_id: climate.living_room
+        data:
+          temperature: '{{ temperature }}'
+          hvac_mode: heat
+      alias: Climate state is Heat
+  alias: Control Climate
+  description: ''

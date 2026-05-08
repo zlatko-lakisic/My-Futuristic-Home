@@ -663,7 +663,7 @@ views:
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: valve.flower_garden_back_lawn_time_2nd_tier_flowers_zone
+                                entity: switch.flower_garden_back_lawn_time_top_flowers
                                 vertical: false
                                 features_position: bottom
                               - type: tile
@@ -679,11 +679,7 @@ views:
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: valve.unnamed_zone_zone_2
-                                vertical: false
-                                features_position: bottom
-                              - type: tile
-                                entity: valve.garden_zone
+                                entity: switch.flower_garden_back_lawn_time_zone_4_zone
                                 vertical: false
                                 features_position: bottom
                           - type: heading
@@ -709,7 +705,7 @@ views:
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: valve.vegitable_garden_timer_top_zone_zone
+                                entity: valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone
                                 vertical: false
                                 features_position: bottom
                         title: IRRIGATION ZONES

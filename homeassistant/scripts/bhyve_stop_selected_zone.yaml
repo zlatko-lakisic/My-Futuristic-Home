@@ -1,0 +1,12 @@
+bhyve_stop_selected_zone:
+  alias: BHyve Stop Selected Zone
+  description: Stop selected BHyve zone.
+  mode: single
+  sequence:
+  - variables:
+      zone_entity: '{{ states(''sensor.bhyve_zone_entity'') }}'
+  - condition: template
+    value_template: "{{ zone_entity not in ['unknown', 'unavailable', 'none', ''] }}"
+  - action: bhyve.stop_watering
+    data:
+      entity_id: '{{ zone_entity }}'

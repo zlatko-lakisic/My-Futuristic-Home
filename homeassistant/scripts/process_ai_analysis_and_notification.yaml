@@ -1,0 +1,150 @@
+process_ai_analysis_and_notification:
+  mode: parallel
+  fields:
+    camera_id:
+      selector:
+        entity:
+          domain:
+          - camera
+      name: Cameras
+      required: true
+    write_persistent_notification:
+      selector:
+        boolean: {}
+      default: true
+      name: Write Persistent Notification
+    ai_prompt:
+      selector:
+        text:
+      name: AI Prompt
+      default: 'Summarize the events based on a series of images captured at short
+        intervals. Focus only on moving subjects such as people, vehicles, and other
+        active elements. Ignore static objects and scenery. Provide a clear and concise
+        account of movements and interactions. Do not mention or imply the existence
+        of imagesâ€”present the information as if directly observing the events. If
+        no movement is detected, respond with: ''No activity observed.'''
+    notification_title:
+      selector:
+        text:
+      name: Notification Title
+      default: New observability notification
+    notification_click_url:
+      selector:
+        text:
+      name: Notification Click URL
+      required: true
+    notify_people:
+      selector:
+        entity:
+          domain:
+          - person
+          multiple: true
+      name: Notify People
+      required: false
+    model:
+      selector:
+        text:
+      name: LLM Model
+      default: omega-ollama
+  variables:
+    snapshot_timestamp: '{{ now().strftime("%Y%m%d-%H%M%S") }}'
+  sequence:
+  - action: llmvision.stream_analyzer
+    metadata: {}
+    data:
+      remember: false
+      use_memory: false
+      duration: 10
+      max_frames: 10
+      include_filename: true
+      target_width: 1280
+      max_tokens: 1000
+      generate_title: false
+      expose_images: true
+      provider: 01KPW6YJ00E65E4HXM9Q53093Q
+      model: '{{ model }}'
+      image_entity: '{{ camera_id }}'
+      message: '{{ai_prompt}}'
+    response_variable: ai_response
+  - variables:
+      ai_text_raw: "{{ (ai_response.response_text\n    | default(ai_response.text, true)\n
+        \   | default('', true)) | trim }}"
+      ai_text_clean: >-
+        {{
+          ai_text_raw
+          | regex_replace('(?im)^\\s*line\\s*\\d+\\s*:\\s*', '')
+          | regex_replace('(?im)^\\s*line\\s*:\\s*', '')
+          | trim
+        }}
+      ai_summary: "{{ ai_text_clean | regex_replace('\\n+', ' ') | regex_replace('\\s+', ' ') | trim }}"
+      notification_title_final: >-
+        {% if ai_summary %}
+          {{ ai_summary[:72] }}{% if ai_summary | length > 72 %}…{% endif %}
+        {% else %}
+          {{ notification_title }}
+        {% endif %}
+      notify_services: >-
+        {% set ns = namespace(services=[]) %}
+        {% for p in notify_people | default([], true) %}
+          {% for dt in state_attr(p, 'device_trackers') | default([], true) %}
+            {% if dt is string and dt.startswith('device_tracker.') %}
+              {% set slug = dt | replace('device_tracker.', '') %}
+              {% set svc = 'notify.mobile_app_' ~ slug %}
+              {% if svc not in ns.services %}
+                {% set ns.services = ns.services + [svc] %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+        {{ ns.services | to_json }}
+      ai_text_final: "{% if ai_text_clean %}\n  {{ ai_text_clean }}\n{% else %}\n  Empty LLM response. key_frame: {{ ai_response.key_frame | default('n/a', true) }}\n{% endif %}"
+  - if:
+    - condition: template
+      value_template: '{{write_persistent_notification}}'
+    then:
+    - action: persistent_notification.create
+      data:
+        title: '{{ notification_title_final }}'
+        message: '{{ ai_text_final }}
+
+          ![image](/api/camera_proxy/{{ camera_id }})'
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ (notify_services | from_json | count) > 0 }}'
+      sequence:
+      - repeat:
+          for_each: '{{ notify_services | from_json }}'
+          sequence:
+          - action: '{{ repeat.item }}'
+            continue_on_error: true
+            metadata: {}
+            data:
+              message: '{{ ai_text_final }} '
+              title: '{{ notification_title_final }}'
+              data:
+                image: /api/camera_proxy/{{ camera_id }}
+                url: '{{ notification_click_url }}'
+                clickAction: '{{ notification_click_url }}'
+                push:
+                  sound:
+                    name: default
+                    critical: 1
+                    volume: 1
+    default:
+    - action: notify.ALL_DEVICES
+      metadata: {}
+      data:
+        message: '{{ ai_text_final }} '
+        title: '{{ notification_title_final }}'
+        data:
+          image: /api/camera_proxy/{{ camera_id }}
+          url: '{{ notification_click_url }}'
+          clickAction: '{{ notification_click_url }}'
+          push:
+            sound:
+              name: default
+              critical: 1
+              volume: 1
+  alias: Process AI Analysis and Notification
+  description: ''
