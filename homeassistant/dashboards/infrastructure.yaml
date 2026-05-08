@@ -834,10 +834,7 @@ views:
             grid_options:
               columns: full
             cards:
-              - type: grid
-                grid_options:
-                  columns: full
-                columns: 2
+              - type: vertical-stack
                 cards:
                   - type: heading
                     heading_style: subtitle
@@ -1034,10 +1031,102 @@ views:
                                 </div>
                               </div>`;
                             ]]]
-              - type: horizontal-stack
+                      - type: custom:button-card
+                        entity: sensor.omega_jetson_orin_cpu_usage
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        triggers_update:
+                          - sensor.omega_jetson_orin_memory_usage
+                          - sensor.omega_jetson_orin_memory_use
+                          - sensor.omega_jetson_orin_disk_usage
+                          - sensor.omega_jetson_orin_eno1_rx
+                          - sensor.omega_jetson_orin_eno1_tx
+                          - sensor.omega_jetson_orin_uptime
+                          - sensor.omega_jetson_orin_orin_nvgpu_gpu_nvidia0_processor_usage
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 12px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"jst"'
+                          custom_fields:
+                            jst:
+                              - width: 100%
+                        custom_fields:
+                          jst: |
+                            [[[
+                              const fmt = (n) => String(parseFloat((Math.round(n * 100) / 100).toFixed(2)));
+                              const bar = (label, entityId, color) => {
+                                const raw = hass.states[entityId]?.state;
+                                const v = Math.min(100, Math.max(0, parseFloat(raw) || 0));
+                                return `<div style="margin-bottom:8px;font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                                  <div style="display:flex;justify-content:space-between;font-size:0.76rem;margin-bottom:3px;"><span>${label}</span><span>${fmt(v)}%</span></div>
+                                  <div style="height:7px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">
+                                    <div style="width:${v}%;height:100%;background:${color};"></div>
+                                  </div>
+                                </div>`;
+                              };
+                              const rate = (id) => {
+                                const st = hass.states[id];
+                                const v = parseFloat(st?.state);
+                                const u = st?.attributes?.unit_of_measurement ?? '';
+                                if (!Number.isFinite(v)) return '—';
+                                return `${fmt(v)} ${u}`.trim();
+                              };
+                              const memMiB = hass.states['sensor.omega_jetson_orin_memory_use']?.state;
+                              const memExtra = Number.isFinite(parseFloat(memMiB)) ? `<div style="font-size:0.65rem;opacity:0.72;margin:-4px 0 6px 0;">${fmt(parseFloat(memMiB))} MiB in use</div>` : '';
+                              const up = hass.states['sensor.omega_jetson_orin_uptime'];
+                              let upStr = '—';
+                              if (up && !['unknown', 'unavailable', 'none', ''].includes(String(up.state).toLowerCase())) {
+                                const uu = up.attributes?.unit_of_measurement;
+                                upStr = uu ? `${up.state} ${uu}` : String(up.state);
+                              }
+                              return `<div style="display:flex;gap:10px;align-items:flex-start;">
+                                <ha-icon icon="mdi:developer-board" style="flex-shrink:0;color:#76B900;--mdc-icon-size:28px;"></ha-icon>
+                                <div style="flex:1;min-width:0;">
+                                <div style="font-weight:700;font-size:0.95rem;margin-bottom:2px;color:#fff;">Jetson Orin</div>
+                                <div style="font-size:0.65rem;opacity:0.7;margin-bottom:8px;">Glances · omega-jetson-orin</div>
+                                ${bar('CPU', 'sensor.omega_jetson_orin_cpu_usage', 'linear-gradient(90deg,#8bc34a,#558b2f)')}
+                                ${bar('Memory', 'sensor.omega_jetson_orin_memory_usage', 'linear-gradient(90deg,#26c6da,#00838f)')}
+                                ${memExtra}
+                                ${bar('Disk (/)', 'sensor.omega_jetson_orin_disk_usage', 'linear-gradient(90deg,#7e57c2,#5e35b1)')}
+                                ${bar('GPU (Orin)', 'sensor.omega_jetson_orin_orin_nvgpu_gpu_nvidia0_processor_usage', 'linear-gradient(90deg,#aed581,#33691e)')}
+                                <div style="margin-top:4px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                                  <div style="font-size:0.68rem;font-weight:600;opacity:0.85;margin-bottom:6px;">Network (eno1)</div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px;">
+                                    <span style="color:#4fc3f7;">Download</span><span>${rate('sensor.omega_jetson_orin_eno1_rx')}</span>
+                                  </div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:6px;">
+                                    <span style="color:#81c784;">Upload</span><span>${rate('sensor.omega_jetson_orin_eno1_tx')}</span>
+                                  </div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);">
+                                    <span style="color:#b0bec5;">Uptime</span><span>${upStr}</span>
+                                  </div>
+                                </div>
+                                </div>
+                              </div>`;
+                            ]]]
+              - type: custom:layout-card
+                layout_type: custom:grid-layout
+                layout:
+                  grid-template-columns: 1fr 1fr
+                  grid-gap: 10px
+                  place-items: stretch
+                  align-items: start
+                  mediaquery:
+                    '(max-width: 1100px)':
+                      grid-template-columns: 100%
+                grid_options:
+                  columns: full
                 cards:
-                  - square: false
-                    type: vertical-stack
+                  - type: vertical-stack
                     cards:
                       - type: heading
                         icon: mdi:server
@@ -1344,8 +1433,7 @@ views:
                             aggregate_func: avg
                         tap_action:
                           action: more-info
-                  - square: false
-                    type: vertical-stack
+                  - type: vertical-stack
                     cards:
                       - type: heading
                         icon: mdi:nvidia

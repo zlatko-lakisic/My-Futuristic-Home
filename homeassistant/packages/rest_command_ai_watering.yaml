@@ -7,6 +7,10 @@ input_text:
     name: AI watering Recorder API token
     mode: password
     max: 255
+  ai_watering_llm_api_key:
+    name: AI watering LLM API key
+    mode: password
+    max: 255
 
 rest_command:
   openweathermap_5day_forecast:
@@ -38,7 +42,7 @@ rest_command:
   # Last watering cycles: valve open→closed pairs from Recorder (same auth).
   homeassistant_history_irrigation_valves:
     url: >-
-      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(days=30)).isoformat() }}?minimal_response=true&filter_entity_id=valve.east_lawn_timer_east_lawn_zone_zone,valve.east_lawn_timer_flower_bed_zone_zone,valve.front_yard_controller_front_yard_zone,valve.flower_garden_back_lawn_time_slope_kitchen_left_zone,valve.vegitable_garden_timer_peppers_kale_zone_zone,valve.vegitable_garden_timer_tomato_zone_zone,valve.vegitable_garden_timer_top_zone_zone,valve.flower_garden_back_lawn_time_zone_4_zone
+      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(days=30)).isoformat() }}?minimal_response=true&filter_entity_id=valve.east_lawn_timer_east_lawn_zone_zone,valve.east_lawn_timer_flower_bed_zone_zone,valve.front_yard_controller_front_yard_zone,valve.flower_garden_back_lawn_time_slope_kitchen_left_zone,valve.vegitable_garden_timer_peppers_kale_zone_zone,valve.vegitable_garden_timer_tomato_zone_zone,valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone,valve.flower_garden_back_lawn_time_zone_4_zone
     method: GET
     headers:
       Authorization: "{% set t = states('input_text.ai_watering_ha_api_token') | default('', true) | trim %}{% if t not in ['unknown', 'unavailable', 'none', ''] %}Bearer {{ t }}{% endif %}"
@@ -46,10 +50,16 @@ rest_command:
     verify_ssl: false
     timeout: 90
 
-  # HA applies no schema max on timeout (seconds); LLM cold-load / large context can exceed minutes.
+  # OpenAI-compatible chat (used by script.ai_sequential_watering).
+  # This is NOT wired to LLM Vision: configuring provider 01KR1YDS2H88N44EA4MJHW0PP8 in the UI
+  # does not set this header. Paste the SAME API key into helper input_text.ai_watering_llm_api_key
+  # (Settings → Helpers → AI watering LLM API key). Raw sk-… or full "Bearer …" both work.
   ollama_chat_completions:
-    url: "http://10.0.10.16:8080/v1/chat/completions"
+    url: "https://ai-orchestrator.mostardesigns.com/v1/chat/completions"
     method: POST
+    headers:
+      Authorization: "{% set t = states('input_text.ai_watering_llm_api_key') | default('', true) | trim %}{% if t in ['unknown', 'unavailable', 'none', ''] %}{% else %}{% set t2 = t | trim %}{% if (t2 | lower)[0:7] == 'bearer ' %}{{ t2 }}{% else %}Bearer {{ t2 }}{% endif %}{% endif %}"
+      Content-Type: application/json
     content_type: "application/json"
     timeout: 86400
     payload: "{{ payload }}"
