@@ -19,6 +19,12 @@ input_text:
     mode: text
     icon: mdi:identifier
 
+  ai_watering_simulate_report:
+    name: AI Watering simulate — per-zone LLM lines
+    # Home Assistant enforces <=255 for the UI/config schema.
+    max: 255
+    mode: text
+
 # Exact tags must exist locally (`ollama list`). Add options here after pulling new models.
 input_select:
   ai_dusk_watering_ollama_model:
@@ -63,7 +69,7 @@ automation:
                 message: >-
                   Home Assistant restarted during an active AI dusk run. Resuming at zone index {{
                   states('input_number.ai_dusk_watering_next_index') | int(1) }}.
-            - action: script.ai_dusk_sequential_watering
+            - action: script.ai_sequential_watering
               data:
                 start_index: "{{ states('input_number.ai_dusk_watering_next_index') | int(1) }}"
         default:
@@ -86,13 +92,18 @@ automation:
                 Cleared in_progress and next index. This avoids restarting after a finished or manually stopped run.
 
 script:
-  ai_dusk_sequential_watering:
-    alias: AI Dusk Sequential Watering
-    description: Ask Ollama for per-zone run times and water zones sequentially at dusk.
+  ai_sequential_watering:
+    alias: AI Sequential Watering
+    description: >-
+      Fetch weather/history, call Ollama once per zone for minutes, then run BHyve valves sequentially.
+      Use simulate=true to skip only valve start/stop (pipeline unchanged).
     fields:
       simulate:
-        name: Simulate only
-        description: If enabled, fetch weather and LLM plan but do not open valves—notification shows planned minutes per zone.
+        name: Simulate (skip valve watering only)
+        description: >-
+          When on: same pipeline as a live run (weather, history calls, per-zone LLM)—only
+          bhyve.start_watering / stop_watering and valve delays are skipped. Helpers like
+          in_progress / resume index are not touched during simulate.
         required: false
         default: false
         selector:
@@ -201,8 +212,8 @@ script:
           estimated_flow_gpm: 0.25-0.50
           notes: Same setup style as Peppers and Kale zone; black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
           soil_sensor: sensor.garden_controller_soil_moisture_4
-        - label: Top zone
-          entity_id: valve.vegitable_garden_timer_top_zone_zone
+        - label: Zucchini
+          entity_id: valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone
           area_sqm: null
           sun_exposure: Full sun throughout the day
           plant_profile: 8 zucchini plants, 8 pea plants, and 8 eggplant plants
@@ -555,112 +566,75 @@ script:
             ] %}
           {% endif %}
           {{ parts.bits | join(' ') }}
-        llm_prompt: >-
-          ABSOLUTE OUTPUT RULE — VIOLATING THIS BREAKS LIVE HARDWARE: Your reply MUST be exactly one JSON object and NOTHING else. First byte `{`. Last byte `}`. Zero characters before `{`. Zero characters after `}`. No title line (never start with "Here", "Step", "#", or "**"). No markdown. No ``` fences. No Python or code. No numbered guides. No tutorials. No “For example”. English labels inside JSON strings only; no Chinese.
-          Your ONLY job: assign integer minutes per irrigation zone from the supplied sensor and forecast inputs. You are NOT helping anyone implement Home Assistant or APIs — Home Assistant already ran those calls; you ONLY return the plan JSON.
-          SCHEMA (mandatory): top-level key **zones** only — array of exactly eight objects, each **{"label": "<exact string>","minutes": <int>}**. Allowed **minutes**: **0** (skip zone) or **2** through **25**. Nothing else at top level (no source, response, forecasts, hourly_next_20h, forecast).
-          Exact shape (minute values are placeholders — compute from data; **0 means skip that zone**):
-          {"zones":[{"label":"East Lawn","minutes":3},{"label":"Flower Bed","minutes":0},{"label":"Front Lawn","minutes":2},{"label":"Slope Kitchen Left","minutes":17},{"label":"Peppers and Kale","minutes":5},{"label":"Tomato","minutes":9},{"label":"Top zone","minutes":14},{"label":"Kitchen Lawn","minutes":6}]}
-          Labels must match zone_context spelling and order exactly.
-          Read-only inputs (never paste these structures back as your answer):
-          - Zone snapshot + soil % (see soil sensors). Last watering: prefer **last_watering_source** `orbit_bhyve` (Orbit zone_history attributes on **bhyve_zone_history_sensor**); if `home_assistant_recorder`, from HA valve history API (30-day). Fields **last_watering_start**, **last_watering_duration_minutes**, **last_watering_note** (program/status/consumption hints may appear): zone_context JSON.
-          - Past ~24h precipitation at this location (model grid): open_meteo_past_rain JSON — use precipitation_mm_sum and rained_in_past_24h_estimate for whether meaningful rain reached the yard recently (OpenWeatherMap forecast API does not include verified historical rainfall).
-          - Past ~24h indoor/garden sensor trends from Home Assistant recorder (sampled if many points): sensor_history JSON — soil probes match Backyard ranking chart (soil_moisture_index). Top zone includes soil_sensor_secondary (Eggplant) plus primary Zucchini probe when present in zone_context.
-          - AccuWeather JSON **accuweather_forecast_for_llm** — keys `next_hours` (time `t`, condition `c`, PoP `pop`), `now_condition`, `precip_rate_in_per_h`. Use only to decide minutes; never paste this structure back (field names are input-only).
-          - OpenWeatherMap list **forecast_short** — cross-check the ~10h window when AccuWeather is thin (input-only; do not emit).
-          Rules:
-          - Use integer minutes only for each zone: allowed values are **0** (skip that zone; no watering) or **2 through 25** (actual run minutes).
-          - **Important:** If your modeled watering need for a zone would be **below 2 minutes**, output **0** for that zone — never output **1** as a stand-in for “minimal”; **1 is treated like skip (below threshold)** downstream but **0 is clearer.
-          - **You decide** minutes per zone; Home Assistant does not override your chosen integer except enforcing skip-vs-run thresholds above. Weight soil trends and recent rain heavily; prefer **0** or shorter runs if it already rained materially or soil stayed high; prefer moderate increases if soil dried steadily.
-          - **Rain within next 10 hours — do not water:** Map forecast times to “within ~10 hours from now.” If **any** forecast in that window (prefer AccuWeather **next_hours**; else OpenWeatherMap slots) indicates likely wet weather — rain, storms, showers, drizzle, thunder, or clearly elevated precipitation_probability / meaningful precip amount — then **do not irrigate**: respond with **0 minutes for every zone**. Only deviate if both past rain was negligible **and** soil data show severe dryness **and** you still believe immediate watering is essential despite imminent rain (rare).
-          - Beyond that 10h window, still prefer shorter runs if significant rain is forecast or soil moisture is already high.
-          - Include exactly eight zones; **no extra top-level keys** beyond **zones**.
-          {% if recorder_rest_hints | trim | length > 0 %}
-          Recorder API failures (fix token — zone_context last_watering_* may be null): {{ recorder_rest_hints }}
-
-          {% endif %}
-          FINAL REMINDER: Respond with ONLY the zones JSON object. Do not explain your reasoning outside JSON.
-
-          Zone data JSON: {{ zone_context }}
-          Open-Meteo past 24h precipitation (hourly_mm): {{ open_meteo_past_rain_for_llm }}
-          Home Assistant past 24h sensor series: {{ sensor_history_24h_for_llm }}
-          AccuWeather context JSON: {{ accuweather_forecast_for_llm }}
-          OpenWeatherMap forecast JSON (next ~24h): {{ forecast_short }}
-        llm_payload: >-
-          {{
-            {
-              'model': ollama_chat_model,
-              'temperature': 0,
-              'max_tokens': 800,
-              'stream': false,
-              'messages': [
-                {'role': 'system', 'content': 'JSON emitter only. Output exactly one object: {"zones":[ eight {"label","minutes"} ]}. minutes: 0 or 2-25 per zone. No markdown/code/steps/prose/help/tutorials/examples/Python/import/Heres—only raw JSON. First char { last char }.'},
-                {'role': 'user', 'content': llm_prompt}
-              ]
-            } | to_json
-          }}
-    - service: rest_command.ollama_chat_completions
-      data:
-        payload: '{{ llm_payload }}'
-      response_variable: llm_response
-    - variables:
-        llm_http_status: '{{ llm_response.status | default(-1) }}'
-        llm_raw_snippet: >-
-          {% set raw = llm_response.content | default(none) %}
-          {% if raw is string %}
-            {{ raw[:1200] }}
-          {% elif raw is mapping %}
-            {{ (raw | to_json)[:1200] }}
-          {% else %}
-            {{ '' }}
-          {% endif %}
-        llm_raw_text: >-
-          {% set raw = llm_response.content | default(none) %}
-          {% set lj = raw if raw is mapping else (raw | trim | from_json(default={}) if raw is string and raw | trim else {}) %}
-          {% set ns = namespace(txt='') %}
-          {% if lj is mapping %}
-            {% if lj.choices is defined and lj.choices | count > 0 %}
-              {% set ch = lj.choices[0] %}
-              {% if ch.message is mapping and ch.message.content is defined %}
-                {% set ns.txt = ch.message.content | default('', true) %}
-              {% elif ch.message is string %}
-                {% set ns.txt = ch.message %}
-              {% elif ch.text is defined %}
-                {% set ns.txt = ch.text | default('', true) %}
-              {% endif %}
-            {% endif %}
-          {% endif %}
-          {{ ns.txt }}
-        llm_clean_text: >-
-          {% set raw = llm_raw_text | default('', true) | string %}
-          {% set stripped = raw | regex_replace('(?s)```(?:json)?\\s*', '') | regex_replace('```', '') | trim %}
-          {% set hits = stripped | regex_findall('\\{\\s*"zones"\\s*:\\s*\\[[\\s\\S]*?\\]\\s*\\}') %}
-          {% set zones_blob = hits[0] if hits | length > 0 else '' %}
-          {% if zones_blob | length > 0 %}
-            {{ zones_blob }}
-          {% else %}
-            {{ stripped }}
-          {% endif %}
-        llm_zone_map: >-
-          {% set raw = llm_raw_text | default('', true) | string %}
-          {% set stripped = raw | regex_replace('(?s)```(?:json)?\\s*', '') | regex_replace('```', '') | trim %}
-          {% set hits = stripped | regex_findall('\\{\\s*"zones"\\s*:\\s*\\[[\\s\\S]*?\\]\\s*\\}') %}
-          {% set blob = hits[0] if hits | length > 0 else stripped %}
-          {% set lp = blob | trim | from_json(default={}) %}
-          {% if lp is not mapping or lp.zones is not defined %}
-            {% set lp = stripped | trim | from_json(default={}) %}
-          {% endif %}
-          {% set ns = namespace(m={}) %}
-          {% if lp is mapping and lp.zones is defined %}
-            {% for item in lp.zones %}
-              {% set label = item.label | default('', true) %}
-              {% set mins = item.minutes | default(0, true) | int(0) %}
-              {% if label %}
-                {% set ns.m = dict(ns.m, **{label: mins}) %}
+        baseline_zone_map: >-
+          {% set temp_f = ecowitt_temp | float(75) %}
+          {% set dew_f = ecowitt_dewpoint | float(55) %}
+          {% set fs = forecast_short | default('[]', true) | trim | from_json(default=[]) %}
+          {% set ns_mm = namespace(t=0.0) %}
+          {% if fs is sequence %}
+            {% for row in fs %}
+              {% if row is mapping and row.rain_mm_3h is defined %}
+                {% set ns_mm.t = ns_mm.t + (row.rain_mm_3h | float(0)) %}
               {% endif %}
             {% endfor %}
           {% endif %}
+          {% set rain_in = (ns_mm.t / 25.4) | round(3) %}
+          {% set ns = namespace(m={}) %}
+          {% for z in zones %}
+            {% set base = 10 %}
+            {% set sun = (z.sun_exposure | default('', true) | lower) %}
+            {% set plants = (z.plant_profile | default('', true) | lower) %}
+            {% if 'full sun' in sun %}
+              {% set base = base + 2 %}
+            {% elif 'shade' in sun %}
+              {% set base = base - 2 %}
+            {% endif %}
+            {% if temp_f >= 88 %}
+              {% set base = base + 3 %}
+            {% elif temp_f >= 80 %}
+              {% set base = base + 2 %}
+            {% elif temp_f <= 65 %}
+              {% set base = base - 1 %}
+            {% endif %}
+            {% if dew_f <= 50 %}
+              {% set base = base + 1 %}
+            {% elif dew_f >= 68 %}
+              {% set base = base - 1 %}
+            {% endif %}
+            {% if plants | regex_search('tomato|pepper|kale|zucchini|eggplant|pea|basil|parsley|rose|hosta|mint|lily|flower') %}
+              {% set base = base + 1 %}
+            {% endif %}
+            {% set soil_raw = states(z.soil_sensor) if z.soil_sensor else 'unknown' %}
+            {% if soil_raw not in ['unknown', 'unavailable', 'none', ''] %}
+              {% set soil = soil_raw | float(0) %}
+              {% if soil <= 20 %}
+                {% set base = base + 5 %}
+              {% elif soil <= 30 %}
+                {% set base = base + 3 %}
+              {% elif soil <= 40 %}
+                {% set base = base + 1 %}
+              {% elif soil >= 70 %}
+                {% set base = base - 4 %}
+              {% elif soil >= 55 %}
+                {% set base = base - 2 %}
+              {% endif %}
+            {% endif %}
+            {% if rain_in >= 0.30 %}
+              {% set base = base - 4 %}
+            {% elif rain_in >= 0.10 %}
+              {% set base = base - 2 %}
+            {% endif %}
+            {% set minutes = [1, [base | int(10), 25] | min] | max %}
+            {% set ns.m = dict(ns.m, **{z.label: minutes}) %}
+          {% endfor %}
           {{ ns.m | to_json }}
+        llm_zone_map: >-
+          {{ baseline_zone_map }}
+    - variables:
+        llm_http_status: "per_zone_mode"
+        llm_raw_snippet: "no global all-zone LLM call — LLM runs per zone below"
+        llm_raw_text: ""
+        llm_clean_text: ""
         simulate_summary: >-
           {% set raw = llm_zone_map | default(none) %}
           {% if raw is mapping %}
@@ -672,15 +646,16 @@ script:
           {% endif %}
           {% set ns = namespace(lines=[]) %}
           {% for z in zones %}
-            {% set lm = m.get(z.label, 2) | int(2) %}
+            {% set lm = m.get(z.label, 0) | int(0) %}
             {% set rm = 0 if lm < 2 else ([2, [lm, 25] | min] | max) %}
             {% set ns.lines = ns.lines + [
               z.label ~ ': ' ~ rm ~ (' min (skipped)' if rm < 1 else (' min → ' ~ z.entity_id))
             ] %}
           {% endfor %}
           {% if m | length < 8 %}
-          WARNING: LLM output did not yield eight zone entries (parsed {{ m | length }}). Missing labels default to 2 min — check Raw LLM JSON in logs/notifications.
+          WARNING: baseline map incomplete ({{ m | length }} zones). Check ecowitt_temp / forecast_short inputs.
           {% endif %}
+          Baseline minutes (deterministic; per-zone LLM can adjust at runtime):
           {{ ns.lines | join('\n') }}
         irrigation_start_summary: >-
           {% set raw = llm_zone_map | default(none) %}
@@ -693,7 +668,7 @@ script:
           {% endif %}
           {% set ns = namespace(lines=[], sec=0) %}
           {% for z in zones %}
-            {% set lm = m.get(z.label, 2) | int(2) %}
+            {% set lm = m.get(z.label, 0) | int(0) %}
             {% set rm = 0 if lm < 2 else ([2, [lm, 25] | min] | max) %}
             {% set ns.lines = ns.lines + [('• ' ~ z.label ~ ' — ' ~ rm ~ (' min (skipped)' if rm < 1 else ' min'))] %}
             {% set ns.sec = ns.sec + ((rm * 60 + 55) if rm > 0 else 0) %}
@@ -726,6 +701,15 @@ script:
     - choose:
       - conditions:
         - condition: template
+          value_template: "{{ simulate_mode }}"
+        sequence:
+        - action: input_text.set_value
+          data:
+            entity_id: input_text.ai_watering_simulate_report
+            value: ""
+    - choose:
+      - conditions:
+        - condition: template
           value_template: "{{ not simulate_mode }}"
         sequence:
         - action: input_boolean.turn_on
@@ -748,77 +732,173 @@ script:
 
               {% endif %}
               {{ irrigation_start_summary }}
-        - repeat:
-            for_each: '{{ pending_zones }}'
+    - repeat:
+        for_each: '{{ pending_zones }}'
+        sequence:
+        - variables:
+            zone_label: '{{ repeat.item.label }}'
+            zone_entity: '{{ repeat.item.entity_id }}'
+            zone_index: '{{ (start_index_clamped | int(1) + repeat.index - 1) | int }}'
+            zone_baseline_clamped: >-
+              {% set mraw = llm_zone_map | default('{}', true) %}
+              {% set md = mraw | trim | from_json(default={}) if mraw is string else (mraw if mraw is mapping else {}) %}
+              {% set br = md.get(repeat.item.label, 10) | int(10) %}
+              {{ 0 if br < 2 else ([2, [br, 25] | min] | max) }}
+            zone_llm_prompt: >-
+              Respond with ONLY one JSON object: {"minutes": <integer>}
+              No markdown, no extra keys, no prose.
+              minutes must be 0 or 2..25.
+              Deterministic baseline for this zone (weather + soil heuristic, already rain-adjusted): {{ zone_baseline_clamped }} minutes (0 = heuristic would skip).
+              Prefer 2..25 minutes matching plant needs; use 0 only if irrigation is clearly unnecessary (e.g. high soil moisture, heavy recent rain combined with wet forecast, or baseline already 0).
+              Zone label: {{ repeat.item.label }}
+              Zone entity: {{ repeat.item.entity_id }}
+              Zone data JSON: {{ repeat.item | to_json }}
+              Open-Meteo past 24h precipitation: {{ open_meteo_past_rain_for_llm }}
+              AccuWeather context: {{ accuweather_forecast_for_llm }}
+              OpenWeatherMap forecast JSON (next ~24h): {{ forecast_short }}
+        - variables:
+            zone_llm_payload: >-
+              {{
+                {
+                  'model': ollama_chat_model,
+                  'temperature': 0,
+                  'max_tokens': 200,
+                  'stream': false,
+                  'messages': [
+                    {'role': 'system', 'content': 'Return only valid JSON: {"minutes": integer}. minutes must be 0 or an integer from 2 to 25 inclusive. No other text.'},
+                    {'role': 'user', 'content': zone_llm_prompt}
+                  ]
+                } | to_json
+              }}
+        - service: rest_command.ollama_chat_completions
+          data:
+            payload: '{{ zone_llm_payload }}'
+          response_variable: zone_llm_response
+        - variables:
+            zone_llm_http: '{{ zone_llm_response.status | default(-1) }}'
+            zone_llm_raw: >-
+              {% set raw = zone_llm_response.content | default(none) %}
+              {% set j = raw if raw is mapping else (raw | trim | from_json(default={}) if raw is string and raw | trim else {}) %}
+              {% if j is mapping and j.choices is defined and j.choices | count > 0 %}
+                {% set ch = j.choices[0] %}
+                {% if ch.message is mapping and ch.message.content is defined %}
+                  {{ ch.message.content | string }}
+                {% elif ch.text is defined %}
+                  {{ ch.text | string }}
+                {% else %}
+                  {{ '' }}
+                {% endif %}
+              {% else %}
+                {{ raw | string if raw is not none else '' }}
+              {% endif %}
+            zone_llm_parsed: >-
+              {% set s = zone_llm_raw | regex_replace('(?s)```(?:json)?\\s*', '') | regex_replace('```', '') | trim %}
+              {{ s | from_json(default={}) }}
+            llm_minutes: >-
+              {% set p = zone_llm_parsed %}
+              {% if p is mapping and p.minutes is defined %}
+                {{ p.minutes | int(0) }}
+              {% elif p is number %}
+                {{ p | int(0) }}
+              {% else %}
+                0
+              {% endif %}
+            run_minutes: >-
+              {% set lm = llm_minutes | int(0) %}
+              {% set bc = zone_baseline_clamped | int(0) %}
+              {% if lm >= 2 %}
+                {{ [2, [lm, 25] | min] | max }}
+              {% elif bc >= 2 %}
+                {{ bc }}
+              {% else %}
+                0
+              {% endif %}
+        - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ simulate_mode }}"
             sequence:
-            - variables:
-                zone_label: '{{ repeat.item.label }}'
-                zone_entity: '{{ repeat.item.entity_id }}'
-                zone_index: '{{ (start_index_clamped | int(1) + repeat.index - 1) | int }}'
-                llm_minutes: >-
-                  {% set raw = llm_zone_map | default(none) %}
-                  {% if raw is mapping %}
-                    {% set m = raw %}
-                  {% elif raw is string and raw | trim | length > 0 %}
-                    {% set m = raw | trim | from_json(default={}) %}
-                  {% else %}
-                    {% set m = {} %}
-                  {% endif %}
-                  {{ m.get(zone_label, 2) | int(2) }}
-                run_minutes: >-
-                  {% set lm = llm_minutes | int(2) %}
-                  {{ 0 if lm < 2 else ([2, [lm, 25] | min] | max) }}
+              - action: input_text.set_value
+                data:
+                  entity_id: input_text.ai_watering_simulate_report
+                  value: >-
+                    {% set prev = states('input_text.ai_watering_simulate_report') | default('', true) %}
+                    {% set snip = zone_llm_raw | default('', true) | replace('\n', ' ') %}
+                    {% set snip2 = snip[:220] %}
+                    {% set lm0 = llm_minutes | int(0) %}
+                    {% set fb = ' fb' if lm0 < 2 and run_minutes | int(0) >= 2 else '' %}
+                    {% set line = zone_label ~ ': ' ~ run_minutes ~ ' min' ~ fb ~ ' (LLM ' ~ lm0 ~ ') | HTTP ' ~ zone_llm_http ~ ' | raw: ' ~ snip2 %}
+                    {% set max_len = 240 %}
+                    {% if repeat.index == 1 %}
+                    {{ line[:max_len] }}
+                    {% else %}
+                    {{ (prev ~ '\n' ~ line)[:max_len] }}
+                    {% endif %}
+        - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ run_minutes | int(0) < 1 }}"
+            sequence:
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ not simulate_mode }}"
+                    sequence:
+                      - action: input_number.set_value
+                        data:
+                          entity_id: input_number.ai_dusk_watering_next_index
+                          value: "{{ [zone_index + 1, 8] | min }}"
+          default:
             - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ run_minutes | int(0) < 1 }}"
-                sequence:
-                  - action: input_number.set_value
-                    data:
-                      entity_id: input_number.ai_dusk_watering_next_index
-                      value: "{{ [zone_index + 1, 8] | min }}"
-              default:
-                - if:
+                - conditions:
                     - condition: template
-                      value_template: "{{ states(zone_entity) not in ['unknown', 'unavailable', 'none', ''] }}"
-                  then:
-                  - action: bhyve.start_watering
-                    data:
-                      entity_id: '{{ zone_entity }}'
-                      minutes: '{{ run_minutes | int(2) }}'
-                  - delay:
-                      hours: 0
-                      minutes: '{{ run_minutes | int(2) }}'
-                      seconds: 10
-                      milliseconds: 0
-                  - action: bhyve.stop_watering
-                    data:
-                      entity_id: '{{ zone_entity }}'
-                  # Same hub often hosts multiple stations (e.g. East Lawn + Flower Bed). Immediate start/stop on another station fails silently until manual mode clears.
-                  - delay:
-                      seconds: 45
-                  - action: input_number.set_value
-                    data:
-                      entity_id: input_number.ai_dusk_watering_next_index
-                      value: "{{ [zone_index + 1, 8] | min }}"
-                  else:
-                  - action: persistent_notification.create
-                    data:
-                      title: AI dusk watering — zone skipped
-                      message: >-
-                        Skipped {{ zone_label }} ({{ zone_entity }}); valve state was {{ states(zone_entity) }} (unknown/unavailable).
-                  - action: input_number.set_value
-                    data:
-                      entity_id: input_number.ai_dusk_watering_next_index
-                      value: "{{ [zone_index + 1, 8] | min }}"
+                      value_template: "{{ not simulate_mode }}"
+                  sequence:
+                    - if:
+                        - condition: template
+                          value_template: "{{ states(zone_entity) not in ['unknown', 'unavailable', 'none', ''] }}"
+                      then:
+                        - action: bhyve.start_watering
+                          data:
+                            entity_id: '{{ zone_entity }}'
+                            minutes: '{{ run_minutes | int(2) }}'
+                        - delay:
+                            hours: 0
+                            minutes: '{{ run_minutes | int(2) }}'
+                            seconds: 10
+                            milliseconds: 0
+                        - action: bhyve.stop_watering
+                          data:
+                            entity_id: '{{ zone_entity }}'
+                        - delay:
+                            seconds: 45
+                        - action: input_number.set_value
+                          data:
+                            entity_id: input_number.ai_dusk_watering_next_index
+                            value: "{{ [zone_index + 1, 8] | min }}"
+                      else:
+                        - action: persistent_notification.create
+                          data:
+                            title: AI dusk watering — zone skipped
+                            message: >-
+                              Skipped {{ zone_label }} ({{ zone_entity }}); valve state was {{ states(zone_entity) }} (unknown/unavailable).
+                        - action: input_number.set_value
+                          data:
+                            entity_id: input_number.ai_dusk_watering_next_index
+                            value: "{{ [zone_index + 1, 8] | min }}"
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: "{{ not simulate_mode }}"
+        sequence:
         - delay:
             seconds: 25
         - action: logbook.log
           data:
             name: AI dusk watering
-            entity_id: script.ai_dusk_sequential_watering
+            entity_id: script.ai_sequential_watering
             message: >-
-              All zones in the sequential plan finished. BHyve zone_history (Orbit) last cycle timestamps — East Lawn: {{ states('sensor.adna_s_flowers_zone_history') }}; Flower Bed: {{ states('sensor.adna_s_roses_zone_history') }}; Front Lawn: {{ states('sensor.front_yard_zone_history') }}; Slope Kitchen Left: {{ states('sensor.garden_zone_history') }}; Peppers & Kale: {{ states('sensor.east_side_lawn_zone_history') }}; Tomato: {{ states('sensor.unknown_zone_history_3') }}; Top zone: {{ states('sensor.unknown_zone_history_5') }}; Kitchen Lawn (zone 4): {{ states('sensor.unknown_zone_history_2') }}; Veg garden timer next: {{ states('sensor.vegitable_garden_timer_next_watering') }}.
+              All zones in the sequential plan finished. BHyve zone_history (Orbit) last cycle timestamps — East Lawn: {{ states('sensor.adna_s_flowers_zone_history') }}; Flower Bed: {{ states('sensor.adna_s_roses_zone_history') }}; Front Lawn: {{ states('sensor.front_yard_zone_history') }}; Slope Kitchen Left: {{ states('sensor.garden_zone_history') }}; Peppers & Kale: {{ states('sensor.east_side_lawn_zone_history') }}; Tomato: {{ states('sensor.unknown_zone_history_3') }}; Zucchini: {{ states('sensor.unknown_zone_history_5') }}; Kitchen Lawn (zone 4): {{ states('sensor.unknown_zone_history_2') }}; Veg garden timer next: {{ states('sensor.vegitable_garden_timer_next_watering') }}.
         - action: input_text.set_value
           data:
             entity_id: input_text.ai_dusk_watering_active_run_id
@@ -832,29 +912,26 @@ script:
             value: 1
     - action: persistent_notification.create
       data:
-        title: "{{ 'AI dusk watering simulation (dry run)' if simulate_mode else 'BHyve dusk watering complete' }}"
+        title: "{{ 'AI sequential watering simulation (dry run)' if simulate_mode else 'AI sequential watering complete' }}"
         message: >-
           {% if simulate_mode %}
           Ollama model: {{ ollama_chat_model }}
 
-          Planned minutes per zone (valves not activated):
+          Baseline plan + per-zone LLM below (BHyve watering services were not called):
           {{ simulate_summary }}
+
+          Per-zone LLM (clamped minutes after parsing each zone):
+          {{ states('input_text.ai_watering_simulate_report') }}
 
           AccuWeather context passed to the LLM (truncated):
           {{ (accuweather_forecast_for_llm | default('', true) | string)[:900] }}{% if (accuweather_forecast_for_llm | default('', true) | string | length) > 900 %}…{% endif %}
 
-          Raw LLM JSON:
-          {{ llm_clean_text | default('n/a', true) }}
-          {% if not (llm_clean_text | default('', true) | trim | length) %}
-          ---
-          HTTP {{ llm_http_status }}. Response (debug):
-          {{ llm_raw_snippet | default('n/a', true) }}
-          {% endif %}
+          Trace helper (legacy global slot unused): {{ llm_http_status }} — {{ llm_raw_snippet }}
           {% else %}
           Completed sequential AI watering plan.
           Ollama model: {{ ollama_chat_model }}
 
           LLM plan: {{ llm_clean_text | default('n/a', true) }}
 
-          BHyve last-cycle times were written to the Logbook (entity: script.ai_dusk_sequential_watering) after a short delay so Orbit zone_history sensors could update.
+          BHyve last-cycle times were written to the Logbook (entity: script.ai_sequential_watering) after a short delay so Orbit zone_history sensors could update.
           {% endif %}
