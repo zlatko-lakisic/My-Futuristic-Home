@@ -1,0 +1,13 @@
+- id: cleanup_www_tmp_images_over_2_weeks
+  alias: Maintenance — delete www/tmp images older than 2 weeks
+  description: >-
+    Scheduled automation (daily): removes *.jpg/*.jpeg/*.png/*.webp under /config/www/tmp (gate AI bursts,
+    process_ai snapshots) and under /config/www/snapshots (event summaries) when older than 14 days.
+    Uses shell_command.cleanup_www_image_snapshots_over_2_weeks (packages/www_tmp_cleanup_shell.yaml).
+  triggers:
+  - at: 03:40:00
+    trigger: time
+  conditions: []
+  actions:
+  - action: shell_command.cleanup_www_image_snapshots_over_2_weeks
+  mode: single

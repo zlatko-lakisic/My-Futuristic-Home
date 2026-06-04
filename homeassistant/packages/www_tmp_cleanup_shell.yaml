@@ -1,0 +1,10 @@
+# Registers shell_command.cleanup_www_image_snapshots_over_2_weeks (automation 04_www_tmp_image_cleanup).
+shell_command:
+  cleanup_www_image_snapshots_over_2_weeks: >-
+    find /config/www/tmp -maxdepth 1 -type f
+    \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \)
+    -mtime +14 -delete ;
+    test ! -d /config/www/snapshots ||
+    find /config/www/snapshots -type f
+    \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \)
+    -mtime +14 -delete

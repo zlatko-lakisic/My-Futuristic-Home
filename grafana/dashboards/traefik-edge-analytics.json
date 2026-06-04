@@ -1,0 +1,872 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_INFLUXDB",
+      "label": "InfluxDB",
+      "description": "InfluxDB data source (Flux)",
+      "type": "datasource",
+      "pluginId": "influxdb",
+      "pluginName": "InfluxDB"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "11.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "influxdb",
+      "name": "InfluxDB",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "bargauge",
+      "name": "Bar gauge",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "piechart",
+      "name": "Pie chart",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "text",
+      "name": "Text",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Traefik edge traffic, errors, latency proxies, TLS expiry (Influx bucket default: traefik). Adjust template variables if your measurement names or tags differ. Optional access-log panels assume a log-derived measurement with path/status tags.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "code": {
+          "language": "markdown",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "## Traefik · Monitoring & analytics\nDefault **Bucket** is `traefik`. OTLP-style measurements use dotted names; request counters use `_field` **`count`** (confirmed via `schema.fieldKeys`). Set **Group traffic by tag** to **`entrypoint`** for `traefik.entrypoint.requests.total`, or **`service`** for `traefik.service.requests.total`. Use **`router`** only if that tag exists on the measurement.",
+        "mode": "markdown"
+      },
+      "transparent": true,
+      "type": "text",
+      "title": ""
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 3 },
+      "id": 2,
+      "panels": [],
+      "title": "Edge capacity & certificates",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 10000,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "semi-dark-blue", "value": null },
+              { "color": "green", "value": 100 },
+              { "color": "orange", "value": 2000 },
+              { "color": "red", "value": 5000 }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 4 },
+      "id": 3,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${open_connections_measurement}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"gauge\" or r[\"_field\"] == \"counter\" or r[\"_field\"] == \"value\")\n  |> last()\n  |> group()\n  |> sum(column: \"_value\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Open connections (sum)",
+      "type": "gauge"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "blue", "mode": "fixed" },
+          "decimals": 1,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          },
+          "unit": "reqpm"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 4 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["mean"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${requests_measurement}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"counter\" or r[\"_field\"] == \"value\" or r[\"_field\"] == \"count\")\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_start\", \"_stop\"])\n  |> group(columns: [\"_time\", \"_start\", \"_stop\"])\n  |> sum(column: \"_value\")\n  |> derivative(unit: 1s, nonNegative: true)\n  |> map(fn: (r) => ({ r with _value: r._value * 60.0 }))",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP throughput (req/min · total)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 4 },
+      "id": 5,
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "decimals": 1,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 7 },
+              { "color": "yellow", "value": 14 },
+              { "color": "green", "value": 30 }
+            ]
+          },
+          "unit": "d"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "cn" },
+            "properties": [
+              { "id": "custom.width", "value": 280 },
+              { "id": "color", "value": { "fixedColor": "text", "mode": "fixed" } },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "transparent", "value": null }] } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "sans" },
+            "properties": [
+              { "id": "custom.width", "value": 220 },
+              { "id": "color", "value": { "fixedColor": "text", "mode": "fixed" } },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "transparent", "value": null }] } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "serial" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "text", "mode": "fixed" } },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "transparent", "value": null }] } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "days_remaining" },
+            "properties": [{ "id": "displayName", "value": "Days left" }]
+          }
+        ]
+      },
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": false, "displayName": "days_remaining" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${tls_not_after_measurement}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"gauge\" or r[\"_field\"] == \"value\")\n  |> group(columns: [\"cn\", \"sans\", \"serial\"])\n  |> last()\n  |> map(fn: (r) => {\n      expirySec = float(v: r._value)\n      expiryNs = int(v: expirySec * 1000000000.0)\n      remainNs = expiryNs - int(v: uint(v: now()))\n      days = float(v: remainNs) / 86400000000000.0\n      return {r with _value: days}\n    })\n  |> sort(columns: [\"_value\"], desc: false)",
+          "refId": "A"
+        }
+      ],
+      "title": "TLS certificates · days remaining (one row per cert)",
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "columns" } },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "_time": true,
+              "_start": true,
+              "_stop": true,
+              "_measurement": true,
+              "_field": true,
+              "result": true,
+              "table": true
+            },
+            "renameByName": { "_value": "days_remaining" }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
+      "id": 6,
+      "panels": [],
+      "title": "Traffic shape · errors · latency",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 65,
+            "gradientMode": "hue",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "normal" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 11, "w": 14, "x": 0, "y": 12 },
+      "id": 7,
+      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "hideZeros": false, "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${requests_measurement}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"counter\" or r[\"_field\"] == \"value\" or r[\"_field\"] == \"count\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> derivative(unit: 1s, nonNegative: true)\n  |> group(columns: [\"${group_tag}\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Traffic heatmap-style · request rate (grouped by tag)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-RdYlGr" },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 11, "w": 10, "x": 14, "y": 12 },
+      "id": 8,
+      "options": {
+        "displayMode": "lcd",
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "text": {},
+        "valueMode": "color"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${requests_measurement}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"counter\" or r[\"_field\"] == \"value\" or r[\"_field\"] == \"count\")\n  |> filter(fn: (r) => string(v: r[\"code\"]) =~ /^5/ or string(v: r[\"code\"]) =~ /^4/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> derivative(unit: 1s, nonNegative: true)\n  |> group(columns: [\"${group_tag}\", \"code\"])\n  |> sum(column: \"_value\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Service error wall · 4xx/5xx volume",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "mode": "none" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
+          "unit": "reqps"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byRegexp", "options": "/latency/" },
+            "properties": [
+              { "id": "custom.axisPlacement", "value": "right" },
+              { "id": "unit", "value": "s" },
+              { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } },
+              { "id": "custom.drawStyle", "value": "line" },
+              { "id": "custom.lineWidth", "value": 2 }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 14, "x": 0, "y": 23 },
+      "id": 9,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${duration_measurement}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"${latency_field}\")\n  |> group()\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> set(key: \"_field\", value: \"latency (s)\")\n  |> yield(name: \"latency\")\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${requests_measurement}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"counter\" or r[\"_field\"] == \"value\" or r[\"_field\"] == \"count\")\n  |> group()\n  |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)\n  |> derivative(unit: 1s, nonNegative: true)\n  |> set(key: \"_field\", value: \"requests/s\")\n  |> yield(name: \"requests\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Throughput vs latency (${latency_field} from OTLP duration metric)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "pieType": "donut",
+            "tooltip": { "hideZeros": false, "mode": "single", "sort": "none" }
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 10, "x": 14, "y": 23 },
+      "id": 10,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "values": ["value"] },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "tooltip": { "hideZeros": false, "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${requests_measurement}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"counter\" or r[\"_field\"] == \"value\" or r[\"_field\"] == \"count\")\n  |> filter(fn: (r) => string(v: r[\"code\"]) =~ /^[2345]/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> derivative(unit: 1s, nonNegative: true)\n  |> group(columns: [\"code\"])\n  |> sum(column: \"_value\")",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP status mix (volume by code)",
+      "type": "piechart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 33 },
+      "id": 11,
+      "panels": [],
+      "title": "Availability & security-oriented views",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "decimals": 2,
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 95 },
+              { "color": "green", "value": 99 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 34 },
+      "id": 12,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "ok = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"traefik.service.requests.total\")\n  |> filter(fn: (r) => r[\"_field\"] == \"counter\" or r[\"_field\"] == \"value\" or r[\"_field\"] == \"count\")\n  |> filter(fn: (r) => string(v: r[\"code\"]) =~ /^2/ or string(v: r[\"code\"]) =~ /^3/)\n  |> group()\n  |> sum(column: \"_value\")\n  |> set(key: \"_field\", value: \"ok\")\n\ntot = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"traefik.service.requests.total\")\n  |> filter(fn: (r) => r[\"_field\"] == \"counter\" or r[\"_field\"] == \"value\" or r[\"_field\"] == \"count\")\n  |> filter(fn: (r) => string(v: r[\"code\"]) =~ /^[0-9]+$/)\n  |> group()\n  |> sum(column: \"_value\")\n  |> set(key: \"_field\", value: \"tot\")\n\nunion(tables: [ok, tot])\n  |> pivot(rowKey: [\"_start\", \"_stop\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => {\n      t = if exists r.tot then float(v: r.tot) else 0.0\n      k = if exists r.ok then float(v: r.ok) else 0.0\n      return {_time: r._start, _start: r._start, _stop: r._stop, _value: if t > 0.0 then 100.0 * k / t else 100.0}\n    })",
+          "refId": "A"
+        }
+      ],
+      "title": "Success proxy · % 2xx+3xx (`traefik.service.requests.total`, numeric codes)",
+      "type": "gauge"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "pieType": "donut"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 34 },
+      "id": 13,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"traefik.entrypoint.requests.total\")\n  |> filter(fn: (r) => r[\"_field\"] == \"counter\" or r[\"_field\"] == \"value\" or r[\"_field\"] == \"count\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> derivative(unit: 1s, nonNegative: true)\n  |> group(columns: [\"method\"])\n  |> sum(column: \"_value\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Requests by HTTP method (from `traefik.entrypoint.requests.total`)",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 34 },
+      "id": 14,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${access_measurement}\")\n  |> filter(fn: (r) => exists r.path)\n  |> filter(fn: (r) => string(v: r.path) =~ /\\.env|wp-login|wp-admin|phpmyadmin|cgi-bin/)\n  |> group(columns: [\"path\", \"method\", \"entrypoint\", \"DownstreamStatus\"])\n  |> count()\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: 25)",
+          "refId": "A"
+        }
+      ],
+      "title": "Suspicious-ish paths (access logs)",
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": { "mode": "columns" }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "renameByName": { "_value": "hits" }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": false
+          },
+          "decimals": 4,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
+          "unit": "reqps"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "service" },
+            "properties": [
+              { "id": "custom.width", "value": 400 },
+              { "id": "unit", "value": "none" }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 42 },
+      "id": 15,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "showHeader": true,
+        "showTypeIcons": false,
+        "sortBy": [{ "desc": true, "displayName": "req_rate_est" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"traefik.service.requests.total\")\n  |> filter(fn: (r) => r[\"_field\"] == \"counter\" or r[\"_field\"] == \"value\" or r[\"_field\"] == \"count\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> derivative(unit: 1s, nonNegative: true)\n  |> group(columns: [\"service\"])\n  |> sum(column: \"_value\")\n  |> sort(columns: [\"service\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Traefik services · estimated request rate (sum over dashboard range)",
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": { "mode": "columns" }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "_start": true,
+              "_stop": true,
+              "_measurement": true,
+              "_field": true,
+              "Time": true,
+              "_time": true,
+              "result": true,
+              "table": true
+            },
+            "renameByName": { "_value": "req_rate_est" }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 50 },
+      "id": 200,
+      "panels": [],
+      "title": "Diagnostics",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 51 },
+      "id": 201,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "import \"influxdata/influxdb/schema\"\nimport \"strings\"\n\nschema.measurements(bucket: \"${bucket}\")\n  |> filter(fn: (r) =>\n      strings.containsStr(v: r._value, substr: \"traefik\")\n      or strings.containsStr(v: r._value, substr: \"access\")\n      or strings.containsStr(v: r._value, substr: \"prometheus\")\n      or strings.containsStr(v: r._value, substr: \"cert\")\n    )\n  |> sort(columns: [\"_value\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Likely Traefik-related measurements in this bucket",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 51 },
+      "id": 202,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: -24h)\n  |> filter(fn: (r) => r[\"_measurement\"] =~ /^traefik/)\n  |> limit(n: 40)",
+          "refId": "A"
+        }
+      ],
+      "title": "Raw sample rows (measurement =~ /^traefik/) · last 24h",
+      "transformations": [{ "id": "labelsToFields", "options": { "mode": "columns" } }],
+      "type": "table"
+    },
+    {
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 60 },
+      "id": 203,
+      "options": {
+        "code": { "language": "markdown", "showLineNumbers": false, "showMiniMap": false },
+        "content": "Your line protocol uses **OTLP-style dotted names** (e.g. `traefik.entrypoint.requests.total`). Dashboard defaults match **query-2.csv**.\n\n**Influx schema (#3):** add `import \"strings\"` before `strings.containsStr`.\n\n**Field/tag keys (#4):** use **`predicate`**, not `measurement`:\n`schema.fieldKeys(bucket: \"traefik\", predicate: (r) => r._measurement == \"traefik.entrypoint.requests.total\")`\n`schema.tagKeys(bucket: \"traefik\", predicate: (r) => r._measurement == \"traefik.entrypoint.requests.total\")`",
+        "mode": "markdown"
+      },
+      "title": "Troubleshooting hints",
+      "transparent": true,
+      "type": "text"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["traefik", "influxdb", "edge"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "traefik", "value": "traefik" },
+        "hide": 0,
+        "label": "Bucket",
+        "name": "bucket",
+        "options": [
+          { "selected": true, "text": "traefik", "value": "traefik" },
+          { "selected": false, "text": "telegraf", "value": "telegraf" },
+          { "selected": false, "text": "metrics", "value": "metrics" },
+          { "selected": false, "text": "homeassistant", "value": "homeassistant" }
+        ],
+        "query": "traefik,telegraf,metrics,homeassistant",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": { "selected": true, "text": "traefik.entrypoint.requests.total", "value": "traefik.entrypoint.requests.total" },
+        "hide": 0,
+        "label": "Requests measurement",
+        "name": "requests_measurement",
+        "options": [
+          { "selected": true, "text": "traefik.entrypoint.requests.total", "value": "traefik.entrypoint.requests.total" },
+          { "selected": false, "text": "traefik.service.requests.total", "value": "traefik.service.requests.total" },
+          { "selected": false, "text": "traefik_entrypoint_requests_total", "value": "traefik_entrypoint_requests_total" },
+          { "selected": false, "text": "traefik_router_requests_total", "value": "traefik_router_requests_total" },
+          { "selected": false, "text": "traefik_service_requests_total", "value": "traefik_service_requests_total" }
+        ],
+        "query": "traefik.entrypoint.requests.total,traefik.service.requests.total,traefik_entrypoint_requests_total,traefik_router_requests_total,traefik_service_requests_total",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": { "selected": true, "text": "entrypoint", "value": "entrypoint" },
+        "hide": 0,
+        "label": "Group traffic by tag",
+        "name": "group_tag",
+        "options": [
+          { "selected": true, "text": "entrypoint", "value": "entrypoint" },
+          { "selected": false, "text": "service", "value": "service" },
+          { "selected": false, "text": "router", "value": "router" }
+        ],
+        "query": "entrypoint,service,router",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": { "selected": true, "text": "p95", "value": "p95" },
+        "hide": 0,
+        "label": "Latency quantile (_field)",
+        "name": "latency_field",
+        "options": [
+          { "selected": true, "text": "p95", "value": "p95" },
+          { "selected": false, "text": "p50", "value": "p50" },
+          { "selected": false, "text": "p75", "value": "p75" },
+          { "selected": false, "text": "p99", "value": "p99" }
+        ],
+        "query": "p95,p50,p75,p99",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": { "selected": true, "text": "traefik.open.connections", "value": "traefik.open.connections" },
+        "hide": 0,
+        "label": "Open connections measurement",
+        "name": "open_connections_measurement",
+        "options": [
+          { "selected": true, "text": "traefik.open.connections", "value": "traefik.open.connections" },
+          { "selected": false, "text": "traefik_entrypoint_open_connections", "value": "traefik_entrypoint_open_connections" },
+          { "selected": false, "text": "traefik_open_connections", "value": "traefik_open_connections" },
+          { "selected": false, "text": "traefik_service_open_connections", "value": "traefik_service_open_connections" }
+        ],
+        "query": "traefik.open.connections,traefik_entrypoint_open_connections,traefik_open_connections,traefik_service_open_connections",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": { "selected": true, "text": "traefik.entrypoint.request.duration", "value": "traefik.entrypoint.request.duration" },
+        "hide": 0,
+        "label": "Latency measurement",
+        "name": "duration_measurement",
+        "options": [
+          { "selected": true, "text": "traefik.entrypoint.request.duration", "value": "traefik.entrypoint.request.duration" },
+          { "selected": false, "text": "traefik.service.request.duration", "value": "traefik.service.request.duration" },
+          { "selected": false, "text": "traefik_entrypoint_request_duration_seconds", "value": "traefik_entrypoint_request_duration_seconds" },
+          { "selected": false, "text": "traefik_router_request_duration_seconds", "value": "traefik_router_request_duration_seconds" },
+          { "selected": false, "text": "traefik_service_request_duration_seconds", "value": "traefik_service_request_duration_seconds" }
+        ],
+        "query": "traefik.entrypoint.request.duration,traefik.service.request.duration,traefik_entrypoint_request_duration_seconds,traefik_router_request_duration_seconds,traefik_service_request_duration_seconds",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": { "selected": true, "text": "traefik.tls.certs.notAfterTimestamp", "value": "traefik.tls.certs.notAfterTimestamp" },
+        "hide": 0,
+        "label": "TLS not-after measurement",
+        "name": "tls_not_after_measurement",
+        "options": [
+          { "selected": true, "text": "traefik.tls.certs.notAfterTimestamp", "value": "traefik.tls.certs.notAfterTimestamp" },
+          { "selected": false, "text": "traefik_tls_certs_not_after", "value": "traefik_tls_certs_not_after" }
+        ],
+        "query": "traefik.tls.certs.notAfterTimestamp,traefik_tls_certs_not_after",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": { "selected": true, "text": "traefik_access", "value": "traefik_access" },
+        "hide": 0,
+        "label": "Access log measurement",
+        "name": "access_measurement",
+        "options": [
+          { "selected": true, "text": "traefik_access", "value": "traefik_access" },
+          { "selected": false, "text": "traefik_access_logs", "value": "traefik_access_logs" }
+        ],
+        "query": "traefik_access,traefik_access_logs",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Traefik Edge · InfluxDB",
+  "uid": "traefik-edge-influxdb",
+  "version": 6,
+  "weekStart": ""
+}

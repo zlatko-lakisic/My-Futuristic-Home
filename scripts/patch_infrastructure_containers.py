@@ -49,6 +49,9 @@ NEW_BLOCK = """                  - type: custom:auto-entities
                             show_name: false
                             show_state: false
                             show_label: false
+                            triggers_update:
+                              - sensor.nvr_mostardesigns_com_total_cpu
+                              - sensor.garden_speaker_mostardesigns_com_total_cpu
                             variables:
                               restart_btn: |
                                 [[[
@@ -83,7 +86,25 @@ NEW_BLOCK = """                  - type: custom:auto-entities
                                   const memE = `sensor.${slug}_memory_usage_percentage`;
                                   const stE = `sensor.${slug}_state`;
                                   const fmt = (n) => String(parseFloat((Math.round(n * 100) / 100).toFixed(2)));
-                                  const cpu = Math.min(100, Math.max(0, parseFloat(hass.states[cpuE]?.state) || 0));
+                                  const NVR_ENDPOINT_DEVICE = '2cb8b12d0ce3ea22d094766f338bacef';
+                                  const GARDEN_SPEAKER_ENDPOINT_DEVICE = 'ae6a3d65cdcb3c5bd014fbc9267872b1';
+                                  const devId = hass.entities?.[cpuE]?.device_id;
+                                  const viaDev = devId ? hass.devices?.[devId]?.via_device_id : null;
+                                  const hostCores = (totalCpuEntity, fallback) => {
+                                    const n = parseFloat(hass.states[totalCpuEntity]?.state);
+                                    if (!isNaN(n) && n > 0) return n;
+                                    return fallback;
+                                  };
+                                  let cores = 1;
+                                  if (slug.startsWith('nvr_') || viaDev === NVR_ENDPOINT_DEVICE) {
+                                    cores = hostCores('sensor.nvr_mostardesigns_com_total_cpu', 12);
+                                  } else if (slug.startsWith('garden_speaker_') || viaDev === GARDEN_SPEAKER_ENDPOINT_DEVICE) {
+                                    cores = hostCores('sensor.garden_speaker_mostardesigns_com_total_cpu', 4);
+                                  }
+                                  const cpuRaw = Math.max(0, parseFloat(hass.states[cpuE]?.state) || 0);
+                                  const cpu = cores > 1
+                                    ? Math.min(100, cpuRaw / cores)
+                                    : Math.min(100, cpuRaw);
                                   const mem = Math.min(100, Math.max(0, parseFloat(hass.states[memE]?.state) || 0));
                                   const st = hass.states[stE]?.state ?? '-';
                                   const TITLES = __TITLES__;
