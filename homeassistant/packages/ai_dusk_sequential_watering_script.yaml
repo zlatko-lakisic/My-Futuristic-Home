@@ -225,7 +225,7 @@ script:
           bhyve_zone_history_sensor: sensor.unknown_zone_history_5
         - label: Kitchen Lawn
           entity_id: valve.flower_garden_back_lawn_time_zone_4_zone
-          bhyve_zone_history_sensor: sensor.unknown_zone_history_2
+          bhyve_zone_history_sensor: sensor.flower_garden_back_lawn_time_zone_4_zone_history
           area_sqm: 36
           sun_exposure: Full sun
           plant_profile: Two lawn sections, mostly grass with a few lilies between
@@ -738,6 +738,20 @@ script:
         - variables:
             zone_label: '{{ repeat.item.label }}'
             zone_entity: '{{ repeat.item.entity_id }}'
+            zone_watering_entity: >-
+              {% set v = repeat.item.entity_id %}
+              {% if v[:6] != 'valve.' %}
+                {{ v }}
+              {% else %}
+                {% set s = 'switch.' ~ (v | replace('valve.', '')) %}
+                {% if states(v) not in ['unknown', 'unavailable', 'none', ''] %}
+                  {{ v }}
+                {% elif states(s) not in ['unknown', 'unavailable', 'none', ''] %}
+                  {{ s }}
+                {% else %}
+                  {{ v }}
+                {% endif %}
+              {% endif %}
             zone_index: '{{ (start_index_clamped | int(1) + repeat.index - 1) | int }}'
             zone_baseline_clamped: >-
               {% set mraw = llm_zone_map | default('{}', true) %}
@@ -745,17 +759,16 @@ script:
               {% set br = md.get(repeat.item.label, 10) | int(10) %}
               {{ 0 if br < 2 else ([2, [br, 25] | min] | max) }}
             zone_llm_prompt: >-
-              Respond with ONLY one JSON object: {"minutes": <integer>}
-              No markdown, no extra keys, no prose.
-              minutes must be 0 or 2..25.
+              Reply with ONLY one integer on a single line: 0, or any whole number from 2 to 25.
+              No words, no JSON, no markdown, no punctuation, no explanation.
               Deterministic baseline for this zone (weather + soil heuristic, already rain-adjusted): {{ zone_baseline_clamped }} minutes (0 = heuristic would skip).
               Prefer 2..25 minutes matching plant needs; use 0 only if irrigation is clearly unnecessary (e.g. high soil moisture, heavy recent rain combined with wet forecast, or baseline already 0).
               Zone label: {{ repeat.item.label }}
               Zone entity: {{ repeat.item.entity_id }}
-              Zone data JSON: {{ repeat.item | to_json }}
+              Zone profile: {{ repeat.item | to_json }}
               Open-Meteo past 24h precipitation: {{ open_meteo_past_rain_for_llm }}
               AccuWeather context: {{ accuweather_forecast_for_llm }}
-              OpenWeatherMap forecast JSON (next ~24h): {{ forecast_short }}
+              OpenWeatherMap forecast (next ~24h): {{ forecast_short }}
         - variables:
             zone_llm_payload: >-
               {{
@@ -765,7 +778,7 @@ script:
                   'max_tokens': 200,
                   'stream': false,
                   'messages': [
-                    {'role': 'system', 'content': 'Return only valid JSON: {"minutes": integer}. minutes must be 0 or an integer from 2 to 25 inclusive. No other text.'},
+                    {'role': 'system', 'content': 'Reply with exactly one integer: 0 or 2-25 inclusive. No other characters, words, or JSON.'},
                     {'role': 'user', 'content': zone_llm_prompt}
                   ]
                 } | to_json
@@ -791,18 +804,28 @@ script:
               {% else %}
                 {{ raw | string if raw is not none else '' }}
               {% endif %}
-            zone_llm_parsed: >-
-              {% set s = zone_llm_raw | regex_replace('(?s)```(?:json)?\\s*', '') | regex_replace('```', '') | trim %}
-              {{ s | from_json(default={}) }}
             llm_minutes: >-
-              {% set p = zone_llm_parsed %}
-              {% if p is mapping and p.minutes is defined %}
-                {{ p.minutes | int(0) }}
-              {% elif p is number %}
-                {{ p | int(0) }}
-              {% else %}
-                0
+              {% set s = zone_llm_raw | default('', true) | string %}
+              {% set s = s | regex_replace('(?s)```(?:json)?\\s*', '') | regex_replace('```', '') | trim %}
+              {% set ns = namespace(v=none) %}
+              {% if (s | length) > 0 and (s[0] == '{') %}
+                {% set p = s | from_json(default={}) %}
+                {% if p is mapping and p.minutes is defined %}
+                  {% set ns.v = p.minutes | int(0) %}
+                {% endif %}
               {% endif %}
+              {% if ns.v is none and s is match('^\s*\d+\s*$') %}
+                {% set ns.v = s | int(0) %}
+              {% endif %}
+              {% if ns.v is none %}
+                {% set nums = s | regex_findall('\d+') %}
+                {% if nums | length > 0 %}
+                  {% set ns.v = nums[0] | int(0) %}
+                {% else %}
+                  {% set ns.v = 0 %}
+                {% endif %}
+              {% endif %}
+              {{ ns.v }}
             run_minutes: >-
               {% set lm = llm_minutes | int(0) %}
               {% set bc = zone_baseline_clamped | int(0) %}
@@ -856,11 +879,11 @@ script:
                   sequence:
                     - if:
                         - condition: template
-                          value_template: "{{ states(zone_entity) not in ['unknown', 'unavailable', 'none', ''] }}"
+                          value_template: "{{ states(zone_watering_entity) not in ['unknown', 'unavailable', 'none', ''] }}"
                       then:
                         - action: bhyve.start_watering
                           data:
-                            entity_id: '{{ zone_entity }}'
+                            entity_id: '{{ zone_watering_entity }}'
                             minutes: '{{ run_minutes | int(2) }}'
                         - delay:
                             hours: 0
@@ -869,7 +892,7 @@ script:
                             milliseconds: 0
                         - action: bhyve.stop_watering
                           data:
-                            entity_id: '{{ zone_entity }}'
+                            entity_id: '{{ zone_watering_entity }}'
                         - delay:
                             seconds: 45
                         - action: input_number.set_value
@@ -881,7 +904,7 @@ script:
                           data:
                             title: AI dusk watering — zone skipped
                             message: >-
-                              Skipped {{ zone_label }} ({{ zone_entity }}); valve state was {{ states(zone_entity) }} (unknown/unavailable).
+                              Skipped {{ zone_label }} ({{ zone_entity }}{% if zone_watering_entity != zone_entity %}, tried {{ zone_watering_entity }}{% endif %}); state was {{ states(zone_watering_entity) }} (unknown/unavailable).
                         - action: input_number.set_value
                           data:
                             entity_id: input_number.ai_dusk_watering_next_index
@@ -898,7 +921,7 @@ script:
             name: AI dusk watering
             entity_id: script.ai_sequential_watering
             message: >-
-              All zones in the sequential plan finished. BHyve zone_history (Orbit) last cycle timestamps — East Lawn: {{ states('sensor.adna_s_flowers_zone_history') }}; Flower Bed: {{ states('sensor.adna_s_roses_zone_history') }}; Front Lawn: {{ states('sensor.front_yard_zone_history') }}; Slope Kitchen Left: {{ states('sensor.garden_zone_history') }}; Peppers & Kale: {{ states('sensor.east_side_lawn_zone_history') }}; Tomato: {{ states('sensor.unknown_zone_history_3') }}; Zucchini: {{ states('sensor.unknown_zone_history_5') }}; Kitchen Lawn (zone 4): {{ states('sensor.unknown_zone_history_2') }}; Veg garden timer next: {{ states('sensor.vegitable_garden_timer_next_watering') }}.
+              All zones in the sequential plan finished. BHyve zone_history (Orbit) last cycle timestamps — East Lawn: {{ states('sensor.adna_s_flowers_zone_history') }}; Flower Bed: {{ states('sensor.adna_s_roses_zone_history') }}; Front Lawn: {{ states('sensor.front_yard_zone_history') }}; Slope Kitchen Left: {{ states('sensor.garden_zone_history') }}; Peppers & Kale: {{ states('sensor.east_side_lawn_zone_history') }}; Tomato: {{ states('sensor.unknown_zone_history_3') }}; Zucchini: {{ states('sensor.unknown_zone_history_5') }}; Kitchen Lawn (zone 4): {{ states('sensor.flower_garden_back_lawn_time_zone_4_zone_history') }}; Veg garden timer next: {{ states('sensor.vegitable_garden_timer_next_watering') }}.
         - action: input_text.set_value
           data:
             entity_id: input_text.ai_dusk_watering_active_run_id
@@ -920,7 +943,7 @@ script:
           Baseline plan + per-zone LLM below (BHyve watering services were not called):
           {{ simulate_summary }}
 
-          Per-zone LLM (clamped minutes after parsing each zone):
+          Per-zone LLM integer (clamped after parsing each zone):
           {{ states('input_text.ai_watering_simulate_report') }}
 
           AccuWeather context passed to the LLM (truncated):

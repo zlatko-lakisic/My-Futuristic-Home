@@ -63,6 +63,7 @@ homeassistant:
     rest_command_ai_watering: !include packages/rest_command_ai_watering.yaml
     ai_dusk_sequential_watering_script: !include packages/ai_dusk_sequential_watering_script.yaml
     irrigation_zone_runtime_7d: !include packages/irrigation_zone_runtime_7d.yaml
+    www_tmp_cleanup_shell: !include packages/www_tmp_cleanup_shell.yaml
 
 influxdb:
   api_version: "1"

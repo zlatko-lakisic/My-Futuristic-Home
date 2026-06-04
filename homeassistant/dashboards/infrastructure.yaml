@@ -981,13 +981,13 @@ views:
                               </div>`;
                             ]]]
                       - type: custom:button-card
-                        entity: sensor.garden_speaker_glances_cpu_usage_total
+                        entity: sensor.garden_speaker_cpu_usage
                         show_icon: false
                         show_name: false
                         show_state: false
                         show_label: false
                         triggers_update:
-                          - sensor.garden_speaker_glances_memory_usage_percentage
+                          - sensor.garden_speaker_memory_usage
                           - sensor.garden_speaker_glances_state
                         tap_action:
                           action: more-info
@@ -1022,9 +1022,9 @@ views:
                                 <ha-icon icon="mdi:speaker-wireless" style="flex-shrink:0;color:#66bb6a;--mdc-icon-size:26px;"></ha-icon>
                                 <div style="flex:1;min-width:0;">
                                 <div style="font-weight:700;font-size:0.95rem;margin-bottom:2px;color:#fff;">Garden speaker</div>
-                                <div style="font-size:0.65rem;opacity:0.7;margin-bottom:8px;">Glances · garden-speaker</div>
-                                ${bar('CPU', 'sensor.garden_speaker_glances_cpu_usage_total', 'linear-gradient(90deg,#66bb6a,#43a047)')}
-                                ${bar('Memory', 'sensor.garden_speaker_glances_memory_usage_percentage', 'linear-gradient(90deg,#26a69a,#00695c)')}
+                                <div style="font-size:0.65rem;opacity:0.7;margin-bottom:8px;">Glances · garden-speaker (host)</div>
+                                ${bar('CPU', 'sensor.garden_speaker_cpu_usage', 'linear-gradient(90deg,#66bb6a,#43a047)')}
+                                ${bar('Memory', 'sensor.garden_speaker_memory_usage', 'linear-gradient(90deg,#26a69a,#00695c)')}
                                 <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:2px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);">
                                   <span style="color:#b0bec5;">State</span><span>${st}</span>
                                 </div>
@@ -3473,6 +3473,9 @@ views:
                             show_name: false
                             show_state: false
                             show_label: false
+                            triggers_update:
+                              - sensor.nvr_mostardesigns_com_total_cpu
+                              - sensor.garden_speaker_mostardesigns_com_total_cpu
                             variables:
                               restart_btn: |
                                 [[[
@@ -3507,7 +3510,25 @@ views:
                                   const memE = `sensor.${slug}_memory_usage_percentage`;
                                   const stE = `sensor.${slug}_state`;
                                   const fmt = (n) => String(parseFloat((Math.round(n * 100) / 100).toFixed(2)));
-                                  const cpu = Math.min(100, Math.max(0, parseFloat(hass.states[cpuE]?.state) || 0));
+                                  const NVR_ENDPOINT_DEVICE = '2cb8b12d0ce3ea22d094766f338bacef';
+                                  const GARDEN_SPEAKER_ENDPOINT_DEVICE = 'ae6a3d65cdcb3c5bd014fbc9267872b1';
+                                  const devId = hass.entities?.[cpuE]?.device_id;
+                                  const viaDev = devId ? hass.devices?.[devId]?.via_device_id : null;
+                                  const hostCores = (totalCpuEntity, fallback) => {
+                                    const n = parseFloat(hass.states[totalCpuEntity]?.state);
+                                    if (!isNaN(n) && n > 0) return n;
+                                    return fallback;
+                                  };
+                                  let cores = 1;
+                                  if (slug.startsWith('nvr_') || viaDev === NVR_ENDPOINT_DEVICE) {
+                                    cores = hostCores('sensor.nvr_mostardesigns_com_total_cpu', 12);
+                                  } else if (slug.startsWith('garden_speaker_') || viaDev === GARDEN_SPEAKER_ENDPOINT_DEVICE) {
+                                    cores = hostCores('sensor.garden_speaker_mostardesigns_com_total_cpu', 4);
+                                  }
+                                  const cpuRaw = Math.max(0, parseFloat(hass.states[cpuE]?.state) || 0);
+                                  const cpu = cores > 1
+                                    ? Math.min(100, cpuRaw / cores)
+                                    : Math.min(100, cpuRaw);
                                   const mem = Math.min(100, Math.max(0, parseFloat(hass.states[memE]?.state) || 0));
                                   const st = hass.states[stE]?.state ?? '-';
                                   const TITLES = {"hdhrdvr": "HDHomeRun DVR", "qbittorrent": "qBittorrent", "portainer": "Portainer CE", "portainer_edge_agent": "Portainer Edge Agent", "codeproject_ai_server": "CodeProject AI Server", "influx_db2": "InfluxDB 2", "nvr_telegraf_mqtt_1": "NVR Telegraf MQTT", "frigate_plate_recognizer": "Frigate (plates)", "nextcloud_aio_mastercontainer": "Nextcloud AIO (master)", "nextcloud_aio_apache": "Nextcloud AIO · Apache", "nextcloud_aio_nextcloud": "Nextcloud AIO · App", "nextcloud_aio_imaginary": "Nextcloud AIO · Imaginary", "nextcloud_aio_talk_recording": "Nextcloud AIO · Talk recording", "nextcloud_aio_clamav": "Nextcloud AIO · ClamAV", "nextcloud_aio_redis": "Nextcloud AIO · Redis", "nextcloud_aio_database": "Nextcloud AIO · Database", "nextcloud_aio_whiteboard": "Nextcloud AIO · Whiteboard", "nextcloud_aio_notify_push": "Nextcloud AIO · Notify push", "nextcloud_aio_talk": "Nextcloud AIO · Talk", "nextcloud_aio_collabora": "Nextcloud AIO · Collabora", "nextcloud_aio_fail2ban": "Nextcloud AIO · Fail2ban", "nextcloud_aio_calcardbackup": "Nextcloud AIO · Cal/card backup", "nextcloud_aio_watchtower": "Nextcloud AIO · Watchtower", "fail2ban_traefik": "Fail2ban (Traefik)", "telegraf_traefik_logs": "Telegraf (Traefik logs)", "traefik_warpgate_init_1": "Traefik · Warpgate init", "traefik_mdns_repeater_1": "Traefik · mDNS repeater", "unifi_network_application": "UniFi Network App", "unifi_db": "UniFi DB", "kong_gateway": "Kong Gateway", "akaunting_db": "Akaunting DB"};
