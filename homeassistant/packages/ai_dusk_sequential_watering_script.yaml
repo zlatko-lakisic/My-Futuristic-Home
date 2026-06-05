@@ -224,8 +224,8 @@ script:
           soil_sensor_secondary: sensor.garden_controller_soil_moisture_1
           bhyve_zone_history_sensor: sensor.unknown_zone_history_5
         - label: Kitchen Lawn
-          entity_id: valve.flower_garden_back_lawn_time_zone_4_zone
-          bhyve_zone_history_sensor: sensor.flower_garden_back_lawn_time_zone_4_zone_history
+          entity_id: valve.flower_garden_back_lawn_time_back_lawn_zone_zone
+          bhyve_zone_history_sensor: sensor.flower_garden_back_lawn_time_back_lawn_zone_zone_history
           area_sqm: 36
           sun_exposure: Full sun
           plant_profile: Two lawn sections, mostly grass with a few lilies between
@@ -758,14 +758,73 @@ script:
               {% set md = mraw | trim | from_json(default={}) if mraw is string else (mraw if mraw is mapping else {}) %}
               {% set br = md.get(repeat.item.label, 10) | int(10) %}
               {{ 0 if br < 2 else ([2, [br, 25] | min] | max) }}
+            zone_soil_for_llm: >-
+              {% set pri = repeat.item.soil_sensor | default('', true) | trim %}
+              {% set sec = repeat.item.soil_sensor_secondary | default('', true) | trim %}
+              {% set plants = repeat.item.plant_profile | default('', true) | lower %}
+              {% set hist = sensor_history_24h_for_llm | default('{}', true) | trim | from_json(default={}) %}
+              {% set hist_ents = hist.entities | default([]) %}
+              {% set ns = namespace(probes=[]) %}
+              {% for eid in [pri, sec] if eid | length > 0 %}
+                {% set raw = states(eid) %}
+                {% set pct = raw | float(none) if raw not in ['unknown', 'unavailable', 'none', ''] else none %}
+                {% set row = namespace(min24=none, max24=none, first=none, last=none) %}
+                {% for e in hist_ents %}
+                  {% if e.entity_id == eid %}
+                    {% set row.min24 = e.min_numeric %}
+                    {% set row.max24 = e.max_numeric %}
+                    {% set row.first = e.first %}
+                    {% set row.last = e.last %}
+                  {% endif %}
+                {% endfor %}
+                {% set ns.probes = ns.probes + [{
+                  'entity_id': eid,
+                  'moisture_pct_now': pct,
+                  'moisture_pct_24h_min': row.min24,
+                  'moisture_pct_24h_max': row.max24,
+                  'moisture_pct_24h_first': row.first,
+                  'moisture_pct_24h_last': row.last
+                }] %}
+              {% endfor %}
+              {% if ns.probes | length == 0 %}
+                {{ {'has_soil_probe': false} | to_json }}
+              {% else %}
+                {% set guide = 'Use live probe reading(s) as the primary signal for this zone. Probe scale is 0-100% (higher = wetter). Adjust minutes vs baseline: very dry <=25% add 3-6 min; dry 26-35% add 1-3 min; comfortable 36-55% stay near baseline; moist 56-65% subtract 1-3 min; wet >=66% subtract 3-6 min or reply 0 if plants are clearly saturated. Match depth to plant_profile.' %}
+                {% if plants | regex_search('hosta|mint|flower') %}
+                  {% set guide = guide ~ ' Ornamentals (hosta/mint/flowers): prefer ~40-65%; avoid long runs when >=68%.' %}
+                {% endif %}
+                {% if plants | regex_search('tomato') %}
+                  {% set guide = guide ~ ' Tomatoes: prefer ~45-65%; add time when <32%; shorten when >62% to limit foliar disease.' %}
+                {% endif %}
+                {% if plants | regex_search('pepper|kale|basil|parsley') %}
+                  {% set guide = guide ~ ' Peppers/kale/herbs: prefer ~40-60%; add when <30%; shorten when >65%.' %}
+                {% endif %}
+                {% if plants | regex_search('zucchini|eggplant|pea') %}
+                  {% set guide = guide ~ ' Zucchini/eggplant/peas: if multiple probes, favor the drier reading; add when any probe <30%; shorten when all probes >60%.' %}
+                {% endif %}
+                {{ {
+                  'has_soil_probe': true,
+                  'plant_profile': repeat.item.plant_profile,
+                  'adjustment_guide': guide,
+                  'probes': ns.probes
+                } | to_json }}
+              {% endif %}
+            zone_has_soil_probe: >-
+              {{ (zone_soil_for_llm | trim | from_json(default={})).get('has_soil_probe', false) | bool }}
             zone_llm_prompt: >-
               Reply with ONLY one integer on a single line: 0, or any whole number from 2 to 25.
               No words, no JSON, no markdown, no punctuation, no explanation.
               Deterministic baseline for this zone (weather + soil heuristic, already rain-adjusted): {{ zone_baseline_clamped }} minutes (0 = heuristic would skip).
               Prefer 2..25 minutes matching plant needs; use 0 only if irrigation is clearly unnecessary (e.g. high soil moisture, heavy recent rain combined with wet forecast, or baseline already 0).
+              {% if zone_has_soil_probe %}
+              This zone has live soil moisture probe(s). Treat current probe reading(s) as the strongest signal — adjust minutes up or down from baseline using plant_profile and the adjustment_guide in Soil moisture context (do not ignore dry or wet probes).
+              {% else %}
+              No soil moisture probe for this zone — use weather, plant profile, and baseline only.
+              {% endif %}
               Zone label: {{ repeat.item.label }}
               Zone entity: {{ repeat.item.entity_id }}
               Zone profile: {{ repeat.item | to_json }}
+              Soil moisture context: {{ zone_soil_for_llm }}
               Open-Meteo past 24h precipitation: {{ open_meteo_past_rain_for_llm }}
               AccuWeather context: {{ accuweather_forecast_for_llm }}
               OpenWeatherMap forecast (next ~24h): {{ forecast_short }}
@@ -778,7 +837,7 @@ script:
                   'max_tokens': 200,
                   'stream': false,
                   'messages': [
-                    {'role': 'system', 'content': 'Reply with exactly one integer: 0 or 2-25 inclusive. No other characters, words, or JSON.'},
+                    {'role': 'system', 'content': 'Reply with exactly one integer: 0 or 2-25 inclusive. No other characters, words, or JSON. When Soil moisture context shows has_soil_probe true, weight live probe moisture_pct_now (and 24h min/max if present) heavily vs baseline for the listed plants.'},
                     {'role': 'user', 'content': zone_llm_prompt}
                   ]
                 } | to_json
@@ -921,7 +980,7 @@ script:
             name: AI dusk watering
             entity_id: script.ai_sequential_watering
             message: >-
-              All zones in the sequential plan finished. BHyve zone_history (Orbit) last cycle timestamps — East Lawn: {{ states('sensor.adna_s_flowers_zone_history') }}; Flower Bed: {{ states('sensor.adna_s_roses_zone_history') }}; Front Lawn: {{ states('sensor.front_yard_zone_history') }}; Slope Kitchen Left: {{ states('sensor.garden_zone_history') }}; Peppers & Kale: {{ states('sensor.east_side_lawn_zone_history') }}; Tomato: {{ states('sensor.unknown_zone_history_3') }}; Zucchini: {{ states('sensor.unknown_zone_history_5') }}; Kitchen Lawn (zone 4): {{ states('sensor.flower_garden_back_lawn_time_zone_4_zone_history') }}; Veg garden timer next: {{ states('sensor.vegitable_garden_timer_next_watering') }}.
+              All zones in the sequential plan finished. BHyve zone_history (Orbit) last cycle timestamps — East Lawn: {{ states('sensor.adna_s_flowers_zone_history') }}; Flower Bed: {{ states('sensor.adna_s_roses_zone_history') }}; Front Lawn: {{ states('sensor.front_yard_zone_history') }}; Slope Kitchen Left: {{ states('sensor.garden_zone_history') }}; Peppers & Kale: {{ states('sensor.east_side_lawn_zone_history') }}; Tomato: {{ states('sensor.unknown_zone_history_3') }}; Zucchini: {{ states('sensor.unknown_zone_history_5') }}; Kitchen Lawn: {{ states('sensor.flower_garden_back_lawn_time_back_lawn_zone_zone_history') }}; Veg garden timer next: {{ states('sensor.vegitable_garden_timer_next_watering') }}.
         - action: input_text.set_value
           data:
             entity_id: input_text.ai_dusk_watering_active_run_id

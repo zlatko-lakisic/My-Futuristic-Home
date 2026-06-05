@@ -42,7 +42,7 @@ rest_command:
   # Last watering cycles: valve open→closed pairs from Recorder (same auth).
   homeassistant_history_irrigation_valves:
     url: >-
-      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(days=30)).isoformat() }}?minimal_response=true&filter_entity_id=valve.east_lawn_timer_east_lawn_zone_zone,valve.east_lawn_timer_flower_bed_zone_zone,valve.front_yard_controller_front_yard_zone,valve.flower_garden_back_lawn_time_slope_kitchen_left_zone,valve.vegitable_garden_timer_peppers_kale_zone_zone,valve.vegitable_garden_timer_tomato_zone_zone,valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone,valve.flower_garden_back_lawn_time_zone_4_zone
+      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(days=30)).isoformat() }}?minimal_response=true&filter_entity_id=valve.east_lawn_timer_east_lawn_zone_zone,valve.east_lawn_timer_flower_bed_zone_zone,valve.front_yard_controller_front_yard_zone,valve.flower_garden_back_lawn_time_slope_kitchen_left_zone,valve.vegitable_garden_timer_peppers_kale_zone_zone,valve.vegitable_garden_timer_tomato_zone_zone,valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone,valve.flower_garden_back_lawn_time_back_lawn_zone_zone
     method: GET
     headers:
       Authorization: "{% set t = states('input_text.ai_watering_ha_api_token') | default('', true) | trim %}{% if t not in ['unknown', 'unavailable', 'none', ''] %}Bearer {{ t }}{% endif %}"
