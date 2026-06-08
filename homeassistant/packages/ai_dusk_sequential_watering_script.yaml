@@ -7,7 +7,7 @@ input_number:
   ai_dusk_watering_next_index:
     name: AI Dusk Watering Next Zone Index
     min: 1
-    max: 8
+    max: 9
     step: 1
     mode: box
     icon: mdi:format-list-numbered
@@ -116,7 +116,7 @@ script:
         selector:
           number:
             min: 1
-            max: 8
+            max: 9
             mode: box
       model_override:
         name: Ollama model override
@@ -144,7 +144,7 @@ script:
     - variables:
         simulate_mode: '{{ simulate | default(false) | bool }}'
         start_index_raw: '{{ start_index | default(1) | int(1) }}'
-        start_index_clamped: '{{ [1, [start_index_raw, 8] | min] | max }}'
+        start_index_clamped: '{{ [1, [start_index_raw, 9] | min] | max }}'
         model_override_trimmed: '{{ (model_override | default("", true) | trim) }}'
     - variables:
         _ollama_secret_fallback: !secret ollama_chat_model
@@ -232,6 +232,16 @@ script:
           irrigation_hardware: Two sprinklers connected in sequence (Amazon B0C6FLH75D, Melnor MiniMax style oscillating sprinklers)
           estimated_flow_gpm: 2.5-4.5 combined
           notes: Two lawns about 18m squared each; in-series setup tends to give more flow at first head and reduced pressure/flow at second head
+          soil_sensor: ''
+        - label: Corn
+          entity_id: valve.flower_garden_back_lawn_time_zone_4_zone
+          bhyve_zone_history_sensor: sensor.flower_garden_back_lawn_time_zone_4_zone_history
+          area_sqm: 6.1
+          sun_exposure: Full sun throughout the day
+          plant_profile: 24 corn plants
+          irrigation_hardware: Soaker hose in bed, same style as Flower Bed dripline/soaker layout
+          estimated_flow_gpm: 0.25-0.50
+          notes: Roughly same footprint as Tomato zone (~22ft x 3ft); black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
           soil_sensor: ''
         ecowitt_temp: '{{ states(''sensor.garden_controller_indoor_temperature'') }}'
         ecowitt_dewpoint: '{{ states(''sensor.garden_controller_indoor_dewpoint'') }}'
@@ -601,7 +611,7 @@ script:
             {% elif dew_f >= 68 %}
               {% set base = base - 1 %}
             {% endif %}
-            {% if plants | regex_search('tomato|pepper|kale|zucchini|eggplant|pea|basil|parsley|rose|hosta|mint|lily|flower') %}
+            {% if plants | regex_search('tomato|pepper|kale|zucchini|eggplant|pea|basil|parsley|rose|hosta|mint|lily|flower|corn') %}
               {% set base = base + 1 %}
             {% endif %}
             {% set soil_raw = states(z.soil_sensor) if z.soil_sensor else 'unknown' %}
@@ -652,7 +662,7 @@ script:
               z.label ~ ': ' ~ rm ~ (' min (skipped)' if rm < 1 else (' min → ' ~ z.entity_id))
             ] %}
           {% endfor %}
-          {% if m | length < 8 %}
+          {% if m | length < 9 %}
           WARNING: baseline map incomplete ({{ m | length }} zones). Check ecowitt_temp / forecast_short inputs.
           {% endif %}
           Baseline minutes (deterministic; per-zone LLM can adjust at runtime):
@@ -802,6 +812,9 @@ script:
                 {% if plants | regex_search('zucchini|eggplant|pea') %}
                   {% set guide = guide ~ ' Zucchini/eggplant/peas: if multiple probes, favor the drier reading; add when any probe <30%; shorten when all probes >60%.' %}
                 {% endif %}
+                {% if plants | regex_search('corn') %}
+                  {% set guide = guide ~ ' Corn: prefer ~45-65%; add when <32%; shorten when >62% (similar thirst to tomatoes).' %}
+                {% endif %}
                 {{ {
                   'has_soil_probe': true,
                   'plant_profile': repeat.item.plant_profile,
@@ -929,7 +942,7 @@ script:
                       - action: input_number.set_value
                         data:
                           entity_id: input_number.ai_dusk_watering_next_index
-                          value: "{{ [zone_index + 1, 8] | min }}"
+                          value: "{{ [zone_index + 1, 9] | min }}"
           default:
             - choose:
                 - conditions:
@@ -957,7 +970,7 @@ script:
                         - action: input_number.set_value
                           data:
                             entity_id: input_number.ai_dusk_watering_next_index
-                            value: "{{ [zone_index + 1, 8] | min }}"
+                            value: "{{ [zone_index + 1, 9] | min }}"
                       else:
                         - action: persistent_notification.create
                           data:
@@ -967,7 +980,7 @@ script:
                         - action: input_number.set_value
                           data:
                             entity_id: input_number.ai_dusk_watering_next_index
-                            value: "{{ [zone_index + 1, 8] | min }}"
+                            value: "{{ [zone_index + 1, 9] | min }}"
     - choose:
       - conditions:
         - condition: template
@@ -980,7 +993,7 @@ script:
             name: AI dusk watering
             entity_id: script.ai_sequential_watering
             message: >-
-              All zones in the sequential plan finished. BHyve zone_history (Orbit) last cycle timestamps — East Lawn: {{ states('sensor.adna_s_flowers_zone_history') }}; Flower Bed: {{ states('sensor.adna_s_roses_zone_history') }}; Front Lawn: {{ states('sensor.front_yard_zone_history') }}; Slope Kitchen Left: {{ states('sensor.garden_zone_history') }}; Peppers & Kale: {{ states('sensor.east_side_lawn_zone_history') }}; Tomato: {{ states('sensor.unknown_zone_history_3') }}; Zucchini: {{ states('sensor.unknown_zone_history_5') }}; Kitchen Lawn: {{ states('sensor.flower_garden_back_lawn_time_back_lawn_zone_zone_history') }}; Veg garden timer next: {{ states('sensor.vegitable_garden_timer_next_watering') }}.
+              All zones in the sequential plan finished. BHyve zone_history (Orbit) last cycle timestamps — East Lawn: {{ states('sensor.adna_s_flowers_zone_history') }}; Flower Bed: {{ states('sensor.adna_s_roses_zone_history') }}; Front Lawn: {{ states('sensor.front_yard_zone_history') }}; Slope Kitchen Left: {{ states('sensor.garden_zone_history') }}; Peppers & Kale: {{ states('sensor.east_side_lawn_zone_history') }}; Tomato: {{ states('sensor.unknown_zone_history_3') }}; Zucchini: {{ states('sensor.unknown_zone_history_5') }}; Kitchen Lawn: {{ states('sensor.flower_garden_back_lawn_time_back_lawn_zone_zone_history') }}; Corn: {{ states('sensor.flower_garden_back_lawn_time_zone_4_zone_history') }}; Veg garden timer next: {{ states('sensor.vegitable_garden_timer_next_watering') }}.
         - action: input_text.set_value
           data:
             entity_id: input_text.ai_dusk_watering_active_run_id

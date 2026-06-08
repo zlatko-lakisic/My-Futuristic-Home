@@ -20,8 +20,10 @@ template:
             {% else %}
               {{ label }}
             {% endif %}
-          {% elif label in ['Kitchen Lawn', 'Flower Garden & Back Lawn Time Zone 4 zone'] %}
+          {% elif label in ['Kitchen Lawn'] %}
             {{ 'valve.flower_garden_back_lawn_time_back_lawn_zone_zone' }}
+          {% elif label in ['Corn', 'Corn zone', 'Flower Garden & Back Lawn Time Corn zone', 'Flower Garden & Back Lawn Time Zone 4 zone'] %}
+            {{ 'valve.flower_garden_back_lawn_time_zone_4_zone' }}
           {% else %}
             {% set zones = [
               'valve.garden_zone',
@@ -29,6 +31,7 @@ template:
               'valve.east_lawn_timer_flower_bed_zone_zone',
               'valve.flower_garden_back_lawn_time_2nd_tier_flowers_zone',
               'valve.flower_garden_back_lawn_time_back_lawn_zone_zone',
+              'valve.flower_garden_back_lawn_time_zone_4_zone',
               'valve.flower_garden_back_lawn_time_slope_kitchen_left_zone',
               'valve.front_yard_controller_front_yard_zone',
               'valve.unnamed_zone_zone_2',
