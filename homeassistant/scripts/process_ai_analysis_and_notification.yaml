@@ -45,7 +45,7 @@ process_ai_analysis_and_notification:
       selector:
         text:
       name: LLM Model
-      default: omega-ollama
+      default: gpt-4o-mini
   variables:
     snapshot_timestamp: '{{ now().strftime("%Y%m%d-%H%M%S") }}'
   sequence:
@@ -61,7 +61,7 @@ process_ai_analysis_and_notification:
       max_tokens: 1000
       generate_title: false
       expose_images: true
-      provider: 01KPW6YJ00E65E4HXM9Q53093Q
+      provider: 01KR1YDS2H88N44EA4MJHW0PP8
       model: '{{ model }}'
       image_entity: '{{ camera_id }}'
       message: '{{ai_prompt}}'

@@ -52,7 +52,7 @@ blueprint:
           integration: llmvision
     llmvision_model:
       name: Vision model
-      default: omega-ollama
+      default: gpt-4o-mini
       selector:
         text:
     target_width:

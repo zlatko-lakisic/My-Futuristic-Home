@@ -288,10 +288,11 @@ script:
           {% set forecast_items = owm.list | default([]) %}
           {% set ns = namespace(items=[]) %}
           {% for f in forecast_items[:8] %}
+            {% set main = f.main if f.main is defined else {} %}
             {% set ns.items = ns.items + [{
               'time': f.dt_txt | default('', true),
-              'temp_f': f.main.temp | default(none, true),
-              'humidity_pct': f.main.humidity | default(none, true),
+              'temp_f': main.temp | default(none, true) if main is mapping else none,
+              'humidity_pct': main.humidity | default(none, true) if main is mapping else none,
               'weather': (f.weather[0].description if f.weather is defined and f.weather | count > 0 else ''),
               'rain_mm_3h': (f.rain['3h'] if f.rain is defined and f.rain['3h'] is defined else 0)
             }] %}
@@ -477,6 +478,23 @@ script:
           {% endfor %}
           {{ {'lookback_days': 30, 'valves': root.rows} | to_json }}
           {% endif %}
+    - variables:
+        # Separate step from forecast/history parsers — avoids LoggingUndefined if zone_context references garden_heat_temp_f.
+        garden_heat_temp_f: >-
+          {% set temp_now = ecowitt_temp | float(75) %}
+          {% set hist = sensor_history_24h_for_llm | default('{}', true) | trim | from_json(default={}) %}
+          {% set ns = namespace(mx=temp_now) %}
+          {% for e in hist.entities | default([]) %}
+            {% if e.entity_id == 'sensor.garden_controller_indoor_temperature' %}
+              {% if e.max_numeric is not none %}
+                {% set v = e.max_numeric | float(temp_now) %}
+                {% if v > ns.mx %}
+                  {% set ns.mx = v %}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.mx | round(1) }}
         zone_context: >-
           {% set vw = valve_last_watering_for_llm | trim | from_json(default={'valves': []}) %}
           {% set vlist = vw.valves | default([]) %}
@@ -536,23 +554,23 @@ script:
               {% endfor %}
             {% endif %}
             {% set ns.items = ns.items + [{
-              'label': z.label,
-              'entity_id': z.entity_id,
-              'area_sqm': z.area_sqm,
-              'sun_exposure': z.sun_exposure,
-              'plant_profile': z.plant_profile,
-              'irrigation_hardware': z.irrigation_hardware,
-              'estimated_flow_gpm': z.estimated_flow_gpm,
-              'notes': z.notes,
-              'soil_sensor': z.soil_sensor,
+              'label': z.label | default('', true),
+              'entity_id': z.entity_id | default('', true),
+              'area_sqm': z.area_sqm | default(none, true),
+              'sun_exposure': z.sun_exposure | default('', true),
+              'plant_profile': z.plant_profile | default('', true),
+              'irrigation_hardware': z.irrigation_hardware | default('', true),
+              'estimated_flow_gpm': z.estimated_flow_gpm | default('', true),
+              'notes': z.notes | default('', true),
+              'soil_sensor': z.soil_sensor | default('', true),
               'soil_moisture_pct': soil,
               'soil_sensor_secondary': sec_eid,
               'soil_moisture_secondary_pct': soil_sec if sec_eid else 'n/a',
               'bhyve_zone_history_sensor': bh,
               'last_watering_source': meta.src,
-              'ecowitt_temp_f': ecowitt_temp,
-              'garden_heat_temp_f': garden_heat_temp_f,
-              'ecowitt_dewpoint_f': ecowitt_dewpoint,
+              'ecowitt_temp_f': ecowitt_temp | default(none, true),
+              'garden_heat_temp_f': garden_heat_temp_f | default(none, true),
+              'ecowitt_dewpoint_f': ecowitt_dewpoint | default(none, true),
               'last_watering_start': meta.v.last_watering_start | default(none, true) if meta.v else none,
               'last_watering_end': meta.v.last_watering_end | default(none, true) if meta.v else none,
               'last_watering_duration_minutes': meta.v.last_watering_duration_minutes | default(none, true) if meta.v else none,
@@ -577,22 +595,6 @@ script:
             ] %}
           {% endif %}
           {{ parts.bits | join(' ') }}
-        # Hotter of live reading vs 24h peak — afternoon heat drives evapotranspiration more than dusk reading alone.
-        garden_heat_temp_f: >-
-          {% set temp_now = ecowitt_temp | float(75) %}
-          {% set hist = sensor_history_24h_for_llm | default('{}', true) | trim | from_json(default={}) %}
-          {% set ns = namespace(mx=temp_now) %}
-          {% for e in hist.entities | default([]) %}
-            {% if e.entity_id == 'sensor.garden_controller_indoor_temperature' %}
-              {% if e.max_numeric is not none %}
-                {% set v = e.max_numeric | float(temp_now) %}
-                {% if v > ns.mx %}
-                  {% set ns.mx = v %}
-                {% endif %}
-              {% endif %}
-            {% endif %}
-          {% endfor %}
-          {{ ns.mx | round(1) }}
         baseline_zone_map: >-
           {% set temp_f = garden_heat_temp_f | float(ecowitt_temp | float(75)) %}
           {% set dew_f = ecowitt_dewpoint | float(55) %}
@@ -789,9 +791,9 @@ script:
                 {{ v }}
               {% else %}
                 {% set s = 'switch.' ~ (v | replace('valve.', '')) %}
-                {% if states(v) not in ['unknown', 'unavailable', 'none', ''] %}
+                {% if states(v) != 'unavailable' %}
                   {{ v }}
-                {% elif states(s) not in ['unknown', 'unavailable', 'none', ''] %}
+                {% elif states(s) != 'unavailable' %}
                   {{ s }}
                 {% else %}
                   {{ v }}
@@ -898,6 +900,7 @@ script:
                 } | to_json
               }}
         - service: rest_command.ollama_chat_completions
+          continue_on_error: true
           data:
             payload: '{{ zone_llm_payload }}'
           response_variable: zone_llm_response
@@ -993,7 +996,9 @@ script:
                   sequence:
                     - if:
                         - condition: template
-                          value_template: "{{ states(zone_watering_entity) not in ['unknown', 'unavailable', 'none', ''] }}"
+                          value_template: >-
+                            {{ zone_watering_entity not in ['', none]
+                               and states(zone_watering_entity) != 'unavailable' }}
                       then:
                         - action: bhyve.start_watering
                           data:
@@ -1018,7 +1023,7 @@ script:
                           data:
                             title: AI dusk watering — zone skipped
                             message: >-
-                              Skipped {{ zone_label }} ({{ zone_entity }}{% if zone_watering_entity != zone_entity %}, tried {{ zone_watering_entity }}{% endif %}); state was {{ states(zone_watering_entity) }} (unknown/unavailable).
+                              Skipped {{ zone_label }} ({{ zone_entity }}{% if zone_watering_entity != zone_entity %}, tried {{ zone_watering_entity }}{% endif %}); valve state was {{ states(zone_watering_entity) }} (unavailable).
                         - action: input_number.set_value
                           data:
                             entity_id: input_number.ai_dusk_watering_next_index
