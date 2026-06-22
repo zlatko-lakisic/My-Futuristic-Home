@@ -836,21 +836,21 @@ script:
               {% if ns.probes | length == 0 %}
                 {{ {'has_soil_probe': false} | to_json }}
               {% else %}
-                {% set guide = 'Use live probe reading(s) as the primary signal for this zone. Probe scale is 0-100% (higher = wetter). Adjust minutes vs baseline: very dry <=25% add 3-6 min; dry 26-35% add 1-3 min; comfortable 36-55% stay near baseline; moist 56-65% subtract 1-3 min; wet >=66% subtract 3-6 min or reply 0 if plants are clearly saturated. Match depth to plant_profile.' %}
+                {% set guide = 'Soil probe is the PRIMARY decision signal (0-100%, higher = wetter). Probe overrides baseline when they disagree. REPLY 0 (skip) whenever moisture is adequate for plant_profile — do not water just because baseline > 0. Generic bands: very dry <=25% add 3-6 min; dry 26-35% add 1-3 min; comfortable 36-55% REPLY 0 unless plant target says otherwise; moist 56-65% REPLY 0 when within plant target max; wet >=66% always REPLY 0.' %}
                 {% if plants | regex_search('hosta|mint|flower') %}
-                  {% set guide = guide ~ ' Ornamentals (hosta/mint/flowers): prefer ~40-65%; avoid long runs when >=68%.' %}
+                  {% set guide = guide ~ ' Ornamentals (hosta/mint/flowers): target ~40-68%. REPLY 0 when every probe is 40-68%.' %}
                 {% endif %}
                 {% if plants | regex_search('tomato') %}
-                  {% set guide = guide ~ ' Tomatoes: prefer ~45-65%; add time when <32%; shorten when >62% to limit foliar disease.' %}
+                  {% set guide = guide ~ ' Tomatoes: target ~45-62%. REPLY 0 when every probe is 45-62%. Add only when any probe <32%.' %}
                 {% endif %}
                 {% if plants | regex_search('pepper|kale|basil|parsley') %}
-                  {% set guide = guide ~ ' Peppers/kale/herbs: prefer ~40-60%; add when <30%; shorten when >65%.' %}
+                  {% set guide = guide ~ ' Peppers/kale/herbs: target ~40-65%. REPLY 0 when every probe is 40-65%. Add only when any probe <30%.' %}
                 {% endif %}
                 {% if plants | regex_search('zucchini|eggplant|pea') %}
-                  {% set guide = guide ~ ' Zucchini/eggplant/peas: if multiple probes, favor the drier reading; add when any probe <30%; shorten when all probes >60%.' %}
+                  {% set guide = guide ~ ' Zucchini/eggplant/peas: with multiple probes use the drier reading for add decisions but REPLY 0 if ANY probe >=66% or if wettest probe >=60%. REPLY 0 when driest probe is 48-59% and wettest <60%. Add only when driest probe <30%.' %}
                 {% endif %}
                 {% if plants | regex_search('corn') %}
-                  {% set guide = guide ~ ' Corn: prefer ~45-65%; add when <32%; shorten when >62% (similar thirst to tomatoes).' %}
+                  {% set guide = guide ~ ' Corn: target ~45-62%. REPLY 0 when every probe is 45-62%. Add only when any probe <32%.' %}
                 {% endif %}
                 {% if garden_heat_temp_f | float(0) >= 75 %}
                   {% set guide = guide ~ ' Hot weather (garden heat signal >=75F): surface dries faster than probe depth — do not shorten below baseline when probe is 35-60%; only shorten or reply 0 when probe >=68% or heavy rain is forecast.' %}
@@ -864,19 +864,66 @@ script:
               {% endif %}
             zone_has_soil_probe: >-
               {{ (zone_soil_for_llm | trim | from_json(default={})).get('has_soil_probe', false) | bool }}
+            zone_probe_skip_recommendation: >-
+              {% set ctx = zone_soil_for_llm | trim | from_json(default={}) %}
+              {% if not ctx.get('has_soil_probe', false) %}
+              {{ 'none (no probe — use baseline/weather)' }}
+              {% else %}
+              {% set probes = ctx.probes | default([]) %}
+              {% set plants = repeat.item.plant_profile | default('', true) | lower %}
+              {% set vals = namespace(list=[]) %}
+              {% for p in probes %}
+                {% set raw = p.moisture_pct_now %}
+                {% if raw is not none and raw | string not in ['unknown', 'unavailable', 'none', ''] %}
+                  {% set fv = raw | float(none) %}
+                  {% if fv is not none %}
+                    {% set vals.list = vals.list + [fv] %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+              {% if vals.list | length == 0 %}
+              {{ 'unknown probe values — use baseline' }}
+              {% else %}
+              {% set mn = vals.list | min %}
+              {% set mx = vals.list | max %}
+              {% if mx >= 66 %}
+              {{ 'SKIP — reply 0: wettest probe ' ~ (mx | round(1)) ~ '% >= 66% (saturated).' }}
+              {% elif plants | regex_search('tomato') and mn >= 45 and mx <= 62 %}
+              {{ 'SKIP — reply 0: tomato probe(s) ' ~ (mn | round(1)) ~ '-' ~ (mx | round(1)) ~ '% within target 45-62%.' }}
+              {% elif plants | regex_search('pepper|kale|basil|parsley') and mn >= 40 and mx <= 65 %}
+              {{ 'SKIP — reply 0: pepper/herb probe(s) ' ~ (mn | round(1)) ~ '-' ~ (mx | round(1)) ~ '% within target 40-65%.' }}
+              {% elif plants | regex_search('hosta|mint|flower') and mn >= 40 and mx <= 68 %}
+              {{ 'SKIP — reply 0: ornamental probe(s) ' ~ (mn | round(1)) ~ '-' ~ (mx | round(1)) ~ '% within target 40-68%.' }}
+              {% elif plants | regex_search('zucchini|eggplant|pea') and mx >= 60 %}
+              {{ 'SKIP — reply 0: wettest probe ' ~ (mx | round(1)) ~ '% >= 60%; driest ' ~ (mn | round(1)) ~ '% — zone wet enough.' }}
+              {% elif plants | regex_search('zucchini|eggplant|pea') and mn >= 48 and mx < 60 %}
+              {{ 'SKIP — reply 0: driest probe ' ~ (mn | round(1)) ~ '% in comfortable 48-59% range.' }}
+              {% elif plants | regex_search('corn') and mn >= 45 and mx <= 62 %}
+              {{ 'SKIP — reply 0: corn probe(s) within target 45-62%.' }}
+              {% elif mn >= 36 and mx <= 55 %}
+              {{ 'SKIP — reply 0: all probe(s) ' ~ (mn | round(1)) ~ '-' ~ (mx | round(1)) ~ '% in comfortable 36-55% range.' }}
+              {% elif mn >= 56 and mx <= 65 %}
+              {{ 'SKIP — reply 0: probe(s) moist but adequate at ' ~ (mn | round(1)) ~ '-' ~ (mx | round(1)) ~ '%.' }}
+              {% else %}
+              {{ 'WATER OK — driest probe ' ~ (mn | round(1)) ~ '%, wettest ' ~ (mx | round(1)) ~ '%; add minutes only if below plant minimum in adjustment_guide.' }}
+              {% endif %}
+              {% endif %}
+              {% endif %}
+            zone_probe_recommends_skip: >-
+              {{ (zone_probe_skip_recommendation | default('', true) | trim).startswith('SKIP') }}
             zone_llm_prompt: >-
               Reply with ONLY one integer on a single line: 0, or any whole number from 2 to 25.
               No words, no JSON, no markdown, no punctuation, no explanation.
-              Deterministic baseline for this zone (weather + soil heuristic, already rain-adjusted): {{ zone_baseline_clamped }} minutes (0 = heuristic would skip).
+              Deterministic baseline for this zone (weather + soil heuristic, already rain-adjusted): {{ zone_baseline_clamped }} minutes (baseline is a fallback only — soil probe overrides when present).
               Garden heat signal (max of live temp vs 24h peak): {{ garden_heat_temp_f }}°F.
-              Prefer 2..25 minutes matching plant needs; use 0 only if irrigation is clearly unnecessary (e.g. probe >=68% with wet forecast, heavy recent rain, or baseline already 0).
-              {% if garden_heat_temp_f | float(0) >= 75 %}
-              Hot spell: prefer baseline or +1-3 min vs baseline; heat evaporates surface moisture faster than probes show — do not cut run time solely because probe reads 35-60%.
-              {% endif %}
               {% if zone_has_soil_probe %}
-              This zone has live soil moisture probe(s). Weight probe reading(s) heavily using plant_profile and adjustment_guide in Soil moisture context — but in hot weather still honor baseline unless probe is clearly wet (>=68%) or rain is imminent.
+              SOIL PROBE RULE (mandatory): When Probe skip recommendation below starts with "SKIP", you MUST reply 0 even if baseline is higher. When probe moisture is within the plant-specific target range in adjustment_guide, reply 0 — do not water adequate soil. Only reply 2-25 when probes are below the plant minimum (dry) or Probe skip recommendation says WATER OK and driest probe is clearly dry.
+              Probe skip recommendation: {{ zone_probe_skip_recommendation }}
               {% else %}
-              No soil moisture probe for this zone — use weather, plant profile, and baseline only.
+              No soil moisture probe for this zone — use weather, plant profile, and baseline only. Reply 0 only if baseline is 0 or heavy recent rain makes irrigation unnecessary.
+              {% endif %}
+              {% if garden_heat_temp_f | float(0) >= 75 %}
+              Hot spell (>=75F): you may reply baseline or +1-3 min ONLY when probes are dry (below plant minimum). Never override a SKIP recommendation or probe >=66% because of heat.
               {% endif %}
               Zone label: {{ repeat.item.label }}
               Zone entity: {{ repeat.item.entity_id }}
@@ -894,7 +941,7 @@ script:
                   'max_tokens': 200,
                   'stream': false,
                   'messages': [
-                    {'role': 'system', 'content': 'Reply with exactly one integer: 0 or 2-25 inclusive. No other characters, words, or JSON. When garden heat signal >=75F, favor baseline or longer unless soil is clearly saturated (>=68%) or heavy rain is forecast. When has_soil_probe true, use probe + plant_profile per adjustment_guide; in heat do not shorten below baseline for moderate moisture (35-60%).'},
+                    {'role': 'system', 'content': 'Reply with exactly one integer: 0 or 2-25 inclusive. No other characters, words, or JSON. When a soil probe exists: reply 0 whenever probe moisture is within the plant-specific target range in adjustment_guide, or when Probe skip recommendation says SKIP. Probe overrides baseline — never reply minutes for adequate moisture. When garden heat signal >=75F, add time only if probes are below plant minimum; never water when any probe >=66% or SKIP applies.'},
                     {'role': 'user', 'content': zone_llm_prompt}
                   ]
                 } | to_json
@@ -946,8 +993,16 @@ script:
             run_minutes: >-
               {% set lm = llm_minutes | int(0) %}
               {% set bc = zone_baseline_clamped | int(0) %}
-              {% if lm >= 2 %}
+              {% set probe_skip = zone_probe_recommends_skip | default(false) | bool %}
+              {% set has_probe = zone_has_soil_probe | default(false) | bool %}
+              {% set rec = zone_probe_skip_recommendation | default('', true) | trim %}
+              {% set water_ok = rec.startswith('WATER OK') %}
+              {% if probe_skip %}
+                0
+              {% elif lm >= 2 %}
                 {{ [2, [lm, 25] | min] | max }}
+              {% elif has_probe and not water_ok %}
+                0
               {% elif bc >= 2 %}
                 {{ bc }}
               {% else %}
@@ -967,7 +1022,8 @@ script:
                     {% set snip2 = snip[:220] %}
                     {% set lm0 = llm_minutes | int(0) %}
                     {% set fb = ' fb' if lm0 < 2 and run_minutes | int(0) >= 2 else '' %}
-                    {% set line = zone_label ~ ': ' ~ run_minutes ~ ' min' ~ fb ~ ' (LLM ' ~ lm0 ~ ') | HTTP ' ~ zone_llm_http ~ ' | raw: ' ~ snip2 %}
+                    {% set psk = ' probe-skip' if zone_probe_recommends_skip | default(false) | bool else '' %}
+                    {% set line = zone_label ~ ': ' ~ run_minutes ~ ' min' ~ fb ~ psk ~ ' (LLM ' ~ lm0 ~ ') | HTTP ' ~ zone_llm_http ~ ' | raw: ' ~ snip2 %}
                     {% set max_len = 240 %}
                     {% if repeat.index == 1 %}
                     {{ line[:max_len] }}
