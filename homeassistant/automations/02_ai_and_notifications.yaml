@@ -37,8 +37,8 @@
       gate_open_state: 'on'
       # No camera.east_side_2 (AXIS) on this host; Frigate entity for snapshots.
       camera: camera.east_side
-      llmvision_provider: 01KPW6YJ00E65E4HXM9Q53093Q
-      llmvision_model: omega-ollama
+      llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
+      llmvision_model: gpt-4o-mini
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /backyard-yaml/backyard-east-side
@@ -56,8 +56,8 @@
       gate_sensor: binary_sensor.west_side_gate_door
       gate_open_state: 'on'
       camera: camera.west_side_2
-      llmvision_provider: 01KPW6YJ00E65E4HXM9Q53093Q
-      llmvision_model: omega-ollama
+      llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
+      llmvision_model: gpt-4o-mini
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /backyard-yaml/backyard-west-side
@@ -75,8 +75,8 @@
       gate_sensor: binary_sensor.fence_gate_door
       gate_open_state: 'on'
       camera: camera.back_yard_2
-      llmvision_provider: 01KPW6YJ00E65E4HXM9Q53093Q
-      llmvision_model: omega-ollama
+      llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
+      llmvision_model: gpt-4o-mini
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /backyard-yaml/backyard-back-yard
@@ -168,8 +168,8 @@
       - camera.east_side
       motion_sensors:
       - binary_sensor.east_side_motion
-      provider: 01KPW6YJ00E65E4HXM9Q53093Q
-      model: omega-ollama
+      provider: 01KR1YDS2H88N44EA4MJHW0PP8
+      model: gpt-4o-mini
       notify: true
       notify_device:
       - 3cab96ade88a859c680543da3cbc807e
@@ -191,10 +191,10 @@
       - camera.garden_north_2
       motion_sensors:
       - binary_sensor.garden_north_all_occupancy
-      provider: 01KPW6YJ00E65E4HXM9Q53093Q
+      provider: 01KR1YDS2H88N44EA4MJHW0PP8
       notify_device:
       - 3cab96ade88a859c680543da3cbc807e
       file_path: /media/local/snapshots/{{ camera_file_path }}/last_motion.jpg
       notification_channel: '{{ camera }} snapshot'
-      model: omega-ollama
+      model: gpt-4o-mini
 

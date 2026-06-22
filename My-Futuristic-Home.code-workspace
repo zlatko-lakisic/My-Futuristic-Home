@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../My-Futuristic-Home.wiki"
+		},
+		{
+			"path": "../hacs-msnswitch"
 		}
 	],
 	"settings": {}
