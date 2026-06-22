@@ -1,0 +1,228 @@
+- type: grid
+  column_span: 4
+  cards:
+    - type: heading
+      heading_style: title
+      heading: POWER WATCHDOGS (MSNSWITCH)
+    - type: heading
+      heading_style: subtitle
+      heading: Hardware PDU watchdogs — outlet power, UIS auto-reset, and ping checker health
+    - type: custom:layout-card
+      layout_type: custom:grid-layout
+      layout:
+        grid-template-columns: repeat(3, 1fr)
+        grid-gap: 10px
+        place-items: stretch
+        mediaquery:
+          '(max-width: 1100px)':
+            grid-template-columns: 1fr
+      grid_options:
+        columns: full
+      cards:
+        - type: custom:button-card
+          entity: switch.basement_msnswitch_router_modem_uis_auto_reset
+          show_icon: false
+          show_name: false
+          show_state: false
+          show_label: false
+          triggers_update:
+            - switch.basement_msnswitch_router_modem_router
+            - switch.basement_msnswitch_router_modem_modem
+            - binary_sensor.basement_msnswitch_router_modem_router
+            - binary_sensor.basement_msnswitch_router_modem_google_dns_2
+          tap_action:
+            action: navigate
+            navigation_path: /config/devices/device/030646678811958c2ae74b5d3bbc580e
+          styles:
+            card:
+              - background-color: '#1c1c1c'
+              - border: 1px solid rgba(255, 255, 255, 0.1)
+              - border-radius: 14px
+              - padding: 12px
+              - box-shadow: none
+              - min-height: 168px
+            grid:
+              - grid-template-areas: '"m"'
+          custom_fields:
+            m: |
+              [[[
+                const outlets = [
+                  ['Router', 'switch.basement_msnswitch_router_modem_router', 'binary_sensor.basement_msnswitch_router_modem_router'],
+                  ['Modem', 'switch.basement_msnswitch_router_modem_modem', 'binary_sensor.basement_msnswitch_router_modem_google_dns_2'],
+                ];
+                const dot = (id, kind) => {
+                  const s = hass.states[id];
+                  if (!s || ['unknown', 'unavailable'].includes(s.state)) return '<span style="color:#9e9e9e;">●</span>';
+                  if (kind === 'pwr') return s.state === 'on'
+                    ? '<span style="color:#81c784;font-weight:600;">ON</span>'
+                    : '<span style="color:#ef5350;font-weight:600;">OFF</span>';
+                  return s.state === 'on'
+                    ? '<span style="color:#81c784;">●</span>'
+                    : '<span style="color:#e57373;">●</span>';
+                };
+                const rows = outlets.map(([lbl, sw, chk]) =>
+                  `<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.72rem;margin:5px 0;">
+                    <span>${lbl}</span>
+                    <span style="display:flex;gap:10px;align-items:center;">
+                      <span title="Outlet power">${dot(sw, 'pwr')}</span>
+                      <span title="Ping checker">${dot(chk, 'chk')}</span>
+                    </span>
+                  </div>`
+                ).join('');
+                const uis = entity?.state === 'on';
+                return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                  <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">
+                    <ha-icon icon="mdi:wan" style="color:#ffb74d;--mdc-icon-size:22px;flex-shrink:0;"></ha-icon>
+                    <div style="min-width:0;">
+                      <div style="font-weight:700;font-size:0.88rem;line-height:1.15;">WAN Watchdog</div>
+                      <div style="font-size:0.62rem;opacity:0.72;margin-top:2px;">Perimeter · MikroTik ether3</div>
+                    </div>
+                  </div>
+                  <div style="font-size:0.58rem;opacity:0.55;margin-bottom:2px;display:flex;justify-content:space-between;">
+                    <span>Outlet</span><span>Checker</span>
+                  </div>
+                  ${rows}
+                  <div style="margin-top:8px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;font-size:0.72rem;">
+                    <span>UIS auto-reset</span>
+                    <span style="color:${uis ? '#81c784' : '#9e9e9e'};font-weight:600;">${uis ? 'Enabled' : 'Disabled'}</span>
+                  </div>
+                </div>`;
+              ]]]
+        - type: custom:button-card
+          entity: switch.basement_msnswitch_traefik_nas1_uis_auto_reset
+          show_icon: false
+          show_name: false
+          show_state: false
+          show_label: false
+          triggers_update:
+            - switch.basement_msnswitch_traefik_nas1_traefik
+            - switch.basement_msnswitch_traefik_nas1_nas1
+            - binary_sensor.basement_msnswitch_traefik_nas1_traefik
+            - binary_sensor.basement_msnswitch_traefik_nas1_nas1
+          tap_action:
+            action: navigate
+            navigation_path: /config/devices/device/d2a59a1268b92c2ab6681f9a4091129e
+          styles:
+            card:
+              - background-color: '#1c1c1c'
+              - border: 1px solid rgba(255, 255, 255, 0.1)
+              - border-radius: 14px
+              - padding: 12px
+              - box-shadow: none
+              - min-height: 168px
+            grid:
+              - grid-template-areas: '"m"'
+          custom_fields:
+            m: |
+              [[[
+                const outlets = [
+                  ['Traefik', 'switch.basement_msnswitch_traefik_nas1_traefik', 'binary_sensor.basement_msnswitch_traefik_nas1_traefik'],
+                  ['NAS1', 'switch.basement_msnswitch_traefik_nas1_nas1', 'binary_sensor.basement_msnswitch_traefik_nas1_nas1'],
+                ];
+                const dot = (id, kind) => {
+                  const s = hass.states[id];
+                  if (!s || ['unknown', 'unavailable'].includes(s.state)) return '<span style="color:#9e9e9e;">●</span>';
+                  if (kind === 'pwr') return s.state === 'on'
+                    ? '<span style="color:#81c784;font-weight:600;">ON</span>'
+                    : '<span style="color:#ef5350;font-weight:600;">OFF</span>';
+                  return s.state === 'on'
+                    ? '<span style="color:#81c784;">●</span>'
+                    : '<span style="color:#e57373;">●</span>';
+                };
+                const rows = outlets.map(([lbl, sw, chk]) =>
+                  `<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.72rem;margin:5px 0;">
+                    <span>${lbl}</span>
+                    <span style="display:flex;gap:10px;align-items:center;">
+                      <span title="Outlet power">${dot(sw, 'pwr')}</span>
+                      <span title="Ping checker">${dot(chk, 'chk')}</span>
+                    </span>
+                  </div>`
+                ).join('');
+                const uis = entity?.state === 'on';
+                return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                  <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">
+                    <ha-icon icon="mdi:server-network" style="color:#64b5f6;--mdc-icon-size:22px;flex-shrink:0;"></ha-icon>
+                    <div style="min-width:0;">
+                      <div style="font-weight:700;font-size:0.88rem;line-height:1.15;">Perimeter & NAS1</div>
+                      <div style="font-size:0.62rem;opacity:0.72;margin-top:2px;">Edge proxy · primary storage</div>
+                    </div>
+                  </div>
+                  <div style="font-size:0.58rem;opacity:0.55;margin-bottom:2px;display:flex;justify-content:space-between;">
+                    <span>Outlet</span><span>Checker</span>
+                  </div>
+                  ${rows}
+                  <div style="margin-top:8px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;font-size:0.72rem;">
+                    <span>UIS auto-reset</span>
+                    <span style="color:${uis ? '#81c784' : '#9e9e9e'};font-weight:600;">${uis ? 'Enabled' : 'Disabled'}</span>
+                  </div>
+                </div>`;
+              ]]]
+        - type: custom:button-card
+          entity: switch.basement_msnswitch_nas2_omega_jetson_uis_auto_reset
+          show_icon: false
+          show_name: false
+          show_state: false
+          show_label: false
+          triggers_update:
+            - switch.basement_msnswitch_nas2_omega_jetson_nas2
+            - switch.basement_msnswitch_nas2_omega_jetson_omega_jetson
+            - binary_sensor.basement_msnswitch_nas2_omega_jetson_nas2
+            - binary_sensor.basement_msnswitch_nas2_omega_jetson_jetson
+          tap_action:
+            action: navigate
+            navigation_path: /config/devices/device/5062b02d8a9af266bdb11e9cb41937a2
+          styles:
+            card:
+              - background-color: '#1c1c1c'
+              - border: 1px solid rgba(255, 255, 255, 0.1)
+              - border-radius: 14px
+              - padding: 12px
+              - box-shadow: none
+              - min-height: 168px
+            grid:
+              - grid-template-areas: '"m"'
+          custom_fields:
+            m: |
+              [[[
+                const outlets = [
+                  ['NAS2', 'switch.basement_msnswitch_nas2_omega_jetson_nas2', 'binary_sensor.basement_msnswitch_nas2_omega_jetson_nas2'],
+                  ['Omega Jetson', 'switch.basement_msnswitch_nas2_omega_jetson_omega_jetson', 'binary_sensor.basement_msnswitch_nas2_omega_jetson_jetson'],
+                ];
+                const dot = (id, kind) => {
+                  const s = hass.states[id];
+                  if (!s || ['unknown', 'unavailable'].includes(s.state)) return '<span style="color:#9e9e9e;">●</span>';
+                  if (kind === 'pwr') return s.state === 'on'
+                    ? '<span style="color:#81c784;font-weight:600;">ON</span>'
+                    : '<span style="color:#ef5350;font-weight:600;">OFF</span>';
+                  return s.state === 'on'
+                    ? '<span style="color:#81c784;">●</span>'
+                    : '<span style="color:#e57373;">●</span>';
+                };
+                const rows = outlets.map(([lbl, sw, chk]) =>
+                  `<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.72rem;margin:5px 0;">
+                    <span>${lbl}</span>
+                    <span style="display:flex;gap:10px;align-items:center;">
+                      <span title="Outlet power">${dot(sw, 'pwr')}</span>
+                      <span title="Ping checker">${dot(chk, 'chk')}</span>
+                    </span>
+                  </div>`
+                ).join('');
+                const uis = entity?.state === 'on';
+                return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                  <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">
+                    <ha-icon icon="mdi:nas" style="color:#ce93d8;--mdc-icon-size:22px;flex-shrink:0;"></ha-icon>
+                    <div style="min-width:0;">
+                      <div style="font-weight:700;font-size:0.88rem;line-height:1.15;">NAS2 & Jetson</div>
+                      <div style="font-size:0.62rem;opacity:0.72;margin-top:2px;">Secondary NAS · edge compute</div>
+                    </div>
+                  </div>
+                  <div style="font-size:0.58rem;opacity:0.55;margin-bottom:2px;display:flex;justify-content:space-between;">
+                    <span>Outlet</span><span>Checker</span>
+                  </div>
+                  ${rows}
+                  <div style="margin-top:8px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;font-size:0.72rem;">
+                    <span>UIS auto-reset</span>
+                    <span style="color:${uis ? '#81c784' : '#9e9e9e'};font-weight:600;">${uis ? 'Enabled' : 'Disabled'}</span>
+                  </div>
+                </div>`;
+              ]]]
