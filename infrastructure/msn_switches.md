@@ -30,4 +30,4 @@ Each MSN Switch is configured with **UIS (Uninterrupted Internet System)** rules
   - **Outlet 2:** MQTT Broker (`192.168.89.26`)
 
 ## **Integration**
-While the switches act autonomously, they can be managed from [Home Assistant](../homeassistant/README.md) using the **[MSNSwitch HACS integration](https://github.com/zlakisic/hacs-msnswitch)** (separate repo; config flow: one entry per device with IP, username, and password). Requires the Home Assistant host IP on each unit’s **API Whitelist**.
+While the switches act autonomously, they can be managed from [Home Assistant](../homeassistant/README.md) using the **[MSNSwitch HACS integration](https://github.com/zlatko-lakisic/hacs-msnswitch)** (separate repo; config flow: one entry per device with IP, username, and password). Requires the Home Assistant host IP on each unit’s **API Whitelist**.
