@@ -90,7 +90,7 @@ blueprint:
         number:
           min: -90
           max: 90
-          step: any
+          step: "any"
           mode: box
     longitude:
       name: Longitude
@@ -99,7 +99,7 @@ blueprint:
         number:
           min: -180
           max: 180
-          step: any
+          step: "any"
           mode: box
     timezone:
       name: Timezone

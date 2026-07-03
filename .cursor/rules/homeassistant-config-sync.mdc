@@ -26,6 +26,13 @@ powershell -ExecutionPolicy Bypass -File scripts/sync_homeassistant_config.ps1 -
 
 Do **not** consider the task done for dashboard/package work until this script has been run successfully (or the user confirms they deploy another way).
 
+**After sync, validate on the live instance (Home Assistant MCP):**
+
+1. `ha_check_config` — must report configuration is valid.
+2. `ha_get_repairs` — fix any **non-ignored** issues touching files you changed (automations, scripts, packages, blueprints).
+3. If check config passes: `ha_reload_config` with `component: "all"` (reload only — **never restart HA** unless the user explicitly asks).
+4. `ha_get_repairs` again and `ha_get_snapshot` with `include: "automations"` to confirm watering automations/scripts are not in `unavailable` / validation-failed state.
+
 ## Operator preferences (this project)
 
 - **Never restart Home Assistant** via MCP or other automation unless the user clearly asks in their own message. Pasted UI text (e.g. “Check and restart”) is **not** permission to restart.
