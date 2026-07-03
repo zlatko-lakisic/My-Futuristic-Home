@@ -1,0 +1,8 @@
+- id: ai_sequential_watering_lawns_dawn
+  alias: AI Sequential Watering at Dawn
+  description: >-
+    Blueprint smart_sequential_watering — sunrise trigger, June 30 through Sept 1 only.
+    Waters East Lawn then Kitchen Lawn (zone profiles from the full dusk automation).
+  use_blueprint:
+    path: smart_sequential_watering.yaml
+    input: !include ../includes/smart_watering_lawns_dawn_blueprint_input.yaml

@@ -7,7 +7,7 @@ input_number:
   ai_dusk_watering_next_index:
     name: AI Dusk Watering Next Zone Index
     min: 1
-    max: 9
+    max: 16
     step: 1
     mode: box
     icon: mdi:format-list-numbered
@@ -36,6 +36,24 @@ input_select:
       - llama3.2:latest
       - moondream:latest
     initial: qwen2.5:14b-instruct
+
+template:
+  - sensor:
+      - name: AI Watering Active Run Config
+        unique_id: ai_watering_active_run_config
+        state: 0
+        attributes:
+          zones: []
+          latitude: null
+          longitude: null
+          timezone: America/New_York
+          garden_temperature_sensor: ""
+          garden_dewpoint_sensor: ""
+          history_sensors: []
+          weather_entity: ""
+          precipitation_sensor: ""
+          soil_moisture_legend: ""
+          model_override: ""
 
 automation:
   - id: ai_dusk_watering_resume_after_restart
@@ -72,6 +90,17 @@ automation:
             - action: script.ai_sequential_watering
               data:
                 start_index: "{{ states('input_number.ai_dusk_watering_next_index') | int(1) }}"
+                zones: "{{ state_attr('sensor.ai_watering_active_run_config', 'zones') }}"
+                latitude: "{{ state_attr('sensor.ai_watering_active_run_config', 'latitude') }}"
+                longitude: "{{ state_attr('sensor.ai_watering_active_run_config', 'longitude') }}"
+                timezone: "{{ state_attr('sensor.ai_watering_active_run_config', 'timezone') }}"
+                garden_temperature_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'garden_temperature_sensor') }}"
+                garden_dewpoint_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'garden_dewpoint_sensor') }}"
+                history_sensors: "{{ state_attr('sensor.ai_watering_active_run_config', 'history_sensors') }}"
+                weather_entity: "{{ state_attr('sensor.ai_watering_active_run_config', 'weather_entity') }}"
+                precipitation_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'precipitation_sensor') }}"
+                soil_moisture_legend: "{{ state_attr('sensor.ai_watering_active_run_config', 'soil_moisture_legend') }}"
+                model_override: "{{ state_attr('sensor.ai_watering_active_run_config', 'model_override') }}"
         default:
           - action: input_boolean.turn_off
             data:
@@ -96,6 +125,7 @@ script:
     alias: AI Sequential Watering
     description: >-
       Fetch weather/history, call Ollama once per zone for minutes, then run BHyve valves sequentially.
+      All zone and sensor configuration is passed from the smart_sequential_watering blueprint.
       Use simulate=true to skip only valve start/stop (pipeline unchanged).
     fields:
       simulate:
@@ -116,136 +146,140 @@ script:
         selector:
           number:
             min: 1
-            max: 9
+            max: 16
             mode: box
-      model_override:
-        name: Ollama model override
-        description: >-
-          For this run only: pick a model or “Use helper selection” to follow input_select.ai_dusk_watering_ollama_model (then secrets fallback).
-        required: false
-        default: ""
-        selector:
-          select:
-            mode: dropdown
-            options:
-              - label: Use helper selection
-                value: ""
-              - label: qwen2.5:14b-instruct
-                value: qwen2.5:14b-instruct
-              - label: gemma4:26b
-                value: gemma4:26b
-              - label: llama3.2:latest
-                value: llama3.2:latest
-              - label: moondream:latest
-                value: moondream:latest
     mode: queued
     max: 2
     sequence:
     - variables:
         simulate_mode: '{{ simulate | default(false) | bool }}'
         start_index_raw: '{{ start_index | default(1) | int(1) }}'
-        start_index_clamped: '{{ [1, [start_index_raw, 9] | min] | max }}'
+    - variables:
+        zones_configured: >-
+          {% set raw = zones | default(none, true) %}
+          {% if raw is string and raw | trim | length > 0 %}
+            {% set raw = raw | trim | from_json(default=[]) %}
+          {% endif %}
+          {% if raw is sequence and raw is not string and raw | length > 0 %}
+            {% set ns = namespace(items=[]) %}
+            {% for z in raw %}
+              {% set ns.items = ns.items + [{
+                'label': z.label | default('', true) | trim,
+                'entity_id': z.entity_id | default('', true) | trim,
+                'bhyve_zone_history_sensor': z.bhyve_zone_history_sensor | default('', true) | trim,
+                'area_sqm': z.area_sqm | default(none, true),
+                'sun_exposure': z.sun_exposure | default('', true),
+                'plant_profile': z.plant_profile | default('', true),
+                'irrigation_hardware': z.irrigation_hardware | default('', true),
+                'estimated_flow_gpm': z.estimated_flow_gpm | default('', true),
+                'notes': z.notes | default('', true),
+                'soil_sensor': z.soil_sensor | default('', true) | trim,
+                'soil_sensor_secondary': z.soil_sensor_secondary | default('', true) | trim
+              }] %}
+            {% endfor %}
+            {{ ns.items }}
+          {% else %}
+            []
+          {% endif %}
+        zone_count: '{{ zones_configured | length }}'
+        start_index_clamped: >-
+          {% set zc = zone_count | int(0) %}
+          {% if zc < 1 %}
+            1
+          {% else %}
+            {{ [1, [start_index_raw, zc] | min] | max }}
+          {% endif %}
+    - if:
+      - condition: template
+        value_template: "{{ zone_count | int(0) < 1 }}"
+      then:
+        - action: persistent_notification.create
+          data:
+            title: AI watering — no zones
+            message: >-
+              No irrigation zones were passed to script.ai_sequential_watering.
+              Configure zones in the Smart sequential watering blueprint automation, then run that automation
+              (or pass a zones list when calling this script).
+        - stop: No irrigation zones configured
+    - variables:
+        cfg_latitude: "{{ latitude | default(none, true) }}"
+        cfg_longitude: "{{ longitude | default(none, true) }}"
+        cfg_timezone: "{{ timezone | default('America/New_York', true) | trim }}"
+        cfg_garden_temperature_sensor: "{{ garden_temperature_sensor | default('', true) | trim }}"
+        cfg_garden_dewpoint_sensor: "{{ garden_dewpoint_sensor | default('', true) | trim }}"
+        cfg_weather_entity: "{{ weather_entity | default('', true) | trim }}"
+        cfg_precipitation_sensor: "{{ precipitation_sensor | default('', true) | trim }}"
+        cfg_soil_moisture_legend: "{{ soil_moisture_legend | default('', true) }}"
         model_override_trimmed: '{{ (model_override | default("", true) | trim) }}'
+        cfg_history_sensors: >-
+          {% set raw = history_sensors | default([], true) %}
+          {% if raw is string and raw | trim | length > 0 %}
+            {% set raw = raw | trim | from_json(default=[]) %}
+          {% endif %}
+          {% if raw is not sequence or raw is string %}
+            {% set raw = [] %}
+          {% endif %}
+          {% set ns = namespace(ids=[]) %}
+          {% for eid in raw %}
+            {% if eid is string and eid | trim | length > 0 and (eid | trim) not in ns.ids %}
+              {% set ns.ids = ns.ids + [eid | trim] %}
+            {% endif %}
+          {% endfor %}
+          {% for z in zones_configured %}
+            {% for key in ['soil_sensor', 'soil_sensor_secondary'] %}
+              {% set e = z[key] | default('', true) | trim %}
+              {% if e | length > 0 and e not in ns.ids %}
+                {% set ns.ids = ns.ids + [e] %}
+              {% endif %}
+            {% endfor %}
+          {% endfor %}
+          {% set gt = garden_temperature_sensor | default('', true) | trim %}
+          {% set gd = garden_dewpoint_sensor | default('', true) | trim %}
+          {% if gt | length > 0 and gt not in ns.ids %}
+            {% set ns.ids = ns.ids + [gt] %}
+          {% endif %}
+          {% if gd | length > 0 and gd not in ns.ids %}
+            {% set ns.ids = ns.ids + [gd] %}
+          {% endif %}
+          {{ ns.ids }}
+        history_entity_ids: "{{ cfg_history_sensors | join(',') }}"
+        valve_entity_ids: >-
+          {% set ns = namespace(ids=[]) %}
+          {% for z in zones_configured %}
+            {% set e = z.entity_id | default('', true) | trim %}
+            {% if e | length > 0 and e not in ns.ids %}
+              {% set ns.ids = ns.ids + [e] %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.ids | join(',') }}
+    - if:
+      - condition: template
+        value_template: >-
+          {{ cfg_latitude is none or cfg_longitude is none
+             or cfg_garden_temperature_sensor | length < 1
+             or history_entity_ids | trim | length < 1
+             or valve_entity_ids | trim | length < 1 }}
+      then:
+        - action: persistent_notification.create
+          data:
+            title: AI watering — incomplete config
+            message: >-
+              Missing blueprint runtime inputs (latitude, longitude, garden temperature sensor, history
+              sensors, or zone valve entities). Configure them in the Smart sequential watering automation.
+        - stop: Incomplete watering configuration from blueprint
     - variables:
         _ollama_secret_fallback: !secret ollama_chat_model
-    # Soil probes = Backyard Overview ranking chart (dashboards/backyard.yaml): _1 Eggplant, _2 Flower Bed, _3 Peppers and Kale, _4 Tomatoes, _6 Zucchini.
     # BHyve zone_history diagnostic sensors (Settings → Devices → BHyve → zone → History): Orbit cloud last run; used before HA Recorder valve history.
     - variables:
-        zones:
-        - label: East Lawn
-          entity_id: valve.east_lawn_timer_east_lawn_zone_zone
-          bhyve_zone_history_sensor: sensor.adna_s_flowers_zone_history
-          area_sqm: 60
-          sun_exposure: 35 percent shade / partial sun, 65 percent sun
-          plant_profile: Tall fescue lawn grass
-          irrigation_hardware: Two Orbit H2O-Six style gear-drive sprinklers, spaced apart, each about 180 degree arc
-          estimated_flow_gpm: 3.0-6.0 combined
-          notes: Adjustable 25-360 degree arc, typical operating pressure 15-65 psi
-          soil_sensor: ''
-        - label: Flower Bed
-          entity_id: valve.east_lawn_timer_flower_bed_zone_zone
-          bhyve_zone_history_sensor: sensor.adna_s_roses_zone_history
-          area_sqm: 6
-          sun_exposure: Partial sun morning, near full sun evening
-          plant_profile: 13 hosta plants and mint in mulched bed
-          irrigation_hardware: Drip hose about 5 meters long in a U pattern around the bed
-          estimated_flow_gpm: 0.15-0.30
-          notes: Flow estimate based on typical dripline emitter rates around 0.6-1.0 GPH at roughly 12 inch spacing over 5 meters
-          soil_sensor: sensor.garden_controller_soil_moisture_2
-        - label: Front Lawn
-          entity_id: valve.front_yard_controller_front_yard_zone
-          bhyve_zone_history_sensor: sensor.front_yard_zone_history
-          area_sqm: 36
-          sun_exposure: Predominantly shady, with sun in the morning through after midday
-          plant_profile: Tall fescue grass
-          irrigation_hardware: One Orbit H2O-Six style gear-drive sprinkler at about 90 degree pattern
-          estimated_flow_gpm: 1.0-2.0
-          notes: Same Orbit H2O-Six type as East Lawn, single head with narrower 90 degree arc
-          soil_sensor: ''
-        - label: Slope Kitchen Left
-          entity_id: valve.flower_garden_back_lawn_time_slope_kitchen_left_zone
-          bhyve_zone_history_sensor: sensor.garden_zone_history
-          area_sqm: 9
-          sun_exposure: Full sun throughout the day
-          plant_profile: Mixed ornamental flowers and spring bulbs on a mulched slope
-          irrigation_hardware: Micro-irrigation similar to the zucchini zone (spray stakes / low-flow emitters); tune after observing coverage on the slope
-          estimated_flow_gpm: 1.2-2.0
-          notes: Mulched slope—water can move downhill; prefer avoiding runoff (consider shorter cycles if needed). Area roughly ~9 m² square-ish footprint.
-          soil_sensor: ''
-        - label: Peppers and Kale
-          entity_id: valve.vegitable_garden_timer_peppers_kale_zone_zone
-          bhyve_zone_history_sensor: sensor.east_side_lawn_zone_history
-          area_sqm: 6.1
-          sun_exposure: Full sun throughout the day
-          plant_profile: Basil, parsley, kale, and peppers
-          irrigation_hardware: Long soaker hose, about 30 feet
-          estimated_flow_gpm: 0.25-0.50
-          notes: Zone dimensions are about 22ft x 3ft, black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
-          soil_sensor: sensor.garden_controller_soil_moisture_3
-        - label: Tomato
-          entity_id: valve.vegitable_garden_timer_tomato_zone_zone
-          bhyve_zone_history_sensor: sensor.unknown_zone_history_3
-          area_sqm: 6.1
-          sun_exposure: Full sun throughout the day
-          plant_profile: 8 tomato plants
-          irrigation_hardware: Long soaker hose, about 30 feet
-          estimated_flow_gpm: 0.25-0.50
-          notes: Same setup style as Peppers and Kale zone; black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
-          soil_sensor: sensor.garden_controller_soil_moisture_4
-        - label: Zucchini
-          entity_id: valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone
-          area_sqm: null
-          sun_exposure: Full sun throughout the day
-          plant_profile: 8 zucchini plants, 8 pea plants, and 8 eggplant plants
-          irrigation_hardware: Amazon B0F174M21Y watering setup with 12 spray stake nozzles and 4 misters (for peas)
-          estimated_flow_gpm: 1.2-2.0
-          notes: Approximate combined flow estimated from common micro-irrigation ranges (spray stakes plus low-flow misters); tune after observing pressure and runoff
-          soil_sensor: sensor.garden_controller_soil_moisture_6
-          soil_sensor_secondary: sensor.garden_controller_soil_moisture_1
-          bhyve_zone_history_sensor: sensor.unknown_zone_history_5
-        - label: Kitchen Lawn
-          entity_id: valve.flower_garden_back_lawn_time_back_lawn_zone_zone
-          bhyve_zone_history_sensor: sensor.flower_garden_back_lawn_time_back_lawn_zone_zone_history
-          area_sqm: 36
-          sun_exposure: Full sun
-          plant_profile: Two lawn sections, mostly grass with a few lilies between
-          irrigation_hardware: Two sprinklers connected in sequence (Amazon B0C6FLH75D, Melnor MiniMax style oscillating sprinklers)
-          estimated_flow_gpm: 2.5-4.5 combined
-          notes: Two lawns about 18m squared each; in-series setup tends to give more flow at first head and reduced pressure/flow at second head
-          soil_sensor: ''
-        - label: Corn
-          entity_id: valve.flower_garden_back_lawn_time_zone_4_zone
-          bhyve_zone_history_sensor: sensor.flower_garden_back_lawn_time_zone_4_zone_history
-          area_sqm: 6.1
-          sun_exposure: Full sun throughout the day
-          plant_profile: 24 corn plants
-          irrigation_hardware: Soaker hose in bed, same style as Flower Bed dripline/soaker layout
-          estimated_flow_gpm: 0.25-0.50
-          notes: Roughly same footprint as Tomato zone (~22ft x 3ft); black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
-          soil_sensor: ''
-        ecowitt_temp: '{{ states(''sensor.garden_controller_indoor_temperature'') }}'
-        ecowitt_dewpoint: '{{ states(''sensor.garden_controller_indoor_dewpoint'') }}'
-        # Resolved model: script field model_override → helper input_select.ai_dusk_watering_ollama_model → secrets.yaml ollama_chat_model
+        zones: '{{ zones_configured }}'
+        ecowitt_temp: '{{ states(cfg_garden_temperature_sensor) }}'
+        ecowitt_dewpoint: >-
+          {% if cfg_garden_dewpoint_sensor | length > 0 %}
+            {{ states(cfg_garden_dewpoint_sensor) }}
+          {% else %}
+            unknown
+          {% endif %}
+        # Resolved model: blueprint model_override → helper input_select → secrets.yaml
         ollama_chat_model: >-
           {% if model_override_trimmed | length > 0 %}
             {{ model_override_trimmed }}
@@ -260,23 +294,34 @@ script:
     - service: rest_command.openweathermap_5day_forecast
       data:
         api_key: !secret openweathermap_api_key
+        latitude: "{{ cfg_latitude }}"
+        longitude: "{{ cfg_longitude }}"
       response_variable: owm_response
     - service: rest_command.open_meteo_precipitation_past_24h
+      data:
+        latitude: "{{ cfg_latitude }}"
+        longitude: "{{ cfg_longitude }}"
+        timezone: "{{ cfg_timezone }}"
       response_variable: meteo_past_response
     - service: rest_command.homeassistant_history_garden_24h
+      data:
+        history_entity_ids: "{{ history_entity_ids }}"
       response_variable: ha_history_response
     - service: rest_command.homeassistant_history_irrigation_valves
+      data:
+        valve_entity_ids: "{{ valve_entity_ids }}"
       response_variable: ha_valve_history_response
-    # AccuWeather entity id from HA registry (second weather when Open-Meteo owns weather.home).
     - variables:
         accuweather_hourly_response: {}
     - if:
       - condition: template
-        value_template: "{{ states('weather.home_2') not in ['unknown', 'unavailable', ''] }}"
+        value_template: >-
+          {{ cfg_weather_entity | length > 0
+             and states(cfg_weather_entity) not in ['unknown', 'unavailable', ''] }}
       then:
         - service: weather.get_forecasts
           target:
-            entity_id: weather.home_2
+            entity_id: "{{ cfg_weather_entity }}"
           data:
             type: hourly
           response_variable: accuweather_hourly_response
@@ -299,7 +344,10 @@ script:
           {% endfor %}
           {{ ns.items | to_json }}
         accuweather_forecast_for_llm: >-
-          {% set wid = 'weather.home_2' %}
+          {% set wid = cfg_weather_entity | default('', true) | trim %}
+          {% if wid | length < 1 %}
+          {{ {'weather_provider': 'none'} | to_json }}
+          {% else %}
           {% set cur = states(wid) %}
           {% set resp = accuweather_hourly_response | default({}, true) %}
           {% set nsf = namespace(fc=[]) %}
@@ -331,14 +379,19 @@ script:
               {% endif %}
             {% endfor %}
           {% endif %}
+          {% set precip = 'unknown' %}
+          {% if cfg_precipitation_sensor | length > 0 %}
+            {% set precip = states(cfg_precipitation_sensor) %}
+          {% endif %}
           {{
             {
-              'weather_provider': 'accuweather_home_2',
+              'weather_provider': wid,
               'now_condition': cur,
               'next_hours': ns.rows,
-              'precip_rate_in_per_h': states('sensor.home_precipitation')
+              'precip_rate_in_per_h': precip
             } | to_json
           }}
+          {% endif %}
         open_meteo_past_rain_for_llm: >-
           {% set raw = meteo_past_response.content | default('') %}
           {% set st = meteo_past_response.status | default(0) %}
@@ -428,7 +481,7 @@ script:
             {
               'period_hours': 24,
               'recorder_end': now().isoformat(),
-              'soil_moisture_index': 'sensor.garden_controller_soil_moisture_1=Eggplant,_2=Flower_Bed,_3=Peppers_and_Kale,_4=Tomatoes,_6=Zucchini',
+              'soil_moisture_index': cfg_soil_moisture_legend | default('', true),
               'entities': accum.items
             } | to_json
           }}
@@ -485,7 +538,7 @@ script:
           {% set hist = sensor_history_24h_for_llm | default('{}', true) | trim | from_json(default={}) %}
           {% set ns = namespace(mx=temp_now) %}
           {% for e in hist.entities | default([]) %}
-            {% if e.entity_id == 'sensor.garden_controller_indoor_temperature' %}
+            {% if e.entity_id == cfg_garden_temperature_sensor %}
               {% if e.max_numeric is not none %}
                 {% set v = e.max_numeric | float(temp_now) %}
                 {% if v > ns.mx %}
@@ -699,8 +752,8 @@ script:
               z.label ~ ': ' ~ rm ~ (' min (skipped)' if rm < 1 else (' min → ' ~ z.entity_id))
             ] %}
           {% endfor %}
-          {% if m | length < 9 %}
-          WARNING: baseline map incomplete ({{ m | length }} zones). Check ecowitt_temp / forecast_short inputs.
+          {% if m | length < (zone_count | int(1)) %}
+          WARNING: baseline map incomplete ({{ m | length }} zones, expected {{ zone_count }}). Check ecowitt_temp / forecast_short inputs.
           {% endif %}
           Baseline minutes (deterministic; per-zone LLM can adjust at runtime):
           {{ ns.lines | join('\n') }}
@@ -770,6 +823,22 @@ script:
           data:
             entity_id: input_number.ai_dusk_watering_next_index
             value: "{{ start_index_clamped | int(1) }}"
+        - action: homeassistant.set_state
+          data:
+            entity_id: sensor.ai_watering_active_run_config
+            state: "{{ zone_count | int(0) }}"
+            attributes:
+              zones: "{{ zones_configured }}"
+              latitude: "{{ cfg_latitude }}"
+              longitude: "{{ cfg_longitude }}"
+              timezone: "{{ cfg_timezone }}"
+              garden_temperature_sensor: "{{ cfg_garden_temperature_sensor }}"
+              garden_dewpoint_sensor: "{{ cfg_garden_dewpoint_sensor }}"
+              history_sensors: "{{ cfg_history_sensors }}"
+              weather_entity: "{{ cfg_weather_entity }}"
+              precipitation_sensor: "{{ cfg_precipitation_sensor }}"
+              soil_moisture_legend: "{{ cfg_soil_moisture_legend }}"
+              model_override: "{{ model_override_trimmed }}"
         - action: persistent_notification.create
           data:
             title: Dusk watering started
@@ -1043,7 +1112,7 @@ script:
                       - action: input_number.set_value
                         data:
                           entity_id: input_number.ai_dusk_watering_next_index
-                          value: "{{ [zone_index + 1, 9] | min }}"
+                          value: "{{ [zone_index + 1, zone_count | int(1)] | min }}"
           default:
             - choose:
                 - conditions:
@@ -1073,7 +1142,7 @@ script:
                         - action: input_number.set_value
                           data:
                             entity_id: input_number.ai_dusk_watering_next_index
-                            value: "{{ [zone_index + 1, 9] | min }}"
+                            value: "{{ [zone_index + 1, zone_count | int(1)] | min }}"
                       else:
                         - action: persistent_notification.create
                           data:
@@ -1083,7 +1152,7 @@ script:
                         - action: input_number.set_value
                           data:
                             entity_id: input_number.ai_dusk_watering_next_index
-                            value: "{{ [zone_index + 1, 9] | min }}"
+                            value: "{{ [zone_index + 1, zone_count | int(1)] | min }}"
     - choose:
       - conditions:
         - condition: template
@@ -1096,7 +1165,15 @@ script:
             name: AI dusk watering
             entity_id: script.ai_sequential_watering
             message: >-
-              All zones in the sequential plan finished. BHyve zone_history (Orbit) last cycle timestamps — East Lawn: {{ states('sensor.adna_s_flowers_zone_history') }}; Flower Bed: {{ states('sensor.adna_s_roses_zone_history') }}; Front Lawn: {{ states('sensor.front_yard_zone_history') }}; Slope Kitchen Left: {{ states('sensor.garden_zone_history') }}; Peppers & Kale: {{ states('sensor.east_side_lawn_zone_history') }}; Tomato: {{ states('sensor.unknown_zone_history_3') }}; Zucchini: {{ states('sensor.unknown_zone_history_5') }}; Kitchen Lawn: {{ states('sensor.flower_garden_back_lawn_time_back_lawn_zone_zone_history') }}; Corn: {{ states('sensor.flower_garden_back_lawn_time_zone_4_zone_history') }}; Veg garden timer next: {{ states('sensor.vegitable_garden_timer_next_watering') }}.
+              All zones in the sequential plan finished. BHyve zone_history (Orbit) last cycle timestamps —
+              {% set ns = namespace(parts=[]) %}
+              {% for z in zones %}
+                {% set bh = z.bhyve_zone_history_sensor | default('', true) | trim %}
+                {% if bh | length > 0 %}
+                  {% set ns.parts = ns.parts + [z.label ~ ': ' ~ states(bh)] %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.parts | join('; ') if ns.parts | length > 0 else 'no bhyve_zone_history_sensor configured' }}.
         - action: input_text.set_value
           data:
             entity_id: input_text.ai_dusk_watering_active_run_id

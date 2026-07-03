@@ -1,0 +1,287 @@
+blueprint:
+  name: Smart sequential watering
+  description: |
+    Configure an ordered list of irrigation zones using the repeatable blocks below (add, remove, or reorder anytime).
+    Each block holds static zone profile (name, valve, plants, hardware). Additional blueprint inputs
+    supply location, garden sensors, and optional weather entities — script.ai_sequential_watering uses those
+    to perform OpenWeather, Open-Meteo, Recorder history, and LLM calls at runtime.
+
+    Requires packages rest_command_ai_watering and ai_dusk_sequential_watering_script, plus helpers for API tokens.
+  domain: automation
+  homeassistant:
+    min_version: '2024.6.0'
+  input:
+    zones:
+      name: Irrigation zones
+      description: >-
+        Ordered list of zones to water sequentially. Each zone needs a name and valve entity; other fields help the
+        AI pick run times. Soil moisture and weather are read live — do not enter those here.
+      selector:
+        object:
+          label_field: label
+          description_field: plant_profile
+          multiple: true
+          fields:
+            label:
+              label: Zone name
+              required: true
+              selector:
+                text:
+            entity_id:
+              label: Valve entity (B-hyve valve or switch)
+              required: true
+              selector:
+                entity:
+                  filter:
+                    - domain: valve
+                    - domain: switch
+            bhyve_zone_history_sensor:
+              label: B-hyve zone history sensor (optional)
+              selector:
+                entity:
+                  filter:
+                    - domain: sensor
+            area_sqm:
+              label: Area m² (optional)
+              selector:
+                number:
+                  min: 0
+                  max: 500
+                  step: 0.1
+                  mode: box
+            sun_exposure:
+              label: Sun exposure
+              selector:
+                text:
+            plant_profile:
+              label: Plant profile
+              selector:
+                text:
+            irrigation_hardware:
+              label: Irrigation hardware
+              selector:
+                text:
+            estimated_flow_gpm:
+              label: Estimated flow (GPM)
+              selector:
+                text:
+            notes:
+              label: Notes
+              selector:
+                text:
+                  multiline: true
+            soil_sensor:
+              label: Primary soil moisture sensor (optional)
+              selector:
+                entity:
+                  filter:
+                    - domain: sensor
+            soil_sensor_secondary:
+              label: Secondary soil moisture sensor (optional)
+              selector:
+                entity:
+                  filter:
+                    - domain: sensor
+    latitude:
+      name: Latitude
+      description: Home coordinates for OpenWeatherMap and Open-Meteo API calls.
+      default: 41.0137572
+      selector:
+        number:
+          min: -90
+          max: 90
+          step: any
+          mode: box
+    longitude:
+      name: Longitude
+      default: -73.8082339
+      selector:
+        number:
+          min: -180
+          max: 180
+          step: any
+          mode: box
+    timezone:
+      name: Timezone
+      description: IANA timezone for Open-Meteo (e.g. America/New_York).
+      default: America/New_York
+      selector:
+        text:
+    garden_temperature_sensor:
+      name: Garden temperature sensor
+      description: Ecowitt or other outdoor/garden temperature used for heat baseline and 24h peak.
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: temperature
+            - domain: sensor
+    garden_dewpoint_sensor:
+      name: Garden dew point sensor
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    history_sensors:
+      name: Recorder history sensors (24h)
+      description: >-
+        Entities to pull 24h Recorder history for (soil probes, indoor garden sensors, etc.). Zone soil
+        sensors are merged automatically if not listed here.
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: sensor
+    weather_entity:
+      name: Hourly weather entity (optional)
+      description: e.g. AccuWeather integration entity for supplemental hourly forecast context.
+      selector:
+        entity:
+          filter:
+            - domain: weather
+    precipitation_sensor:
+      name: Current precipitation rate sensor (optional)
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    soil_moisture_legend:
+      name: Soil probe legend for LLM
+      description: Optional text explaining which soil sensor maps to which bed/plant.
+      selector:
+        text:
+          multiline: true
+    minutes_after_event:
+      name: Minutes after sun event
+      description: Delay after astronomical sunrise or sunset (see Sun trigger event) before starting.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 180
+          step: 1
+          mode: box
+          unit_of_measurement: min
+    sun_event:
+      name: Sun trigger event
+      description: Run at sunrise (dawn) or sunset (dusk).
+      default: sunset
+      selector:
+        select:
+          options:
+            - sunset
+            - sunrise
+    limit_to_season:
+      name: Limit to date window
+      description: When enabled, only run between season start and end (inclusive, each year).
+      default: false
+      selector:
+        boolean: {}
+    season_start_month:
+      name: Season start month
+      default: 6
+      selector:
+        number:
+          min: 1
+          max: 12
+          step: 1
+          mode: box
+    season_start_day:
+      name: Season start day
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 31
+          step: 1
+          mode: box
+    season_end_month:
+      name: Season end month
+      default: 9
+      selector:
+        number:
+          min: 1
+          max: 12
+          step: 1
+          mode: box
+    season_end_day:
+      name: Season end day
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 31
+          step: 1
+          mode: box
+    watering_script:
+      name: Watering script
+      description: Script that runs the AI + B-hyve sequential pipeline.
+      default: script.ai_sequential_watering
+      selector:
+        entity:
+          filter:
+            - domain: script
+    model_override:
+      name: LLM model override
+      description: >-
+        Optional model for this run only. Leave empty to use helper input_select.ai_dusk_watering_ollama_model
+        (then secrets fallback).
+      default: ""
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - label: Use helper / default
+              value: ""
+            - label: qwen2.5:14b-instruct
+              value: qwen2.5:14b-instruct
+            - label: gemma4:26b
+              value: gemma4:26b
+            - label: llama3.2:latest
+              value: llama3.2:latest
+            - label: moondream:latest
+              value: moondream:latest
+
+mode: single
+variables:
+  limit_to_season: !input limit_to_season
+  season_start_month: !input season_start_month
+  season_start_day: !input season_start_day
+  season_end_month: !input season_end_month
+  season_end_day: !input season_end_day
+triggers:
+  - trigger: sun
+    event: !input sun_event
+conditions:
+  - condition: template
+    value_template: >-
+      {% if not limit_to_season %}
+        true
+      {% else %}
+        {% set m = now().month %}
+        {% set d = now().day %}
+        {% set start_ord = (season_start_month | int(1)) * 100 + (season_start_day | int(1)) %}
+        {% set end_ord = (season_end_month | int(12)) * 100 + (season_end_day | int(31)) %}
+        {% set cur_ord = m * 100 + d %}
+        {% if start_ord <= end_ord %}
+          {{ cur_ord >= start_ord and cur_ord <= end_ord }}
+        {% else %}
+          {{ cur_ord >= start_ord or cur_ord <= end_ord }}
+        {% endif %}
+      {% endif %}
+actions:
+  - delay:
+      minutes: !input minutes_after_event
+  - action: !input watering_script
+    data:
+      zones: !input zones
+      latitude: !input latitude
+      longitude: !input longitude
+      timezone: !input timezone
+      garden_temperature_sensor: !input garden_temperature_sensor
+      garden_dewpoint_sensor: !input garden_dewpoint_sensor
+      history_sensors: !input history_sensors
+      weather_entity: !input weather_entity
+      precipitation_sensor: !input precipitation_sensor
+      soil_moisture_legend: !input soil_moisture_legend
+      model_override: !input model_override

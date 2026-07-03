@@ -1,0 +1,31 @@
+# Blueprint input for East + Kitchen lawns at dawn (June 30 – Sept 1).
+zones: !include smart_watering_lawns_zones.yaml
+latitude: 41.0137572
+longitude: -73.8082339
+timezone: America/New_York
+garden_temperature_sensor: sensor.garden_controller_indoor_temperature
+garden_dewpoint_sensor: sensor.garden_controller_indoor_dewpoint
+history_sensors:
+  - sensor.garden_controller_soil_moisture_1
+  - sensor.garden_controller_soil_moisture_2
+  - sensor.garden_controller_soil_moisture_3
+  - sensor.garden_controller_soil_moisture_4
+  - sensor.garden_controller_soil_moisture_6
+  - sensor.garden_controller_indoor_temperature
+  - sensor.garden_controller_indoor_humidity
+  - sensor.garden_controller_indoor_dewpoint
+  - sensor.garden_controller_absolute_pressure
+weather_entity: weather.home_2
+precipitation_sensor: sensor.home_precipitation
+soil_moisture_legend: >-
+  sensor.garden_controller_soil_moisture_1=Eggplant, _2=Flower Bed, _3=Peppers and Kale,
+  _4=Tomatoes, _6=Zucchini
+minutes_after_event: 0
+sun_event: sunrise
+limit_to_season: true
+season_start_month: 6
+season_start_day: 30
+season_end_month: 9
+season_end_day: 1
+watering_script: script.ai_sequential_watering
+model_override: ""
