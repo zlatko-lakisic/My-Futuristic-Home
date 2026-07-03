@@ -37,23 +37,31 @@ input_select:
       - moondream:latest
     initial: qwen2.5:14b-instruct
 
-template:
+shell_command:
+  ai_watering_save_run_config: >-
+    RUN_CONFIG='{{ run_config_json | urlencode }}' python3 /config/packages/ai_watering_snapshot_config.py
+
+command_line:
   - sensor:
-      - name: AI Watering Active Run Config
-        unique_id: ai_watering_active_run_config
-        state: 0
-        attributes:
-          zones: []
-          latitude: null
-          longitude: null
-          timezone: America/New_York
-          garden_temperature_sensor: ""
-          garden_dewpoint_sensor: ""
-          history_sensors: []
-          weather_entity: ""
-          precipitation_sensor: ""
-          soil_moisture_legend: ""
-          model_override: ""
+      name: AI Watering Active Run Config
+      unique_id: ai_watering_active_run_config
+      command: 'cat /config/includes/ai_watering_active_run_snapshot.json 2>/dev/null || echo "{}"'
+      scan_interval: 86400
+      value_template: >-
+        {% set j = value_json if value_json is mapping else {} %}
+        {{ (j.get('zones', []) if j is mapping else []) | length }}
+      json_attributes:
+        - zones
+        - latitude
+        - longitude
+        - timezone
+        - garden_temperature_sensor
+        - garden_dewpoint_sensor
+        - history_sensors
+        - weather_entity
+        - precipitation_sensor
+        - soil_moisture_legend
+        - model_override
 
 automation:
   - id: ai_dusk_watering_resume_after_restart
@@ -823,22 +831,27 @@ script:
           data:
             entity_id: input_number.ai_dusk_watering_next_index
             value: "{{ start_index_clamped | int(1) }}"
-        - action: homeassistant.set_state
+        - variables:
+            run_config_json: >-
+              {{ {
+                'zones': zones_configured,
+                'latitude': cfg_latitude,
+                'longitude': cfg_longitude,
+                'timezone': cfg_timezone,
+                'garden_temperature_sensor': cfg_garden_temperature_sensor,
+                'garden_dewpoint_sensor': cfg_garden_dewpoint_sensor,
+                'history_sensors': cfg_history_sensors,
+                'weather_entity': cfg_weather_entity,
+                'precipitation_sensor': cfg_precipitation_sensor,
+                'soil_moisture_legend': cfg_soil_moisture_legend,
+                'model_override': model_override_trimmed
+              } | to_json }}
+        - action: shell_command.ai_watering_save_run_config
           data:
+            run_config_json: "{{ run_config_json }}"
+        - action: homeassistant.update_entity
+          target:
             entity_id: sensor.ai_watering_active_run_config
-            state: "{{ zone_count | int(0) }}"
-            attributes:
-              zones: "{{ zones_configured }}"
-              latitude: "{{ cfg_latitude }}"
-              longitude: "{{ cfg_longitude }}"
-              timezone: "{{ cfg_timezone }}"
-              garden_temperature_sensor: "{{ cfg_garden_temperature_sensor }}"
-              garden_dewpoint_sensor: "{{ cfg_garden_dewpoint_sensor }}"
-              history_sensors: "{{ cfg_history_sensors }}"
-              weather_entity: "{{ cfg_weather_entity }}"
-              precipitation_sensor: "{{ cfg_precipitation_sensor }}"
-              soil_moisture_legend: "{{ cfg_soil_moisture_legend }}"
-              model_override: "{{ model_override_trimmed }}"
         - action: persistent_notification.create
           data:
             title: Dusk watering started
