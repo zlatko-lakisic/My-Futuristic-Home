@@ -37,31 +37,15 @@ input_select:
       - moondream:latest
     initial: qwen2.5:14b-instruct
 
-shell_command:
-  ai_watering_save_run_config: >-
-    RUN_CONFIG='{{ run_config_json | urlencode }}' python3 /config/packages/ai_watering_snapshot_config.py
-
-command_line:
-  - sensor:
-      name: AI Watering Active Run Config
+mqtt:
+  sensor:
+    - name: AI Watering Active Run Config
       unique_id: ai_watering_active_run_config
-      command: 'cat /config/includes/ai_watering_active_run_snapshot.json 2>/dev/null || echo "{}"'
-      scan_interval: 86400
+      state_topic: homeassistant/ai_watering/active_run_config
       value_template: >-
         {% set j = value_json if value_json is mapping else {} %}
         {{ (j.get('zones', []) if j is mapping else []) | length }}
-      json_attributes:
-        - zones
-        - latitude
-        - longitude
-        - timezone
-        - garden_temperature_sensor
-        - garden_dewpoint_sensor
-        - history_sensors
-        - weather_entity
-        - precipitation_sensor
-        - soil_moisture_legend
-        - model_override
+      json_attributes_topic: homeassistant/ai_watering/active_run_config
 
 automation:
   - id: ai_dusk_watering_resume_after_restart
@@ -121,6 +105,11 @@ automation:
             data:
               entity_id: input_text.ai_dusk_watering_active_run_id
               value: ""
+          - action: mqtt.publish
+            data:
+              topic: homeassistant/ai_watering/active_run_config
+              payload: "{}"
+              retain: true
           - action: persistent_notification.create
             data:
               title: AI dusk watering — resume skipped
@@ -820,17 +809,6 @@ script:
         - condition: template
           value_template: "{{ not simulate_mode }}"
         sequence:
-        - action: input_boolean.turn_on
-          data:
-            entity_id: input_boolean.ai_dusk_watering_in_progress
-        - action: input_text.set_value
-          data:
-            entity_id: input_text.ai_dusk_watering_active_run_id
-            value: "{{ now().timestamp() | int }}"
-        - action: input_number.set_value
-          data:
-            entity_id: input_number.ai_dusk_watering_next_index
-            value: "{{ start_index_clamped | int(1) }}"
         - variables:
             run_config_json: >-
               {{ {
@@ -846,12 +824,22 @@ script:
                 'soil_moisture_legend': cfg_soil_moisture_legend,
                 'model_override': model_override_trimmed
               } | to_json }}
-        - action: shell_command.ai_watering_save_run_config
+        - action: mqtt.publish
           data:
-            run_config_json: "{{ run_config_json }}"
-        - action: homeassistant.update_entity
-          target:
-            entity_id: sensor.ai_watering_active_run_config
+            topic: homeassistant/ai_watering/active_run_config
+            payload: "{{ run_config_json }}"
+            retain: true
+        - action: input_boolean.turn_on
+          data:
+            entity_id: input_boolean.ai_dusk_watering_in_progress
+        - action: input_text.set_value
+          data:
+            entity_id: input_text.ai_dusk_watering_active_run_id
+            value: "{{ now().timestamp() | int }}"
+        - action: input_number.set_value
+          data:
+            entity_id: input_number.ai_dusk_watering_next_index
+            value: "{{ start_index_clamped | int(1) }}"
         - action: persistent_notification.create
           data:
             title: Dusk watering started
@@ -1198,6 +1186,11 @@ script:
           data:
             entity_id: input_number.ai_dusk_watering_next_index
             value: 1
+        - action: mqtt.publish
+          data:
+            topic: homeassistant/ai_watering/active_run_config
+            payload: "{}"
+            retain: true
     - action: persistent_notification.create
       data:
         title: "{{ 'AI sequential watering simulation (dry run)' if simulate_mode else 'AI sequential watering complete' }}"
