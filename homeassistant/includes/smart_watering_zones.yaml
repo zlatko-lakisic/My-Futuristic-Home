@@ -1,4 +1,4 @@
-# Seed data for the smart_sequential_watering blueprint automation instance (automations/03_bhyve_ai_dusk_watering.yaml).
+# Seed data for the smart_sequential_watering blueprint (HACS: zlatko-lakisic/smart_sequential_watering.yaml).
 # Not used by script.ai_sequential_watering — zones are configured only in the blueprint UI / automation input.
 # After editing zones in Home Assistant, Pull sync updates this file if you manage config via Git.
 - label: East Lawn
