@@ -1,12 +1,12 @@
 blueprint:
   name: Smart sequential watering
   description: |
-    Configure an ordered list of irrigation zones using the repeatable blocks below (add, remove, or reorder anytime).
-    Each block holds static zone profile (name, valve, plants, hardware). Additional blueprint inputs
-    supply location, garden sensors, and optional weather entities — script.ai_sequential_watering uses those
-    to perform OpenWeather, Open-Meteo, Recorder history, and LLM calls at runtime.
+    Configure irrigation zones, location, sensors, API helpers, and runtime state helpers.
+    The linked watering script performs OpenWeather, Open-Meteo, Recorder history, LLM, and
+    irrigation service calls using only the parameters you provide here.
 
-    Requires packages rest_command_ai_watering and ai_dusk_sequential_watering_script, plus helpers for API tokens.
+    Requires generic packages smart_sequential_watering_script and rest_command_ai_watering,
+    plus a site instance package (helpers, MQTT snapshot sensor, resume automation).
   domain: automation
   homeassistant:
     min_version: '2024.6.0'
@@ -14,8 +14,8 @@ blueprint:
     zones:
       name: Irrigation zones
       description: >-
-        Ordered list of zones to water sequentially. Each zone needs a name and valve entity; other fields help the
-        AI pick run times. Soil moisture and weather are read live — do not enter those here.
+        Ordered list of zones to water sequentially. Each zone needs a name and valve entity.
+        Soil moisture and weather are read live at runtime.
       selector:
         object:
           label_field: label
@@ -28,15 +28,15 @@ blueprint:
               selector:
                 text:
             entity_id:
-              label: Valve entity (B-hyve valve or switch)
+              label: Valve entity
               required: true
               selector:
                 entity:
                   filter:
                     - domain: valve
                     - domain: switch
-            bhyve_zone_history_sensor:
-              label: B-hyve zone history sensor (optional)
+            zone_history_sensor:
+              label: Zone history sensor (optional, integration-specific last-run)
               selector:
                 entity:
                   filter:
@@ -84,8 +84,7 @@ blueprint:
                     - domain: sensor
     latitude:
       name: Latitude
-      description: Home coordinates for OpenWeatherMap and Open-Meteo API calls.
-      default: 41.0137572
+      description: Coordinates for OpenWeatherMap and Open-Meteo.
       selector:
         number:
           min: -90
@@ -94,7 +93,6 @@ blueprint:
           mode: box
     longitude:
       name: Longitude
-      default: -73.8082339
       selector:
         number:
           min: -180
@@ -104,12 +102,10 @@ blueprint:
     timezone:
       name: Timezone
       description: IANA timezone for Open-Meteo (e.g. America/New_York).
-      default: America/New_York
       selector:
         text:
     garden_temperature_sensor:
       name: Garden temperature sensor
-      description: Ecowitt or other outdoor/garden temperature used for heat baseline and 24h peak.
       selector:
         entity:
           filter:
@@ -124,9 +120,7 @@ blueprint:
             - domain: sensor
     history_sensors:
       name: Recorder history sensors (24h)
-      description: >-
-        Entities to pull 24h Recorder history for (soil probes, indoor garden sensors, etc.). Zone soil
-        sensors are merged automatically if not listed here.
+      description: Zone soil sensors are merged automatically if not listed here.
       selector:
         entity:
           multiple: true
@@ -134,7 +128,6 @@ blueprint:
             - domain: sensor
     weather_entity:
       name: Hourly weather entity (optional)
-      description: e.g. AccuWeather integration entity for supplemental hourly forecast context.
       selector:
         entity:
           filter:
@@ -147,13 +140,11 @@ blueprint:
             - domain: sensor
     soil_moisture_legend:
       name: Soil probe legend for LLM
-      description: Optional text explaining which soil sensor maps to which bed/plant.
       selector:
         text:
           multiline: true
     minutes_after_event:
       name: Minutes after sun event
-      description: Delay after astronomical sunrise or sunset (see Sun trigger event) before starting.
       default: 0
       selector:
         number:
@@ -164,7 +155,6 @@ blueprint:
           unit_of_measurement: min
     sun_event:
       name: Sun trigger event
-      description: Run at sunrise (dawn) or sunset (dusk).
       default: sunset
       selector:
         select:
@@ -173,13 +163,12 @@ blueprint:
             - sunrise
     limit_to_season:
       name: Limit to date window
-      description: When enabled, only run between season start and end (inclusive, each year).
       default: false
       selector:
         boolean: {}
     season_start_month:
       name: Season start month
-      default: 6
+      default: 1
       selector:
         number:
           min: 1
@@ -188,7 +177,7 @@ blueprint:
           mode: box
     season_start_day:
       name: Season start day
-      default: 30
+      default: 1
       selector:
         number:
           min: 1
@@ -197,7 +186,7 @@ blueprint:
           mode: box
     season_end_month:
       name: Season end month
-      default: 9
+      default: 12
       selector:
         number:
           min: 1
@@ -206,7 +195,7 @@ blueprint:
           mode: box
     season_end_day:
       name: Season end day
-      default: 1
+      default: 31
       selector:
         number:
           min: 1
@@ -215,32 +204,105 @@ blueprint:
           mode: box
     watering_script:
       name: Watering script
-      description: Script that runs the AI + B-hyve sequential pipeline.
-      default: script.ai_sequential_watering
       selector:
         entity:
           filter:
             - domain: script
     model_override:
       name: LLM model override
-      description: >-
-        Optional model for this run only. Leave empty to use helper input_select.ai_dusk_watering_ollama_model
-        (then secrets fallback).
+      description: Optional model for this run only. Leave empty to use the default LLM model helper or text fallback.
       default: ""
       selector:
-        select:
-          mode: dropdown
-          options:
-            - label: Use helper / default
-              value: ""
-            - label: qwen2.5:14b-instruct
-              value: qwen2.5:14b-instruct
-            - label: gemma4:26b
-              value: gemma4:26b
-            - label: llama3.2:latest
-              value: llama3.2:latest
-            - label: moondream:latest
-              value: moondream:latest
+        text:
+    in_progress_boolean:
+      name: In-progress helper (input_boolean)
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+    next_index_number:
+      name: Next zone index helper (input_number)
+      selector:
+        entity:
+          filter:
+            - domain: input_number
+    active_run_id_text:
+      name: Active run id helper (input_text)
+      selector:
+        entity:
+          filter:
+            - domain: input_text
+    simulate_report_text:
+      name: Simulate report helper (input_text, optional)
+      selector:
+        entity:
+          filter:
+            - domain: input_text
+    run_config_snapshot_sensor:
+      name: Run config snapshot sensor
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    mqtt_snapshot_topic:
+      name: MQTT snapshot topic
+      selector:
+        text:
+    default_llm_model_helper:
+      name: Default LLM model helper (input_select, optional)
+      selector:
+        entity:
+          filter:
+            - domain: input_select
+    default_llm_model:
+      name: Default LLM model text fallback
+      default: ""
+      selector:
+        text:
+    openweathermap_api_key_helper:
+      name: OpenWeatherMap API key helper (input_text)
+      selector:
+        entity:
+          filter:
+            - domain: input_text
+    ha_api_token_helper:
+      name: HA Recorder API token helper (input_text)
+      selector:
+        entity:
+          filter:
+            - domain: input_text
+    llm_api_key_helper:
+      name: LLM API key helper (input_text)
+      selector:
+        entity:
+          filter:
+            - domain: input_text
+    llm_api_url:
+      name: LLM chat completions URL
+      selector:
+        text:
+    ha_api_base_url:
+      name: Home Assistant API base URL
+      selector:
+        text:
+    irrigation_start_service:
+      name: Irrigation start service
+      description: domain.service (e.g. bhyve.start_watering)
+      selector:
+        text:
+    irrigation_stop_service:
+      name: Irrigation stop service
+      selector:
+        text:
+    max_zone_index:
+      name: Max zone index
+      default: 16
+      selector:
+        number:
+          min: 1
+          max: 64
+          step: 1
+          mode: box
 
 mode: single
 variables:
@@ -285,3 +347,19 @@ actions:
       precipitation_sensor: !input precipitation_sensor
       soil_moisture_legend: !input soil_moisture_legend
       model_override: !input model_override
+      in_progress_boolean: !input in_progress_boolean
+      next_index_number: !input next_index_number
+      active_run_id_text: !input active_run_id_text
+      simulate_report_text: !input simulate_report_text
+      run_config_snapshot_sensor: !input run_config_snapshot_sensor
+      mqtt_snapshot_topic: !input mqtt_snapshot_topic
+      default_llm_model_helper: !input default_llm_model_helper
+      default_llm_model: !input default_llm_model
+      openweathermap_api_key_helper: !input openweathermap_api_key_helper
+      ha_api_token_helper: !input ha_api_token_helper
+      llm_api_key_helper: !input llm_api_key_helper
+      llm_api_url: !input llm_api_url
+      ha_api_base_url: !input ha_api_base_url
+      irrigation_start_service: !input irrigation_start_service
+      irrigation_stop_service: !input irrigation_stop_service
+      max_zone_index: !input max_zone_index
