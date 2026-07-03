@@ -68,6 +68,7 @@ $dirs = @(
     @{ Src = 'scripts'; Note = 'Script fragments (!include from scripts.yaml)' },
     @{ Src = 'dashboards'; Note = 'Lovelace dashboard YAML' },
     @{ Src = 'packages'; Note = 'Packages (!include_dir_named packages)' },
+    @{ Src = 'includes'; Note = 'Shared YAML fragments (!include from packages/automations)' },
     @{ Src = 'www'; Note = 'Static files (config www -> /local/)' },
     @{ Src = 'blueprints'; Note = 'Blueprints (optional)' }
 )

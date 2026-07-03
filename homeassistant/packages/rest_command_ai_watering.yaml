@@ -15,23 +15,23 @@ input_text:
 rest_command:
   openweathermap_5day_forecast:
     url: >-
-      https://api.openweathermap.org/data/2.5/forecast?lat=41.0137572&lon=-73.8082339&units=imperial&appid={{ api_key }}
+      https://api.openweathermap.org/data/2.5/forecast?lat={{ latitude }}&lon={{ longitude }}&units=imperial&appid={{ api_key }}
     method: GET
     verify_ssl: true
     timeout: 30
 
-  # Past ~24h hourly precipitation at home coordinates (grid); use forecast_hours=0 so hourly length matches past_hours.
+  # Past ~24h hourly precipitation at grid coordinates; forecast_hours=0 so hourly length matches past_hours.
   open_meteo_precipitation_past_24h:
     url: >-
-      https://api.open-meteo.com/v1/forecast?latitude=41.0137572&longitude=-73.8082339&hourly=precipitation&past_hours=24&forecast_hours=0&timezone=America%2FNew_York
+      https://api.open-meteo.com/v1/forecast?latitude={{ latitude }}&longitude={{ longitude }}&hourly=precipitation&past_hours=24&forecast_hours=0&timezone={{ timezone | urlencode }}
     method: GET
     verify_ssl: true
     timeout: 30
 
-  # Same HA instance: Recorder history for soil + indoor sensors (Authorization header is templated).
+  # Recorder history for garden/soil sensors (entity list passed per run from blueprint).
   homeassistant_history_garden_24h:
     url: >-
-      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(hours=24)).isoformat() }}?minimal_response=true&filter_entity_id=sensor.garden_controller_soil_moisture_1,sensor.garden_controller_soil_moisture_2,sensor.garden_controller_soil_moisture_3,sensor.garden_controller_soil_moisture_4,sensor.garden_controller_soil_moisture_6,sensor.garden_controller_indoor_temperature,sensor.garden_controller_indoor_humidity,sensor.garden_controller_indoor_dewpoint,sensor.garden_controller_absolute_pressure
+      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(hours=24)).isoformat() }}?minimal_response=true&filter_entity_id={{ history_entity_ids }}
     method: GET
     headers:
       Authorization: "{% set t = states('input_text.ai_watering_ha_api_token') | default('', true) | trim %}{% if t not in ['unknown', 'unavailable', 'none', ''] %}Bearer {{ t }}{% endif %}"
@@ -39,10 +39,10 @@ rest_command:
     verify_ssl: false
     timeout: 45
 
-  # Last watering cycles: valve open→closed pairs from Recorder (same auth).
+  # Valve open→closed pairs from Recorder (valve list built from blueprint zones each run).
   homeassistant_history_irrigation_valves:
     url: >-
-      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(days=30)).isoformat() }}?minimal_response=true&filter_entity_id=valve.east_lawn_timer_east_lawn_zone_zone,valve.east_lawn_timer_flower_bed_zone_zone,valve.front_yard_controller_front_yard_zone,valve.flower_garden_back_lawn_time_slope_kitchen_left_zone,valve.vegitable_garden_timer_peppers_kale_zone_zone,valve.vegitable_garden_timer_tomato_zone_zone,valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone,valve.flower_garden_back_lawn_time_back_lawn_zone_zone,valve.flower_garden_back_lawn_time_zone_4_zone
+      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(days=30)).isoformat() }}?minimal_response=true&filter_entity_id={{ valve_entity_ids }}
     method: GET
     headers:
       Authorization: "{% set t = states('input_text.ai_watering_ha_api_token') | default('', true) | trim %}{% if t not in ['unknown', 'unavailable', 'none', ''] %}Bearer {{ t }}{% endif %}"

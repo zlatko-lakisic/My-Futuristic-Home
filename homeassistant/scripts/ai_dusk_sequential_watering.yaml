@@ -1,6 +1,8 @@
 ai_dusk_sequential_watering:
   alias: AI Dusk Sequential Watering (Legacy Wrapper)
-  description: Backward-compatible wrapper. Use script.ai_sequential_watering.
+  description: >-
+    Backward-compatible simulate wrapper. Uses the last live run config snapshot
+    (sensor.ai_watering_active_run_config). Prefer the Smart sequential watering automation.
   fields:
     simulate:
       name: Simulate only
@@ -13,3 +15,14 @@ ai_dusk_sequential_watering:
   - action: script.ai_sequential_watering
     data:
       simulate: "{{ simulate | default(false) | bool }}"
+      zones: "{{ state_attr('sensor.ai_watering_active_run_config', 'zones') }}"
+      latitude: "{{ state_attr('sensor.ai_watering_active_run_config', 'latitude') }}"
+      longitude: "{{ state_attr('sensor.ai_watering_active_run_config', 'longitude') }}"
+      timezone: "{{ state_attr('sensor.ai_watering_active_run_config', 'timezone') }}"
+      garden_temperature_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'garden_temperature_sensor') }}"
+      garden_dewpoint_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'garden_dewpoint_sensor') }}"
+      history_sensors: "{{ state_attr('sensor.ai_watering_active_run_config', 'history_sensors') }}"
+      weather_entity: "{{ state_attr('sensor.ai_watering_active_run_config', 'weather_entity') }}"
+      precipitation_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'precipitation_sensor') }}"
+      soil_moisture_legend: "{{ state_attr('sensor.ai_watering_active_run_config', 'soil_moisture_legend') }}"
+      model_override: "{{ state_attr('sensor.ai_watering_active_run_config', 'model_override') }}"

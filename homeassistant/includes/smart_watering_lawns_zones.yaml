@@ -1,0 +1,21 @@
+# East Lawn + Kitchen Lawn only (from smart_watering_zones.yaml).
+- label: East Lawn
+  entity_id: valve.east_lawn_timer_east_lawn_zone_zone
+  bhyve_zone_history_sensor: sensor.adna_s_flowers_zone_history
+  area_sqm: 60
+  sun_exposure: 35 percent shade / partial sun, 65 percent sun
+  plant_profile: Tall fescue lawn grass
+  irrigation_hardware: Two Orbit H2O-Six style gear-drive sprinklers, spaced apart, each about 180 degree arc
+  estimated_flow_gpm: 3.0-6.0 combined
+  notes: Adjustable 25-360 degree arc, typical operating pressure 15-65 psi
+  soil_sensor: ''
+- label: Kitchen Lawn
+  entity_id: valve.flower_garden_back_lawn_time_back_lawn_zone_zone
+  bhyve_zone_history_sensor: sensor.flower_garden_back_lawn_time_back_lawn_zone_zone_history
+  area_sqm: 36
+  sun_exposure: Full sun
+  plant_profile: Two lawn sections, mostly grass with a few lilies between
+  irrigation_hardware: Two sprinklers connected in sequence (Amazon B0C6FLH75D, Melnor MiniMax style oscillating sprinklers)
+  estimated_flow_gpm: 2.5-4.5 combined
+  notes: Two lawns about 18m squared each; in-series setup tends to give more flow at first head and reduced pressure/flow at second head
+  soil_sensor: ''

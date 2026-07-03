@@ -1,0 +1,94 @@
+# Seed data for the smart_sequential_watering blueprint automation instance (automations/03_bhyve_ai_dusk_watering.yaml).
+# Not used by script.ai_sequential_watering — zones are configured only in the blueprint UI / automation input.
+# After editing zones in Home Assistant, Pull sync updates this file if you manage config via Git.
+- label: East Lawn
+  entity_id: valve.east_lawn_timer_east_lawn_zone_zone
+  bhyve_zone_history_sensor: sensor.adna_s_flowers_zone_history
+  area_sqm: 60
+  sun_exposure: 35 percent shade / partial sun, 65 percent sun
+  plant_profile: Tall fescue lawn grass
+  irrigation_hardware: Two Orbit H2O-Six style gear-drive sprinklers, spaced apart, each about 180 degree arc
+  estimated_flow_gpm: 3.0-6.0 combined
+  notes: Adjustable 25-360 degree arc, typical operating pressure 15-65 psi
+  soil_sensor: ''
+- label: Flower Bed
+  entity_id: valve.east_lawn_timer_flower_bed_zone_zone
+  bhyve_zone_history_sensor: sensor.adna_s_roses_zone_history
+  area_sqm: 6
+  sun_exposure: Partial sun morning, near full sun evening
+  plant_profile: 13 hosta plants and mint in mulched bed
+  irrigation_hardware: Drip hose about 5 meters long in a U pattern around the bed
+  estimated_flow_gpm: 0.15-0.30
+  notes: Flow estimate based on typical dripline emitter rates around 0.6-1.0 GPH at roughly 12 inch spacing over 5 meters
+  soil_sensor: sensor.garden_controller_soil_moisture_2
+- label: Front Lawn
+  entity_id: valve.front_yard_controller_front_yard_zone
+  bhyve_zone_history_sensor: sensor.front_yard_zone_history
+  area_sqm: 36
+  sun_exposure: Predominantly shady, with sun in the morning through after midday
+  plant_profile: Tall fescue grass
+  irrigation_hardware: One Orbit H2O-Six style gear-drive sprinkler at about 90 degree pattern
+  estimated_flow_gpm: 1.0-2.0
+  notes: Same Orbit H2O-Six type as East Lawn, single head with narrower 90 degree arc
+  soil_sensor: ''
+- label: Slope Kitchen Left
+  entity_id: valve.flower_garden_back_lawn_time_slope_kitchen_left_zone
+  bhyve_zone_history_sensor: sensor.garden_zone_history
+  area_sqm: 9
+  sun_exposure: Full sun throughout the day
+  plant_profile: Mixed ornamental flowers and spring bulbs on a mulched slope
+  irrigation_hardware: Micro-irrigation similar to the zucchini zone (spray stakes / low-flow emitters); tune after observing coverage on the slope
+  estimated_flow_gpm: 1.2-2.0
+  notes: Mulched slope—water can move downhill; prefer avoiding runoff (consider shorter cycles if needed). Area roughly ~9 m² square-ish footprint.
+  soil_sensor: ''
+- label: Peppers and Kale
+  entity_id: valve.vegitable_garden_timer_peppers_kale_zone_zone
+  bhyve_zone_history_sensor: sensor.east_side_lawn_zone_history
+  area_sqm: 6.1
+  sun_exposure: Full sun throughout the day
+  plant_profile: Basil, parsley, kale, and peppers
+  irrigation_hardware: Long soaker hose, about 30 feet
+  estimated_flow_gpm: 0.25-0.50
+  notes: Zone dimensions are about 22ft x 3ft, black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
+  soil_sensor: sensor.garden_controller_soil_moisture_3
+- label: Tomato
+  entity_id: valve.vegitable_garden_timer_tomato_zone_zone
+  bhyve_zone_history_sensor: sensor.unknown_zone_history_3
+  area_sqm: 6.1
+  sun_exposure: Full sun throughout the day
+  plant_profile: 8 tomato plants
+  irrigation_hardware: Long soaker hose, about 30 feet
+  estimated_flow_gpm: 0.25-0.50
+  notes: Same setup style as Peppers and Kale zone; black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
+  soil_sensor: sensor.garden_controller_soil_moisture_4
+- label: Zucchini
+  entity_id: valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone
+  bhyve_zone_history_sensor: sensor.unknown_zone_history_5
+  area_sqm: null
+  sun_exposure: Full sun throughout the day
+  plant_profile: 8 zucchini plants, 8 pea plants, and 8 eggplant plants
+  irrigation_hardware: Amazon B0F174M21Y watering setup with 12 spray stake nozzles and 4 misters (for peas)
+  estimated_flow_gpm: 1.2-2.0
+  notes: Approximate combined flow estimated from common micro-irrigation ranges (spray stakes plus low-flow misters); tune after observing pressure and runoff
+  soil_sensor: sensor.garden_controller_soil_moisture_6
+  soil_sensor_secondary: sensor.garden_controller_soil_moisture_1
+- label: Kitchen Lawn
+  entity_id: valve.flower_garden_back_lawn_time_back_lawn_zone_zone
+  bhyve_zone_history_sensor: sensor.flower_garden_back_lawn_time_back_lawn_zone_zone_history
+  area_sqm: 36
+  sun_exposure: Full sun
+  plant_profile: Two lawn sections, mostly grass with a few lilies between
+  irrigation_hardware: Two sprinklers connected in sequence (Amazon B0C6FLH75D, Melnor MiniMax style oscillating sprinklers)
+  estimated_flow_gpm: 2.5-4.5 combined
+  notes: Two lawns about 18m squared each; in-series setup tends to give more flow at first head and reduced pressure/flow at second head
+  soil_sensor: ''
+- label: Corn
+  entity_id: valve.flower_garden_back_lawn_time_zone_4_zone
+  bhyve_zone_history_sensor: sensor.flower_garden_back_lawn_time_zone_4_zone_history
+  area_sqm: 6.1
+  sun_exposure: Full sun throughout the day
+  plant_profile: 24 corn plants
+  irrigation_hardware: Soaker hose in bed, same style as Flower Bed dripline/soaker layout
+  estimated_flow_gpm: 0.25-0.50
+  notes: Roughly same footprint as Tomato zone (~22ft x 3ft); black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
+  soil_sensor: ''
