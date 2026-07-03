@@ -1,8 +1,8 @@
 - id: ai_sequential_watering
   alias: AI Sequential Watering at Dusk
   description: >-
-    Blueprint smart_sequential_watering — dusk trigger. Zones and runtime sensors/location are
-    configured in the blueprint (repeatable zone blocks + sensor inputs). Seeds from includes/.
+    HACS Agentic Watering blueprint (zlatko-lakisic/smart_sequential_watering) — dusk trigger.
+    Zones and runtime sensors/location are configured in blueprint inputs (includes/).
   use_blueprint:
     path: zlatko-lakisic/smart_sequential_watering.yaml
     input: !include ../includes/smart_watering_blueprint_input.yaml
