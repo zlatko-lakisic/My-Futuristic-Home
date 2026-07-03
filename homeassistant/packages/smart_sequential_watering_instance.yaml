@@ -1,0 +1,150 @@
+# Site-specific helpers, MQTT snapshot sensor, and resume automation for smart sequential watering.
+# Generic script/blueprint live in smart_sequential_watering_script.yaml and smart_sequential_watering.yaml.
+
+input_boolean:
+  ai_dusk_watering_in_progress:
+    name: AI Dusk Watering In Progress
+    icon: mdi:sprinkler-variant
+
+input_number:
+  ai_dusk_watering_next_index:
+    name: AI Dusk Watering Next Zone Index
+    min: 1
+    max: 16
+    step: 1
+    mode: box
+    icon: mdi:format-list-numbered
+
+input_text:
+  ai_dusk_watering_active_run_id:
+    name: AI Dusk Watering Active Run Id
+    max: 32
+    mode: text
+    icon: mdi:identifier
+
+  ai_watering_simulate_report:
+    name: AI Watering simulate — per-zone LLM lines
+    max: 255
+    mode: text
+
+  ai_watering_openweathermap_api_key:
+    name: AI watering OpenWeatherMap API key
+    mode: password
+    max: 255
+
+  ai_watering_ha_api_token:
+    name: AI watering Recorder API token
+    mode: password
+    max: 255
+
+  ai_watering_llm_api_key:
+    name: AI watering LLM API key
+    mode: password
+    max: 255
+
+input_select:
+  ai_dusk_watering_ollama_model:
+    name: AI Dusk Watering — Ollama model
+    icon: mdi:server-network
+    options:
+      - qwen2.5:14b-instruct
+      - gemma4:26b
+      - llama3.2:latest
+      - moondream:latest
+    initial: qwen2.5:14b-instruct
+
+mqtt:
+  sensor:
+    - name: AI Watering Active Run Config
+      unique_id: ai_watering_active_run_config
+      state_topic: homeassistant/ai_watering/active_run_config
+      value_template: >-
+        {% set j = value_json if value_json is mapping else {} %}
+        {{ (j.get('zones', []) if j is mapping else []) | length }}
+      json_attributes_topic: homeassistant/ai_watering/active_run_config
+
+automation:
+  - id: ai_sequential_watering_resume_after_restart
+    alias: AI Sequential Watering Resume After Restart
+    description: >-
+      Resume remaining zones when in_progress was set during an interrupted run.
+      Runtime parameters are read from the MQTT snapshot sensor attributes.
+    mode: single
+    triggers:
+      - trigger: homeassistant
+        event: start
+    conditions:
+      - condition: state
+        entity_id: input_boolean.ai_dusk_watering_in_progress
+        state: "on"
+    actions:
+      - delay:
+          seconds: 25
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: >-
+              {% set rid = states('input_text.ai_dusk_watering_active_run_id') | default('', true) | trim %}
+              {% set ts = rid | int(0) %}
+              {{ rid not in ['', 'unknown', 'unavailable', 'none'] and ts > 0
+                 and (now().timestamp() | int) - ts < 172800 }}
+          sequence:
+            - action: persistent_notification.create
+              data:
+                title: AI sequential watering resume
+                message: >-
+                  Home Assistant restarted during an active run. Resuming at zone index {{
+                  states('input_number.ai_dusk_watering_next_index') | int(1) }}.
+            - action: script.ai_sequential_watering
+              data:
+                start_index: "{{ states('input_number.ai_dusk_watering_next_index') | int(1) }}"
+                zones: "{{ state_attr('sensor.ai_watering_active_run_config', 'zones') }}"
+                latitude: "{{ state_attr('sensor.ai_watering_active_run_config', 'latitude') }}"
+                longitude: "{{ state_attr('sensor.ai_watering_active_run_config', 'longitude') }}"
+                timezone: "{{ state_attr('sensor.ai_watering_active_run_config', 'timezone') }}"
+                garden_temperature_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'garden_temperature_sensor') }}"
+                garden_dewpoint_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'garden_dewpoint_sensor') }}"
+                history_sensors: "{{ state_attr('sensor.ai_watering_active_run_config', 'history_sensors') }}"
+                weather_entity: "{{ state_attr('sensor.ai_watering_active_run_config', 'weather_entity') }}"
+                precipitation_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'precipitation_sensor') }}"
+                soil_moisture_legend: "{{ state_attr('sensor.ai_watering_active_run_config', 'soil_moisture_legend') }}"
+                model_override: "{{ state_attr('sensor.ai_watering_active_run_config', 'model_override') }}"
+                in_progress_boolean: "{{ state_attr('sensor.ai_watering_active_run_config', 'in_progress_boolean') }}"
+                next_index_number: "{{ state_attr('sensor.ai_watering_active_run_config', 'next_index_number') }}"
+                active_run_id_text: "{{ state_attr('sensor.ai_watering_active_run_config', 'active_run_id_text') }}"
+                simulate_report_text: "{{ state_attr('sensor.ai_watering_active_run_config', 'simulate_report_text') }}"
+                run_config_snapshot_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'run_config_snapshot_sensor') }}"
+                mqtt_snapshot_topic: "{{ state_attr('sensor.ai_watering_active_run_config', 'mqtt_snapshot_topic') }}"
+                default_llm_model_helper: "{{ state_attr('sensor.ai_watering_active_run_config', 'default_llm_model_helper') }}"
+                default_llm_model: "{{ state_attr('sensor.ai_watering_active_run_config', 'default_llm_model') }}"
+                openweathermap_api_key_helper: "{{ state_attr('sensor.ai_watering_active_run_config', 'openweathermap_api_key_helper') }}"
+                ha_api_token_helper: "{{ state_attr('sensor.ai_watering_active_run_config', 'ha_api_token_helper') }}"
+                llm_api_key_helper: "{{ state_attr('sensor.ai_watering_active_run_config', 'llm_api_key_helper') }}"
+                llm_api_url: "{{ state_attr('sensor.ai_watering_active_run_config', 'llm_api_url') }}"
+                ha_api_base_url: "{{ state_attr('sensor.ai_watering_active_run_config', 'ha_api_base_url') }}"
+                irrigation_start_service: "{{ state_attr('sensor.ai_watering_active_run_config', 'irrigation_start_service') }}"
+                irrigation_stop_service: "{{ state_attr('sensor.ai_watering_active_run_config', 'irrigation_stop_service') }}"
+                max_zone_index: "{{ state_attr('sensor.ai_watering_active_run_config', 'max_zone_index') }}"
+        default:
+          - action: input_boolean.turn_off
+            data:
+              entity_id: input_boolean.ai_dusk_watering_in_progress
+          - action: input_number.set_value
+            data:
+              entity_id: input_number.ai_dusk_watering_next_index
+              value: 1
+          - action: input_text.set_value
+            data:
+              entity_id: input_text.ai_dusk_watering_active_run_id
+              value: ""
+          - action: mqtt.publish
+            data:
+              topic: homeassistant/ai_watering/active_run_config
+              payload: "{}"
+              retain: true
+          - action: persistent_notification.create
+            data:
+              title: AI sequential watering — resume skipped
+              message: >-
+                in_progress was on after restart but there was no valid active run id (empty, stale, or older than 48h).
+                Cleared in_progress and next index.

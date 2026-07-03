@@ -1,8 +1,8 @@
 ai_dusk_sequential_watering:
   alias: AI Dusk Sequential Watering (Legacy Wrapper)
   description: >-
-    Backward-compatible simulate wrapper. Uses the last live run config snapshot
-    (sensor.ai_watering_active_run_config). Prefer the Smart sequential watering automation.
+    Backward-compatible simulate wrapper. Replays the last live run from the MQTT snapshot sensor.
+    Prefer the Smart sequential watering blueprint automation.
   fields:
     simulate:
       name: Simulate only
@@ -26,3 +26,19 @@ ai_dusk_sequential_watering:
       precipitation_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'precipitation_sensor') }}"
       soil_moisture_legend: "{{ state_attr('sensor.ai_watering_active_run_config', 'soil_moisture_legend') }}"
       model_override: "{{ state_attr('sensor.ai_watering_active_run_config', 'model_override') }}"
+      in_progress_boolean: "{{ state_attr('sensor.ai_watering_active_run_config', 'in_progress_boolean') }}"
+      next_index_number: "{{ state_attr('sensor.ai_watering_active_run_config', 'next_index_number') }}"
+      active_run_id_text: "{{ state_attr('sensor.ai_watering_active_run_config', 'active_run_id_text') }}"
+      simulate_report_text: "{{ state_attr('sensor.ai_watering_active_run_config', 'simulate_report_text') }}"
+      run_config_snapshot_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'run_config_snapshot_sensor') }}"
+      mqtt_snapshot_topic: "{{ state_attr('sensor.ai_watering_active_run_config', 'mqtt_snapshot_topic') }}"
+      default_llm_model_helper: "{{ state_attr('sensor.ai_watering_active_run_config', 'default_llm_model_helper') }}"
+      default_llm_model: "{{ state_attr('sensor.ai_watering_active_run_config', 'default_llm_model') }}"
+      openweathermap_api_key_helper: "{{ state_attr('sensor.ai_watering_active_run_config', 'openweathermap_api_key_helper') }}"
+      ha_api_token_helper: "{{ state_attr('sensor.ai_watering_active_run_config', 'ha_api_token_helper') }}"
+      llm_api_key_helper: "{{ state_attr('sensor.ai_watering_active_run_config', 'llm_api_key_helper') }}"
+      llm_api_url: "{{ state_attr('sensor.ai_watering_active_run_config', 'llm_api_url') }}"
+      ha_api_base_url: "{{ state_attr('sensor.ai_watering_active_run_config', 'ha_api_base_url') }}"
+      irrigation_start_service: "{{ state_attr('sensor.ai_watering_active_run_config', 'irrigation_start_service') }}"
+      irrigation_stop_service: "{{ state_attr('sensor.ai_watering_active_run_config', 'irrigation_stop_service') }}"
+      max_zone_index: "{{ state_attr('sensor.ai_watering_active_run_config', 'max_zone_index') }}"

@@ -1,149 +1,206 @@
-input_boolean:
-  ai_dusk_watering_in_progress:
-    name: AI Dusk Watering In Progress
-    icon: mdi:sprinkler-variant
-
-input_number:
-  ai_dusk_watering_next_index:
-    name: AI Dusk Watering Next Zone Index
-    min: 1
-    max: 16
-    step: 1
-    mode: box
-    icon: mdi:format-list-numbered
-
-input_text:
-  ai_dusk_watering_active_run_id:
-    name: AI Dusk Watering Active Run Id
-    max: 32
-    mode: text
-    icon: mdi:identifier
-
-  ai_watering_simulate_report:
-    name: AI Watering simulate — per-zone LLM lines
-    # Home Assistant enforces <=255 for the UI/config schema.
-    max: 255
-    mode: text
-
-# Exact tags must exist locally (`ollama list`). Add options here after pulling new models.
-input_select:
-  ai_dusk_watering_ollama_model:
-    name: AI Dusk Watering — Ollama model
-    icon: mdi:server-network
-    options:
-      - qwen2.5:14b-instruct
-      - gemma4:26b
-      - llama3.2:latest
-      - moondream:latest
-    initial: qwen2.5:14b-instruct
-
-mqtt:
-  sensor:
-    - name: AI Watering Active Run Config
-      unique_id: ai_watering_active_run_config
-      state_topic: homeassistant/ai_watering/active_run_config
-      value_template: >-
-        {% set j = value_json if value_json is mapping else {} %}
-        {{ (j.get('zones', []) if j is mapping else []) | length }}
-      json_attributes_topic: homeassistant/ai_watering/active_run_config
-
-automation:
-  - id: ai_dusk_watering_resume_after_restart
-    alias: AI Dusk Watering Resume After Restart
-    description: >-
-      Resume remaining zones only if a real AI dusk run was interrupted (active run id set).
-      If you stopped watering in the B-hyve app and HA still had in_progress on, or the run is older than 48h, flags are cleared and watering is not restarted.
-    mode: single
-    triggers:
-      - trigger: homeassistant
-        event: start
-    conditions:
-      - condition: state
-        entity_id: input_boolean.ai_dusk_watering_in_progress
-        state: "on"
-    actions:
-      - delay:
-          seconds: 25
-      - choose:
-        - conditions:
-          - condition: template
-            value_template: >-
-              {% set rid = states('input_text.ai_dusk_watering_active_run_id') | default('', true) | trim %}
-              {% set ts = rid | int(0) %}
-              {{ rid not in ['', 'unknown', 'unavailable', 'none'] and ts > 0
-                 and (now().timestamp() | int) - ts < 172800 }}
-          sequence:
-            - action: persistent_notification.create
-              data:
-                title: AI dusk watering resume
-                message: >-
-                  Home Assistant restarted during an active AI dusk run. Resuming at zone index {{
-                  states('input_number.ai_dusk_watering_next_index') | int(1) }}.
-            - action: script.ai_sequential_watering
-              data:
-                start_index: "{{ states('input_number.ai_dusk_watering_next_index') | int(1) }}"
-                zones: "{{ state_attr('sensor.ai_watering_active_run_config', 'zones') }}"
-                latitude: "{{ state_attr('sensor.ai_watering_active_run_config', 'latitude') }}"
-                longitude: "{{ state_attr('sensor.ai_watering_active_run_config', 'longitude') }}"
-                timezone: "{{ state_attr('sensor.ai_watering_active_run_config', 'timezone') }}"
-                garden_temperature_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'garden_temperature_sensor') }}"
-                garden_dewpoint_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'garden_dewpoint_sensor') }}"
-                history_sensors: "{{ state_attr('sensor.ai_watering_active_run_config', 'history_sensors') }}"
-                weather_entity: "{{ state_attr('sensor.ai_watering_active_run_config', 'weather_entity') }}"
-                precipitation_sensor: "{{ state_attr('sensor.ai_watering_active_run_config', 'precipitation_sensor') }}"
-                soil_moisture_legend: "{{ state_attr('sensor.ai_watering_active_run_config', 'soil_moisture_legend') }}"
-                model_override: "{{ state_attr('sensor.ai_watering_active_run_config', 'model_override') }}"
-        default:
-          - action: input_boolean.turn_off
-            data:
-              entity_id: input_boolean.ai_dusk_watering_in_progress
-          - action: input_number.set_value
-            data:
-              entity_id: input_number.ai_dusk_watering_next_index
-              value: 1
-          - action: input_text.set_value
-            data:
-              entity_id: input_text.ai_dusk_watering_active_run_id
-              value: ""
-          - action: mqtt.publish
-            data:
-              topic: homeassistant/ai_watering/active_run_config
-              payload: "{}"
-              retain: true
-          - action: persistent_notification.create
-            data:
-              title: AI dusk watering — resume skipped
-              message: >-
-                in_progress was on after restart but there was no valid active run id (empty, stale, or older than 48h).
-                Cleared in_progress and next index. This avoids restarting after a finished or manually stopped run.
-
 script:
   ai_sequential_watering:
     alias: AI Sequential Watering
     description: >-
-      Fetch weather/history, call Ollama once per zone for minutes, then run BHyve valves sequentially.
-      All zone and sensor configuration is passed from the smart_sequential_watering blueprint.
-      Use simulate=true to skip only valve start/stop (pipeline unchanged).
+      Generic sequential AI irrigation pipeline: weather APIs, Recorder history, LLM per zone,
+      then irrigation start/stop services. All zones, sensors, helpers, and API endpoints are
+      passed as script fields (typically from the smart_sequential_watering blueprint).
     fields:
+      zones:
+        name: Irrigation zones
+        required: true
+        selector:
+          object:
+            multiple: true
+      latitude:
+        name: Latitude
+        required: true
+        selector:
+          number:
+            min: -90
+            max: 90
+            step: any
+            mode: box
+      longitude:
+        name: Longitude
+        required: true
+        selector:
+          number:
+            min: -180
+            max: 180
+            step: any
+            mode: box
+      timezone:
+        name: Timezone
+        required: true
+        selector:
+          text:
+      garden_temperature_sensor:
+        name: Garden temperature sensor
+        required: true
+        selector:
+          entity:
+            filter:
+              - domain: sensor
+      garden_dewpoint_sensor:
+        name: Garden dew point sensor
+        required: false
+        selector:
+          entity:
+            filter:
+              - domain: sensor
+      history_sensors:
+        name: History sensors (24h)
+        required: true
+        selector:
+          entity:
+            multiple: true
+            filter:
+              - domain: sensor
+      weather_entity:
+        name: Weather entity
+        required: false
+        selector:
+          entity:
+            filter:
+              - domain: weather
+      precipitation_sensor:
+        name: Precipitation sensor
+        required: false
+        selector:
+          entity:
+            filter:
+              - domain: sensor
+      soil_moisture_legend:
+        name: Soil moisture legend
+        required: false
+        selector:
+          text:
+            multiline: true
+      model_override:
+        name: LLM model override
+        required: false
+        default: ""
+        selector:
+          text:
+      in_progress_boolean:
+        name: In-progress helper
+        required: true
+        selector:
+          entity:
+            filter:
+              - domain: input_boolean
+      next_index_number:
+        name: Next zone index helper
+        required: true
+        selector:
+          entity:
+            filter:
+              - domain: input_number
+      active_run_id_text:
+        name: Active run id helper
+        required: true
+        selector:
+          entity:
+            filter:
+              - domain: input_text
+      simulate_report_text:
+        name: Simulate report helper
+        required: false
+        selector:
+          entity:
+            filter:
+              - domain: input_text
+      run_config_snapshot_sensor:
+        name: Run config snapshot sensor
+        required: true
+        selector:
+          entity:
+            filter:
+              - domain: sensor
+      mqtt_snapshot_topic:
+        name: MQTT snapshot topic
+        required: true
+        selector:
+          text:
+      default_llm_model_helper:
+        name: Default LLM model helper
+        required: false
+        selector:
+          entity:
+            filter:
+              - domain: input_select
+      default_llm_model:
+        name: Default LLM model (fallback text)
+        required: false
+        default: ""
+        selector:
+          text:
+      openweathermap_api_key_helper:
+        name: OpenWeatherMap API key helper
+        required: true
+        selector:
+          entity:
+            filter:
+              - domain: input_text
+      ha_api_token_helper:
+        name: HA Recorder API token helper
+        required: true
+        selector:
+          entity:
+            filter:
+              - domain: input_text
+      llm_api_key_helper:
+        name: LLM API key helper
+        required: true
+        selector:
+          entity:
+            filter:
+              - domain: input_text
+      llm_api_url:
+        name: LLM chat completions URL
+        required: true
+        selector:
+          text:
+      ha_api_base_url:
+        name: HA API base URL
+        required: true
+        selector:
+          text:
+      irrigation_start_service:
+        name: Irrigation start service
+        description: domain.service (e.g. bhyve.start_watering)
+        required: true
+        selector:
+          text:
+      irrigation_stop_service:
+        name: Irrigation stop service
+        required: true
+        selector:
+          text:
+      max_zone_index:
+        name: Max zone index
+        required: false
+        default: 16
+        selector:
+          number:
+            min: 1
+            max: 64
+            mode: box
       simulate:
         name: Simulate (skip valve watering only)
-        description: >-
-          When on: same pipeline as a live run (weather, history calls, per-zone LLM)—only
-          bhyve.start_watering / stop_watering and valve delays are skipped. Helpers like
-          in_progress / resume index are not touched during simulate.
         required: false
         default: false
         selector:
           boolean:
       start_index:
         name: Start index
-        description: 1-based zone index used for resume workflows (normally leave as 1).
         required: false
         default: 1
         selector:
           number:
             min: 1
-            max: 16
+            max: 64
             mode: box
     mode: queued
     max: 2
@@ -151,6 +208,38 @@ script:
     - variables:
         simulate_mode: '{{ simulate | default(false) | bool }}'
         start_index_raw: '{{ start_index | default(1) | int(1) }}'
+    - variables:
+        cfg_in_progress: "{{ in_progress_boolean | default('', true) | trim }}"
+        cfg_next_index: "{{ next_index_number | default('', true) | trim }}"
+        cfg_active_run_id: "{{ active_run_id_text | default('', true) | trim }}"
+        cfg_simulate_report: "{{ simulate_report_text | default('', true) | trim }}"
+        cfg_snapshot_sensor: "{{ run_config_snapshot_sensor | default('', true) | trim }}"
+        cfg_mqtt_topic: "{{ mqtt_snapshot_topic | default('', true) | trim }}"
+        cfg_llm_helper: "{{ default_llm_model_helper | default('', true) | trim }}"
+        cfg_default_llm: "{{ default_llm_model | default('', true) | trim }}"
+        cfg_owm_key_helper: "{{ openweathermap_api_key_helper | default('', true) | trim }}"
+        cfg_ha_token_helper: "{{ ha_api_token_helper | default('', true) | trim }}"
+        cfg_llm_key_helper: "{{ llm_api_key_helper | default('', true) | trim }}"
+        cfg_llm_url: "{{ llm_api_url | default('', true) | trim }}"
+        cfg_ha_api_base: "{{ (ha_api_base_url | default('http://127.0.0.1:8123', true) | trim) | regex_replace('/$', '') }}"
+        cfg_irrigation_start: "{{ irrigation_start_service | default('', true) | trim }}"
+        cfg_irrigation_stop: "{{ irrigation_stop_service | default('', true) | trim }}"
+        cfg_max_zone_index: "{{ max_zone_index | default(16) | int(16) }}"
+        cfg_owm_key: >-
+          {% set h = cfg_owm_key_helper %}
+          {% if h | length > 0 %}
+            {{ states(h) | default('', true) | trim }}
+          {% else %}
+            {{ '' }}
+          {% endif %}
+        cfg_ha_auth: >-
+          {% set h = cfg_ha_token_helper %}
+          {% set t = states(h) | default('', true) | trim if h | length > 0 else '' %}
+          {% if t not in ['', 'unknown', 'unavailable', 'none'] %}
+            Bearer {{ t }}
+          {% else %}
+            {{ '' }}
+          {% endif %}
     - variables:
         zones_configured: >-
           {% set raw = zones | default(none, true) %}
@@ -163,7 +252,7 @@ script:
               {% set ns.items = ns.items + [{
                 'label': z.label | default('', true) | trim,
                 'entity_id': z.entity_id | default('', true) | trim,
-                'bhyve_zone_history_sensor': z.bhyve_zone_history_sensor | default('', true) | trim,
+                'zone_history_sensor': (z.zone_history_sensor | default(z.bhyve_zone_history_sensor, true) | default('', true) | trim),
                 'area_sqm': z.area_sqm | default(none, true),
                 'sun_exposure': z.sun_exposure | default('', true),
                 'plant_profile': z.plant_profile | default('', true),
@@ -201,7 +290,7 @@ script:
     - variables:
         cfg_latitude: "{{ latitude | default(none, true) }}"
         cfg_longitude: "{{ longitude | default(none, true) }}"
-        cfg_timezone: "{{ timezone | default('America/New_York', true) | trim }}"
+        cfg_timezone: "{{ timezone | default('UTC', true) | trim }}"
         cfg_garden_temperature_sensor: "{{ garden_temperature_sensor | default('', true) | trim }}"
         cfg_garden_dewpoint_sensor: "{{ garden_dewpoint_sensor | default('', true) | trim }}"
         cfg_weather_entity: "{{ weather_entity | default('', true) | trim }}"
@@ -255,18 +344,27 @@ script:
           {{ cfg_latitude is none or cfg_longitude is none
              or cfg_garden_temperature_sensor | length < 1
              or history_entity_ids | trim | length < 1
-             or valve_entity_ids | trim | length < 1 }}
+             or valve_entity_ids | trim | length < 1
+             or cfg_in_progress | length < 1
+             or cfg_next_index | length < 1
+             or cfg_active_run_id | length < 1
+             or cfg_mqtt_topic | length < 1
+             or cfg_snapshot_sensor | length < 1
+             or cfg_owm_key_helper | length < 1
+             or cfg_ha_token_helper | length < 1
+             or cfg_llm_key_helper | length < 1
+             or cfg_llm_url | length < 1
+             or cfg_ha_api_base | length < 1
+             or cfg_irrigation_start | length < 1
+             or cfg_irrigation_stop | length < 1 }}
       then:
         - action: persistent_notification.create
           data:
             title: AI watering — incomplete config
             message: >-
-              Missing blueprint runtime inputs (latitude, longitude, garden temperature sensor, history
-              sensors, or zone valve entities). Configure them in the Smart sequential watering automation.
+              Missing required script inputs (location, sensors, zone valves, runtime helpers,
+              MQTT topic, API helpers/URLs, or irrigation services). Configure them in the blueprint automation.
         - stop: Incomplete watering configuration from blueprint
-    - variables:
-        _ollama_secret_fallback: !secret ollama_chat_model
-    # BHyve zone_history diagnostic sensors (Settings → Devices → BHyve → zone → History): Orbit cloud last run; used before HA Recorder valve history.
     - variables:
         zones: '{{ zones_configured }}'
         ecowitt_temp: '{{ states(cfg_garden_temperature_sensor) }}'
@@ -276,21 +374,22 @@ script:
           {% else %}
             unknown
           {% endif %}
-        # Resolved model: blueprint model_override → helper input_select → secrets.yaml
         ollama_chat_model: >-
           {% if model_override_trimmed | length > 0 %}
             {{ model_override_trimmed }}
-          {% else %}
-            {% set h = states('input_select.ai_dusk_watering_ollama_model') | default('', true) | trim %}
+          {% elif cfg_llm_helper | length > 0 %}
+            {% set h = states(cfg_llm_helper) | default('', true) | trim %}
             {% if h not in ['unknown', 'unavailable', 'none', ''] %}
               {{ h }}
             {% else %}
-              {{ _ollama_secret_fallback }}
+              {{ cfg_default_llm }}
             {% endif %}
+          {% else %}
+            {{ cfg_default_llm }}
           {% endif %}
     - service: rest_command.openweathermap_5day_forecast
       data:
-        api_key: !secret openweathermap_api_key
+        api_key: "{{ cfg_owm_key }}"
         latitude: "{{ cfg_latitude }}"
         longitude: "{{ cfg_longitude }}"
       response_variable: owm_response
@@ -302,10 +401,14 @@ script:
       response_variable: meteo_past_response
     - service: rest_command.homeassistant_history_garden_24h
       data:
+        ha_api_base_url: "{{ cfg_ha_api_base }}"
+        authorization: "{{ cfg_ha_auth }}"
         history_entity_ids: "{{ history_entity_ids }}"
       response_variable: ha_history_response
     - service: rest_command.homeassistant_history_irrigation_valves
       data:
+        ha_api_base_url: "{{ cfg_ha_api_base }}"
+        authorization: "{{ cfg_ha_auth }}"
         valve_entity_ids: "{{ valve_entity_ids }}"
       response_variable: ha_valve_history_response
     - variables:
@@ -433,7 +536,7 @@ script:
           {{
             {
               'error': 'recorder_history_http_' ~ st,
-              'hint': 'Profile → Security → Long-lived access token (JWT only). Paste into helper input_text.ai_watering_ha_api_token (Settings → Helpers → AI watering Recorder API token).'
+              'hint': 'Configure a long-lived access token in the HA API token helper passed to this script.'
             } | to_json
           }}
           {% else %}
@@ -553,7 +656,7 @@ script:
             {% set soil = states(z.soil_sensor) if z.soil_sensor else 'n/a' %}
             {% set sec_eid = z.soil_sensor_secondary | default('', true) | trim %}
             {% set soil_sec = states(sec_eid) if sec_eid else 'n/a' %}
-            {% set bh = z.bhyve_zone_history_sensor | default('', true) | trim %}
+            {% set bh = z.zone_history_sensor | default('', true) | trim %}
             {% set meta = namespace(v=none, src='none') %}
             {% if bh | length > 0 %}
               {% set st_raw = state_attr(bh, 'start_time') %}
@@ -616,7 +719,7 @@ script:
               'soil_moisture_pct': soil,
               'soil_sensor_secondary': sec_eid,
               'soil_moisture_secondary_pct': soil_sec if sec_eid else 'n/a',
-              'bhyve_zone_history_sensor': bh,
+              'zone_history_sensor': bh,
               'last_watering_source': meta.src,
               'ecowitt_temp_f': ecowitt_temp | default(none, true),
               'garden_heat_temp_f': garden_heat_temp_f | default(none, true),
@@ -635,13 +738,13 @@ script:
           {% if hs != 200 %}
             {% set parts.bits = parts.bits + [
               'Garden/soil recorder HTTP ' ~ hs
-              ~ ' — use JWT long-lived token in helper input_text.ai_watering_ha_api_token (Profile → Security).'
+              ~ ' — configure the HA API token helper passed to this script.'
             ] %}
           {% endif %}
           {% if vs != 200 %}
             {% set parts.bits = parts.bits + [
               'Valve last-watering recorder HTTP ' ~ vs
-              ~ ' — same token (optional). Primary last run times come from Orbit: check last_watering_source and bhyve_zone_history_sensor in zone_context.'
+              ~ ' — same token (optional). Primary last run times come from Orbit: check last_watering_source and zone_history_sensor in zone_context.'
             ] %}
           {% endif %}
           {{ parts.bits | join(' ') }}
@@ -802,7 +905,7 @@ script:
         sequence:
         - action: input_text.set_value
           data:
-            entity_id: input_text.ai_watering_simulate_report
+            entity_id: '{{ cfg_simulate_report }}'
             value: ""
     - choose:
       - conditions:
@@ -822,27 +925,43 @@ script:
                 'weather_entity': cfg_weather_entity,
                 'precipitation_sensor': cfg_precipitation_sensor,
                 'soil_moisture_legend': cfg_soil_moisture_legend,
-                'model_override': model_override_trimmed
+                'model_override': model_override_trimmed,
+                'in_progress_boolean': cfg_in_progress,
+                'next_index_number': cfg_next_index,
+                'active_run_id_text': cfg_active_run_id,
+                'simulate_report_text': cfg_simulate_report,
+                'run_config_snapshot_sensor': cfg_snapshot_sensor,
+                'mqtt_snapshot_topic': cfg_mqtt_topic,
+                'default_llm_model_helper': cfg_llm_helper,
+                'default_llm_model': cfg_default_llm,
+                'openweathermap_api_key_helper': cfg_owm_key_helper,
+                'ha_api_token_helper': cfg_ha_token_helper,
+                'llm_api_key_helper': cfg_llm_key_helper,
+                'llm_api_url': cfg_llm_url,
+                'ha_api_base_url': cfg_ha_api_base,
+                'irrigation_start_service': cfg_irrigation_start,
+                'irrigation_stop_service': cfg_irrigation_stop,
+                'max_zone_index': cfg_max_zone_index
               } | to_json }}
         - action: mqtt.publish
           data:
-            topic: homeassistant/ai_watering/active_run_config
+            topic: '{{ cfg_mqtt_topic }}'
             payload: "{{ run_config_json }}"
             retain: true
         - action: input_boolean.turn_on
           data:
-            entity_id: input_boolean.ai_dusk_watering_in_progress
+            entity_id: '{{ cfg_in_progress }}'
         - action: input_text.set_value
           data:
-            entity_id: input_text.ai_dusk_watering_active_run_id
+            entity_id: '{{ cfg_active_run_id }}'
             value: "{{ now().timestamp() | int }}"
         - action: input_number.set_value
           data:
-            entity_id: input_number.ai_dusk_watering_next_index
+            entity_id: '{{ cfg_next_index }}'
             value: "{{ start_index_clamped | int(1) }}"
         - action: persistent_notification.create
           data:
-            title: Dusk watering started
+            title: Sequential watering started
             message: >-
               {% if start_index_clamped | int(1) > 1 %}
               Resuming interrupted run at zone index {{ start_index_clamped }}.
@@ -1019,6 +1138,8 @@ script:
         - service: rest_command.ollama_chat_completions
           continue_on_error: true
           data:
+            llm_api_url: "{{ cfg_llm_url }}"
+            llm_api_key_helper: "{{ cfg_llm_key_helper }}"
             payload: '{{ zone_llm_payload }}'
           response_variable: zone_llm_response
         - variables:
@@ -1085,9 +1206,9 @@ script:
             sequence:
               - action: input_text.set_value
                 data:
-                  entity_id: input_text.ai_watering_simulate_report
+                  entity_id: '{{ cfg_simulate_report }}'
                   value: >-
-                    {% set prev = states('input_text.ai_watering_simulate_report') | default('', true) %}
+                    {% set prev = states(cfg_simulate_report) | default('', true) %}
                     {% set snip = zone_llm_raw | default('', true) | replace('\n', ' ') %}
                     {% set snip2 = snip[:220] %}
                     {% set lm0 = llm_minutes | int(0) %}
@@ -1112,7 +1233,7 @@ script:
                     sequence:
                       - action: input_number.set_value
                         data:
-                          entity_id: input_number.ai_dusk_watering_next_index
+                          entity_id: '{{ cfg_next_index }}'
                           value: "{{ [zone_index + 1, zone_count | int(1)] | min }}"
           default:
             - choose:
@@ -1126,7 +1247,7 @@ script:
                             {{ zone_watering_entity not in ['', none]
                                and states(zone_watering_entity) != 'unavailable' }}
                       then:
-                        - action: bhyve.start_watering
+                        - action: '{{ cfg_irrigation_start }}'
                           data:
                             entity_id: '{{ zone_watering_entity }}'
                             minutes: '{{ run_minutes | int(2) }}'
@@ -1135,24 +1256,24 @@ script:
                             minutes: '{{ run_minutes | int(2) }}'
                             seconds: 10
                             milliseconds: 0
-                        - action: bhyve.stop_watering
+                        - action: '{{ cfg_irrigation_stop }}'
                           data:
                             entity_id: '{{ zone_watering_entity }}'
                         - delay:
                             seconds: 45
                         - action: input_number.set_value
                           data:
-                            entity_id: input_number.ai_dusk_watering_next_index
+                            entity_id: '{{ cfg_next_index }}'
                             value: "{{ [zone_index + 1, zone_count | int(1)] | min }}"
                       else:
                         - action: persistent_notification.create
                           data:
-                            title: AI dusk watering — zone skipped
+                            title: AI sequential watering — zone skipped
                             message: >-
                               Skipped {{ zone_label }} ({{ zone_entity }}{% if zone_watering_entity != zone_entity %}, tried {{ zone_watering_entity }}{% endif %}); valve state was {{ states(zone_watering_entity) }} (unavailable).
                         - action: input_number.set_value
                           data:
-                            entity_id: input_number.ai_dusk_watering_next_index
+                            entity_id: '{{ cfg_next_index }}'
                             value: "{{ [zone_index + 1, zone_count | int(1)] | min }}"
     - choose:
       - conditions:
@@ -1163,32 +1284,32 @@ script:
             seconds: 25
         - action: logbook.log
           data:
-            name: AI dusk watering
+            name: AI sequential watering
             entity_id: script.ai_sequential_watering
             message: >-
-              All zones in the sequential plan finished. BHyve zone_history (Orbit) last cycle timestamps —
+              All zones in the sequential plan finished. Zone history last cycle timestamps —
               {% set ns = namespace(parts=[]) %}
               {% for z in zones %}
-                {% set bh = z.bhyve_zone_history_sensor | default('', true) | trim %}
+                {% set bh = z.zone_history_sensor | default('', true) | trim %}
                 {% if bh | length > 0 %}
                   {% set ns.parts = ns.parts + [z.label ~ ': ' ~ states(bh)] %}
                 {% endif %}
               {% endfor %}
-              {{ ns.parts | join('; ') if ns.parts | length > 0 else 'no bhyve_zone_history_sensor configured' }}.
+              {{ ns.parts | join('; ') if ns.parts | length > 0 else 'no zone_history_sensor configured' }}.
         - action: input_text.set_value
           data:
-            entity_id: input_text.ai_dusk_watering_active_run_id
+            entity_id: '{{ cfg_active_run_id }}'
             value: ""
         - action: input_boolean.turn_off
           data:
-            entity_id: input_boolean.ai_dusk_watering_in_progress
+            entity_id: '{{ cfg_in_progress }}'
         - action: input_number.set_value
           data:
-            entity_id: input_number.ai_dusk_watering_next_index
+            entity_id: '{{ cfg_next_index }}'
             value: 1
         - action: mqtt.publish
           data:
-            topic: homeassistant/ai_watering/active_run_config
+            topic: '{{ cfg_mqtt_topic }}'
             payload: "{}"
             retain: true
     - action: persistent_notification.create
@@ -1198,11 +1319,11 @@ script:
           {% if simulate_mode %}
           Ollama model: {{ ollama_chat_model }}
 
-          Baseline plan + per-zone LLM below (BHyve watering services were not called):
+          Baseline plan + per-zone LLM below (Irrigation start/stop services were not called):
           {{ simulate_summary }}
 
           Per-zone LLM integer (clamped after parsing each zone):
-          {{ states('input_text.ai_watering_simulate_report') }}
+          {{ states(cfg_simulate_report) }}
 
           AccuWeather context passed to the LLM (truncated):
           {{ (accuweather_forecast_for_llm | default('', true) | string)[:900] }}{% if (accuweather_forecast_for_llm | default('', true) | string | length) > 900 %}…{% endif %}
@@ -1214,5 +1335,5 @@ script:
 
           LLM plan: {{ llm_clean_text | default('n/a', true) }}
 
-          BHyve last-cycle times were written to the Logbook (entity: script.ai_sequential_watering) after a short delay so Orbit zone_history sensors could update.
+          Zone last-cycle times were written to the Logbook (entity: script.ai_sequential_watering) after a short delay so Orbit zone_history sensors could update.
           {% endif %}

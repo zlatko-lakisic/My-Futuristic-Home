@@ -1,17 +1,4 @@
-# REST actions used by script.ai_dusk_sequential_watering (forecast + Open-Meteo + HA history + Ollama).
-# Recorder calls need a long-lived access token: paste JWT ONLY into helper
-# input_text.ai_watering_ha_api_token (Settings → Devices & services → Helpers → AI watering Recorder API token).
-# Create token: Profile (avatar) → Security → Long-lived access tokens.
-input_text:
-  ai_watering_ha_api_token:
-    name: AI watering Recorder API token
-    mode: password
-    max: 255
-  ai_watering_llm_api_key:
-    name: AI watering LLM API key
-    mode: password
-    max: 255
-
+# Generic REST actions for script.ai_sequential_watering (URLs and auth passed per call).
 rest_command:
   openweathermap_5day_forecast:
     url: >-
@@ -20,7 +7,6 @@ rest_command:
     verify_ssl: true
     timeout: 30
 
-  # Past ~24h hourly precipitation at grid coordinates; forecast_hours=0 so hourly length matches past_hours.
   open_meteo_precipitation_past_24h:
     url: >-
       https://api.open-meteo.com/v1/forecast?latitude={{ latitude }}&longitude={{ longitude }}&hourly=precipitation&past_hours=24&forecast_hours=0&timezone={{ timezone | urlencode }}
@@ -28,38 +14,40 @@ rest_command:
     verify_ssl: true
     timeout: 30
 
-  # Recorder history for garden/soil sensors (entity list passed per run from blueprint).
   homeassistant_history_garden_24h:
     url: >-
-      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(hours=24)).isoformat() }}?minimal_response=true&filter_entity_id={{ history_entity_ids }}
+      {{ ha_api_base_url }}/api/history/period/{{ (now() - timedelta(hours=24)).isoformat() }}?minimal_response=true&filter_entity_id={{ history_entity_ids }}
     method: GET
     headers:
-      Authorization: "{% set t = states('input_text.ai_watering_ha_api_token') | default('', true) | trim %}{% if t not in ['unknown', 'unavailable', 'none', ''] %}Bearer {{ t }}{% endif %}"
+      Authorization: "{{ authorization }}"
       Content-Type: application/json
     verify_ssl: false
     timeout: 45
 
-  # Valve open→closed pairs from Recorder (valve list built from blueprint zones each run).
   homeassistant_history_irrigation_valves:
     url: >-
-      http://127.0.0.1:8123/api/history/period/{{ (now() - timedelta(days=30)).isoformat() }}?minimal_response=true&filter_entity_id={{ valve_entity_ids }}
+      {{ ha_api_base_url }}/api/history/period/{{ (now() - timedelta(days=30)).isoformat() }}?minimal_response=true&filter_entity_id={{ valve_entity_ids }}
     method: GET
     headers:
-      Authorization: "{% set t = states('input_text.ai_watering_ha_api_token') | default('', true) | trim %}{% if t not in ['unknown', 'unavailable', 'none', ''] %}Bearer {{ t }}{% endif %}"
+      Authorization: "{{ authorization }}"
       Content-Type: application/json
     verify_ssl: false
     timeout: 90
 
-  # OpenAI-compatible chat (used by script.ai_sequential_watering).
-  # This is NOT wired to LLM Vision: configuring provider 01KR1YDS2H88N44EA4MJHW0PP8 in the UI
-  # does not set this header. Paste the SAME API key into helper input_text.ai_watering_llm_api_key
-  # (Settings → Helpers → AI watering LLM API key). Raw sk-… or full "Bearer …" both work.
   ollama_chat_completions:
-    url: "https://ai-orchestrator.mostardesigns.com/v1/chat/completions"
+    url: "{{ llm_api_url }}"
     method: POST
     headers:
-      Authorization: "{% set t = states('input_text.ai_watering_llm_api_key') | default('', true) | trim %}{% if t in ['unknown', 'unavailable', 'none', ''] %}{% else %}{% set t2 = t | trim %}{% if (t2 | lower)[0:7] == 'bearer ' %}{{ t2 }}{% else %}Bearer {{ t2 }}{% endif %}{% endif %}"
+      Authorization: >-
+        {% set h = llm_api_key_helper | default('', true) | trim %}
+        {% set t = states(h) | default('', true) | trim if h | length > 0 else '' %}
+        {% if t in ['', 'unknown', 'unavailable', 'none'] %}
+        {% elif (t | lower)[0:7] == 'bearer ' %}
+        {{ t }}
+        {% else %}
+        Bearer {{ t }}
+        {% endif %}
       Content-Type: application/json
-    content_type: "application/json"
+    content_type: application/json
     timeout: 86400
     payload: "{{ payload }}"

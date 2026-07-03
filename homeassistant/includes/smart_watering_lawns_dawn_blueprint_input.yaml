@@ -1,4 +1,4 @@
-# Blueprint input for East + Kitchen lawns at dawn (June 30 – Sept 1).
+# Dawn lawns blueprint input (site-specific).
 zones: !include smart_watering_lawns_zones.yaml
 latitude: 41.0137572
 longitude: -73.8082339
@@ -29,3 +29,19 @@ season_end_month: 9
 season_end_day: 1
 watering_script: script.ai_sequential_watering
 model_override: ""
+in_progress_boolean: input_boolean.ai_dusk_watering_in_progress
+next_index_number: input_number.ai_dusk_watering_next_index
+active_run_id_text: input_text.ai_dusk_watering_active_run_id
+simulate_report_text: input_text.ai_watering_simulate_report
+run_config_snapshot_sensor: sensor.ai_watering_active_run_config
+mqtt_snapshot_topic: homeassistant/ai_watering/active_run_config
+default_llm_model_helper: input_select.ai_dusk_watering_ollama_model
+default_llm_model: qwen2.5:14b-instruct
+openweathermap_api_key_helper: input_text.ai_watering_openweathermap_api_key
+ha_api_token_helper: input_text.ai_watering_ha_api_token
+llm_api_key_helper: input_text.ai_watering_llm_api_key
+llm_api_url: https://ai-orchestrator.mostardesigns.com/v1/chat/completions
+ha_api_base_url: http://127.0.0.1:8123
+irrigation_start_service: bhyve.start_watering
+irrigation_stop_service: bhyve.stop_watering
+max_zone_index: 16
