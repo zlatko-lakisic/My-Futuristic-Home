@@ -4,5 +4,5 @@
     Blueprint smart_sequential_watering — dusk trigger. Zones and runtime sensors/location are
     configured in the blueprint (repeatable zone blocks + sensor inputs). Seeds from includes/.
   use_blueprint:
-    path: smart_sequential_watering.yaml
+    path: zlatko-lakisic/smart_sequential_watering.yaml
     input: !include ../includes/smart_watering_blueprint_input.yaml

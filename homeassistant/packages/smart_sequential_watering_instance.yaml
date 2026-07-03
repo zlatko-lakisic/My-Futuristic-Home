@@ -1,5 +1,5 @@
 # Site-specific helpers, MQTT snapshot sensor, and resume automation for smart sequential watering.
-# Generic script/blueprint live in smart_sequential_watering_script.yaml and smart_sequential_watering.yaml.
+# Generic blueprint/script ship via HACS: github.com/zlatko-lakisic/hacs-agentic-watering
 
 input_boolean:
   ai_dusk_watering_in_progress:

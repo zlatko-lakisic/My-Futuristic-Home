@@ -60,8 +60,8 @@ homeassistant:
     qbittorrent_speed_k: !include packages/qbittorrent_speed_k.yaml
     axis_frigate_gauge_sensors: !include packages/axis_frigate_gauge_sensors.yaml
     bhyve_manual_zone_resolve: !include packages/bhyve_manual_zone_resolve.yaml
-    rest_command_ai_watering: !include packages/rest_command_ai_watering.yaml
-    smart_sequential_watering_script: !include packages/smart_sequential_watering_script.yaml
+    rest_command_ai_watering: !include custom_components/agentic_watering/packages/rest_command_ai_watering.yaml
+    smart_sequential_watering_script: !include custom_components/agentic_watering/packages/smart_sequential_watering_script.yaml
     smart_sequential_watering_instance: !include packages/smart_sequential_watering_instance.yaml
     irrigation_zone_runtime_7d: !include packages/irrigation_zone_runtime_7d.yaml
     www_tmp_cleanup_shell: !include packages/www_tmp_cleanup_shell.yaml
