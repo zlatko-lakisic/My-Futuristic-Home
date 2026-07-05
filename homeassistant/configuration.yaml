@@ -89,11 +89,28 @@ template: !include templates.yaml
 climate:
   - unique_id: "7966441f-ee57-471d-a387-ab0a879859ff"
     platform: climate_template
-    name: New Livingroom Climate
+    name: Livingroom Climate Control
     modes:
       - "off"
       - "cool"
       - "heat"
+    fan_modes:
+      - silent
+      - low
+      - medium
+      - high
+      - full
+      - auto
+    swing_modes:
+      - "off"
+      - vertical
+    preset_modes:
+      - none
+      - comfort
+      - eco
+      - boost
+      - sleep
+      - away
     min_temp: 55
     max_temp: 85
     
@@ -137,6 +154,11 @@ climate:
         {{ ((n + a) / 2) | round(1) }}
       {% endif %}
 
+    # AC-only: mirror Midea fan/swing/presets (Nest has no equivalent).
+    fan_mode_template: "{{ state_attr('climate.150633094697190_climate', 'fan_mode') | default('auto', true) }}"
+    swing_mode_template: "{{ 'vertical' if is_state('switch.150633094697190_swing_vertical', 'on') else 'off' }}"
+    preset_mode_template: "{{ state_attr('climate.150633094697190_climate', 'preset_mode') | default('none', true) }}"
+
     set_hvac_mode:
       - service: script.control_climate
         data:
@@ -147,6 +169,24 @@ climate:
         data:
           temperature: "{{ temperature }}"
           operation_mode: "{{ states('climate.new_livingroom_climate') }}"
+    set_fan_mode:
+      - action: climate.set_fan_mode
+        target:
+          entity_id: climate.150633094697190_climate
+        data:
+          fan_mode: "{{ fan_mode }}"
+    set_swing_mode:
+      - action: climate.set_swing_mode
+        target:
+          entity_id: climate.150633094697190_climate
+        data:
+          swing_mode: "{{ swing_mode }}"
+    set_preset_mode:
+      - action: climate.set_preset_mode
+        target:
+          entity_id: climate.150633094697190_climate
+        data:
+          preset_mode: "{{ preset_mode }}"
 
 notify:
   - name: ALL_DEVICES
