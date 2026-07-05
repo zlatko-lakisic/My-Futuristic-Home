@@ -76,8 +76,65 @@ views:
           - type: heading
             heading: CLIMATE & COMFORT
             heading_style: title
-          - type: thermostat
-            entity: climate.new_livingroom_climate
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: climate.new_livingroom_climate
+                state: heat
+            card:
+              type: thermostat
+              entity: climate.new_livingroom_climate
+              name: Livingroom Climate Control
+              features:
+                - type: climate-hvac-modes
+                  style: icons
+                  hvac_modes:
+                    - "off"
+                    - cool
+                    - heat
+            grid_options:
+              columns: full
+          - type: conditional
+            conditions:
+              - condition: not
+                conditions:
+                  - condition: state
+                    entity: climate.new_livingroom_climate
+                    state: heat
+            card:
+              type: thermostat
+              entity: climate.new_livingroom_climate
+              name: Livingroom Climate Control
+              features:
+                - type: climate-hvac-modes
+                  style: icons
+                  hvac_modes:
+                    - "off"
+                    - cool
+                    - heat
+                - type: climate-fan-modes
+                  style: icons
+                  fan_modes:
+                    - silent
+                    - low
+                    - medium
+                    - high
+                    - full
+                    - auto
+                - type: climate-swing-modes
+                  style: dropdown
+                  swing_modes:
+                    - "off"
+                    - vertical
+                - type: climate-preset-modes
+                  style: dropdown
+                  preset_modes:
+                    - none
+                    - comfort
+                    - eco
+                    - boost
+                    - sleep
+                    - away
             grid_options:
               columns: full
           - type: tile
