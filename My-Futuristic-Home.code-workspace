@@ -11,6 +11,9 @@
 		},
 		{
 			"path": "../hacs-msnswitch"
+		},
+		{
+			"path": "../hacs-agentic-watering"
 		}
 	],
 	"settings": {}
