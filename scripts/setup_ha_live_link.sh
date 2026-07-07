@@ -41,7 +41,7 @@ mount_share() {
       smb_url="//${SMB_USER}@${SMB_HOST}/${SMB_SHARE}"
     fi
   else
-    smb_url="//guest@${SMB_HOST}/${SMB_SHARE}"
+    smb_url="//${SMB_HOST}/${SMB_SHARE}"
   fi
 
   echo "Mounting ${SMB_HOST}/${SMB_SHARE} at ${mount_point}"
