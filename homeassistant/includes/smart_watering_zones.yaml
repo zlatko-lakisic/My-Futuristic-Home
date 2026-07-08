@@ -1,9 +1,9 @@
-# Seed data for the smart_sequential_watering blueprint (HACS: zlatko-lakisic/smart_sequential_watering.yaml).
-# Not used by script.ai_sequential_watering — zones are configured only in the blueprint UI / automation input.
-# After editing zones in Home Assistant, Pull sync updates this file if you manage config via Git.
+# Irrigation zone catalog for smart_sequential_watering blueprint (dusk 9-zone run).
+# zone_history_sensor must be the B-hyve diagnostic entity (Settings → Devices → zone → History).
+# Pattern: sensor.<device_slug>_<zone_slug>_history (see entity registry translation_key zone_history).
 - label: East Lawn
   entity_id: valve.east_lawn_timer_east_lawn_zone_zone
-  zone_history_sensor: sensor.adna_s_flowers_zone_history
+  zone_history_sensor: sensor.east_lawn_timer_east_lawn_zone_zone_history
   area_sqm: 60
   sun_exposure: 35 percent shade / partial sun, 65 percent sun
   plant_profile: Tall fescue lawn grass
@@ -13,7 +13,7 @@
   soil_sensor: ''
 - label: Flower Bed
   entity_id: valve.east_lawn_timer_flower_bed_zone_zone
-  zone_history_sensor: sensor.adna_s_roses_zone_history
+  zone_history_sensor: sensor.east_lawn_timer_flower_bed_zone_zone_history
   area_sqm: 6
   sun_exposure: Partial sun morning, near full sun evening
   plant_profile: 13 hosta plants and mint in mulched bed
@@ -23,7 +23,7 @@
   soil_sensor: sensor.garden_controller_soil_moisture_2
 - label: Front Lawn
   entity_id: valve.front_yard_controller_front_yard_zone
-  zone_history_sensor: sensor.front_yard_zone_history
+  zone_history_sensor: sensor.front_yard_controller_front_yard_zone_history
   area_sqm: 36
   sun_exposure: Predominantly shady, with sun in the morning through after midday
   plant_profile: Tall fescue grass
@@ -33,7 +33,7 @@
   soil_sensor: ''
 - label: Slope Kitchen Left
   entity_id: valve.flower_garden_back_lawn_time_slope_kitchen_left_zone
-  zone_history_sensor: sensor.garden_zone_history
+  zone_history_sensor: sensor.flower_garden_back_lawn_time_slope_kitchen_left_zone_history
   area_sqm: 9
   sun_exposure: Full sun throughout the day
   plant_profile: Mixed ornamental flowers and spring bulbs on a mulched slope
@@ -43,7 +43,7 @@
   soil_sensor: ''
 - label: Peppers and Kale
   entity_id: valve.vegitable_garden_timer_peppers_kale_zone_zone
-  zone_history_sensor: sensor.east_side_lawn_zone_history
+  zone_history_sensor: sensor.vegitable_garden_timer_peppers_kale_zone_zone_history
   area_sqm: 6.1
   sun_exposure: Full sun throughout the day
   plant_profile: Basil, parsley, kale, and peppers
@@ -53,7 +53,7 @@
   soil_sensor: sensor.garden_controller_soil_moisture_3
 - label: Tomato
   entity_id: valve.vegitable_garden_timer_tomato_zone_zone
-  zone_history_sensor: sensor.unknown_zone_history_3
+  zone_history_sensor: sensor.vegitable_garden_timer_tomato_zone_zone_history
   area_sqm: 6.1
   sun_exposure: Full sun throughout the day
   plant_profile: 8 tomato plants
@@ -63,7 +63,7 @@
   soil_sensor: sensor.garden_controller_soil_moisture_4
 - label: Zucchini
   entity_id: valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone
-  zone_history_sensor: sensor.unknown_zone_history_5
+  zone_history_sensor: sensor.vegitable_garden_timer_zucchini_and_eggplant_zone_zone_history
   area_sqm: null
   sun_exposure: Full sun throughout the day
   plant_profile: 8 zucchini plants, 8 pea plants, and 8 eggplant plants
