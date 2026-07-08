@@ -1,7 +1,7 @@
 # East Lawn + Kitchen Lawn only (from smart_watering_zones.yaml).
 - label: East Lawn
   entity_id: valve.east_lawn_timer_east_lawn_zone_zone
-  zone_history_sensor: sensor.adna_s_flowers_zone_history
+  zone_history_sensor: sensor.east_lawn_timer_east_lawn_zone_zone_history
   area_sqm: 60
   sun_exposure: 35 percent shade / partial sun, 65 percent sun
   plant_profile: Tall fescue lawn grass
