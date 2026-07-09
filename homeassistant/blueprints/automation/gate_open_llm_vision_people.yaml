@@ -6,10 +6,8 @@ blueprint:
     so the model sees multiple frames without using **stream_analyzer** (which relies on camera ``entity_picture`` and
     internal HTTP fetches and often fails with all cameras offline on Frigate cameras).
 
-    Notifies when line 1 classifies **PEOPLE**. Line 2–3 describe activity across the sampled frames.
-
-    If your vision model only accepts one image per request (some Ollama setups), lower **Number of still frames** to 1–2
-    or use a multi-image-capable model.
+    Notifies when classification is **PEOPLE**. If the vision provider returns tool-call JSON / unusable text,
+    optionally falls back to a Frigate person occupancy (or count) sensor.
 
     Configure one automation per gate (east, west, back yard) with its sensor, camera, and dashboard path.
   domain: automation
@@ -44,6 +42,17 @@ blueprint:
       selector:
         entity:
           domain: camera
+    frigate_person_sensor:
+      name: Frigate person sensor (fallback)
+      description: >
+        Optional. Used when LLM Vision returns tool-call junk or UNKNOWN.
+        Prefer binary_sensor.*_person_occupancy; sensor.*_person_count also works (on if > 0).
+      default: ""
+      selector:
+        entity:
+          domain:
+            - binary_sensor
+            - sensor
     llmvision_provider:
       name: LLM Vision provider
       description: Config entry for your CodeProject / OpenAI-compatible provider.
@@ -122,6 +131,7 @@ variables:
   snapshot_path: '/config/www/{{ snapshot_rel }}'
   public_base_url: !input public_base_url
   public_image_url: '{{ public_base_url }}{{ snapshot_rel }}'
+  frigate_person_sensor: !input frigate_person_sensor
 triggers:
   - trigger: state
     entity_id: !input gate_sensor
@@ -148,7 +158,7 @@ actions:
       provider: !input llmvision_provider
       model: !input llmvision_model
       image_file: '{{ clip_image_files }}'
-      include_filename: true
+      include_filename: false
       store_in_timeline: false
       use_memory: false
       temperature: 0.2
@@ -156,14 +166,139 @@ actions:
       generate_title: false
       expose_images: false
       target_width: !input target_width
-      message: "You are viewing multiple still frames from the {{ gate_name }} security camera, captured in order over a few seconds. Infer motion and activity across frames — paths people take, pauses, interacting with the gate or objects, carrying items, gestures, entering or leaving view.\nYour reply must be exactly 3 lines and nothing else: no title, no preamble, no blank lines, no markdown, no numbering. The very first character of your reply must be the letter P or N (the start of PEOPLE or NOPEOPLE).\n\nLine 1 — classification (this line is used by automation; format matters): output ONLY the single word PEOPLE if any human appears in any frame (foreground or background, partial or small figures count). Otherwise ONLY the single word NOPEOPLE. No other words or punctuation on line 1.\n\nLine 2 — home log (standalone; do not mention lines or instructions): concrete observation of activity across the frames — how many people if any, where they move or stand, what they appear to be doing (verbs). Notable clothing or carried objects. Do not write \"these images\", \"the frames\", \"the video\", or \"the camera\". Max 240 characters, one paragraph.\n\nLine 3 — phone alert (standalone; must not refer to other lines): shorter factual summary of what people are doing (or that no one appeared). Max 120 characters. Do not write \"line 1\", \"line 2\", \"line 3\", \"same as\", \"see above\", \"as before\", or any meta text. Do not quote or paraphrase these instructions."
+      message: "You are viewing multiple still frames from the {{ gate_name }} security camera, captured in order over a few seconds. Infer motion and activity across frames — paths people take, pauses, interacting with the gate or objects, carrying items, gestures, entering or leaving view.\n\nCRITICAL OUTPUT RULES:\n- Do NOT call tools, functions, or MCP servers.\n- Do NOT output JSON, code fences, file paths, or tool-call blocks.\n- Do NOT invent pets or people that are not visible.\n- Your entire reply must be exactly 3 lines of plain text and nothing else.\n\nLine 1 — classification only: PEOPLE if any human appears in any frame (partial/small counts). Otherwise NOPEOPLE. No other words on this line.\nLine 2 — home log: concrete observation across frames (who/where/what they do). Max 240 characters. One paragraph. Do not mention images/frames/camera.\nLine 3 — phone alert: shorter factual summary. Max 120 characters. No meta text."
     response_variable: ai_response
   - variables:
-      reply: "{{ ai_response.response_text | default(ai_response.text, true) | default('', true) | trim }}"
-      gate_class_idx: "{% set sl = reply.splitlines() %}{% set ns = namespace(idx=-1) %}{% for i in range(sl | length) %}{% if ns.idx < 0 %}{% set line = sl[i] %}{% set cleaned = line | regex_replace('(?i)^[\\s*_`]*(?:line\\s*1\\s*[:.)-]*)?\\s*', '') | trim %}{% set cleaned = cleaned | regex_replace('(?i)^(?:\\d+\\s*[.)\\-])?\\s*', '') | trim %}{% set parts = cleaned.split() %}{% set w = parts[0] if parts | length > 0 else '' %}{% set tok = w | regex_replace('[^A-Za-z]', '') | upper %}{% if tok == 'PEOPLE' or tok == 'NOPEOPLE' %}{% set ns.idx = i %}{% endif %}{% endif %}{% endfor %}{{ ns.idx }}"
-      gate_classification: "{% set sl = reply.splitlines() %}{% set idx = gate_class_idx | default(-1) | int %}{% if idx < 0 %}UNKNOWN{% else %}{% set line = sl[idx] %}{% set cleaned = line | regex_replace('(?i)^[\\s*_`]*(?:line\\s*1\\s*[:.)-]*)?\\s*', '') | trim %}{% set cleaned = cleaned | regex_replace('(?i)^(?:\\d+\\s*[.)\\-])?\\s*', '') | trim %}{% set parts = cleaned.split() %}{% set w = parts[0] if parts | length > 0 else '' %}{{ w | regex_replace('[^A-Za-z]', '') | upper }}{% endif %}"
-      log_description: "{% set sl = reply.splitlines() %}{% set idx = gate_class_idx | default(-1) | int %}{% if idx >= 0 and idx + 1 < sl | length %}{{ sl[idx + 1] | trim | truncate(240, true, '...') }}{% elif sl | length > 1 %}{{ sl[1] | trim | truncate(240, true, '...') }}{% else %}{{ reply | truncate(240, true, '...') }}{% endif %}"
-      mobile_short: "{% set sl = reply.splitlines() %}{% set idx = gate_class_idx | default(-1) | int %}{% if idx >= 0 and idx + 2 < sl | length %}{{ sl[idx + 2] | trim | truncate(120, true, '...') }}{% elif idx >= 0 and idx + 1 < sl | length %}{{ sl[idx + 1] | trim | truncate(120, true, '...') }}{% elif sl | length > 2 %}{{ sl[2] | trim | truncate(120, true, '...') }}{% elif sl | length > 1 %}{{ sl[1] | trim | truncate(120, true, '...') }}{% else %}Person at {{ gate_name }}{% endif %}"
+      reply_raw: >-
+        {% set r = ai_response.response_text | default(ai_response.text, true) | default('', true) %}
+        {% if r is mapping or r is iterable and r is not string %}
+          {{ r | to_json }}
+        {% else %}
+          {{ r }}
+        {% endif %}
+      reply: >-
+        {% set raw = reply_raw | string %}
+        {% set cleaned = raw
+          | regex_replace('(?is)```.*?```', ' ')
+          | regex_replace('(?is)\\{\\s*"name"\\s*:.*?\\}\\s*', ' ')
+          | regex_replace("(?is)\\{\\s*'name'\\s*:.*?\\}\\s*", ' ')
+          | regex_replace('(?im)^\\s*For each image file:.*$', ' ')
+          | regex_replace('(?im)^\\s*-\\s*Analyze it with.*$', ' ')
+          | trim %}
+        {% set ans = cleaned | regex_findall('(?is)Answer:\\s*(.*)$') %}
+        {% if ans | length > 0 %}
+          {{ ans[0] | trim }}
+        {% else %}
+          {{ cleaned }}
+        {% endif %}
+      llm_label: >-
+        {% set text = reply | string %}
+        {% set labeled = text | regex_findall('(?im)(?:^|\\n)\\s*People\\s*:\\s*(NOPEOPLE|PEOPLE)\\b') %}
+        {% if labeled | length > 0 %}
+          {{ labeled[-1] | upper }}
+        {% else %}
+          {% set exact = text | regex_findall('(?m)^\\s*(NOPEOPLE|PEOPLE)\\s*[.!]?\\s*$') %}
+          {% if exact | length > 0 %}
+            {{ exact[0] | upper }}
+          {% else %}
+            {% set caps = text | regex_findall('\\b(NOPEOPLE|PEOPLE)\\b') %}
+            {{ (caps[-1] | upper) if caps | length > 0 else '' }}
+          {% endif %}
+        {% endif %}
+      llm_unusable: >-
+        {% set raw = reply_raw | string %}
+        {% set cleaned = reply | string | trim %}
+        {% set label = llm_label | string | trim | upper %}
+        {% if raw | regex_findall('(?i)"name"\\s*:\\s*"(describe_image|python_m_mcp|media_understand)') | length > 0 %}
+          yes
+        {% elif cleaned in ['', '}', '{', "Couldn't generate content. Check logs for details."] %}
+          yes
+        {% elif cleaned | regex_findall('(?i)(Describe local image files|For each frame analyzed|List the person/pet)') | length > 0 %}
+          yes
+        {% elif label not in ['PEOPLE', 'NOPEOPLE'] %}
+          yes
+        {% else %}
+          no
+        {% endif %}
+      frigate_people: >-
+        {% set eid = frigate_person_sensor | default('', true) | string %}
+        {% if eid in ['', 'None', 'unknown', 'unavailable', '[]'] %}
+          no
+        {% elif eid.startswith('binary_sensor.') %}
+          {{ 'yes' if is_state(eid, 'on') else 'no' }}
+        {% elif eid.startswith('sensor.') %}
+          {{ 'yes' if (states(eid) | float(0)) > 0 else 'no' }}
+        {% else %}
+          no
+        {% endif %}
+      gate_class_idx: >-
+        {% set sl = (reply | string).split('\n') %}
+        {% set ns = namespace(idx=-1) %}
+        {% for i in range(sl | length) %}
+          {% if ns.idx < 0 %}
+            {% set line = sl[i] | trim %}
+            {% if line | regex_findall('(?i)^People\\s*:\\s*(NOPEOPLE|PEOPLE)\\b') | length > 0
+               or line | regex_findall('^(NOPEOPLE|PEOPLE)\\s*[.!]?\\s*$') | length > 0 %}
+              {% set ns.idx = i %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.idx }}
+      gate_classification: >-
+        {% set label = llm_label | string | trim | upper %}
+        {% if label in ['PEOPLE', 'NOPEOPLE'] %}
+          {{ label }}
+        {% elif (llm_unusable | string | trim) == 'yes' %}
+          {{ 'PEOPLE' if (frigate_people | string | trim) == 'yes' else 'NOPEOPLE' }}
+        {% else %}
+          UNKNOWN
+        {% endif %}
+      log_description: >-
+        {% set label = llm_label | string | trim | upper %}
+        {% set unusable = (llm_unusable | string | trim) == 'yes' %}
+        {% if unusable and label not in ['PEOPLE', 'NOPEOPLE'] %}
+          {% if gate_classification == 'PEOPLE' %}
+            Frigate detected a person near {{ gate_name }} (vision model unavailable)
+          {% else %}
+            No person detected by Frigate at {{ gate_name }} (vision model unavailable)
+          {% endif %}
+        {% elif unusable and label == 'NOPEOPLE' %}
+          No people at {{ gate_name }}
+        {% elif unusable and label == 'PEOPLE' %}
+          Person activity at {{ gate_name }}
+        {% else %}
+          {% set sl = (reply | string).split('\n') %}
+          {% set idx = gate_class_idx | default(-1) | int %}
+          {% set ns = namespace(parts=[]) %}
+          {% if idx >= 0 %}
+            {% for i in range(idx + 1, sl | length) %}
+              {% set t = sl[i] | trim %}
+              {% if t | length > 0
+                 and (t | regex_findall('(?i)^People\\s*:') | length) == 0
+                 and (t | regex_findall('^(NOPEOPLE|PEOPLE)\\s*$') | length) == 0
+                 and (t | regex_findall('(?i)(List the person|For each frame|Describe local)') | length) == 0 %}
+                {% set ns.parts = ns.parts + [t | regex_replace('(?i)^(Alert|Line\\s*2|Line\\s*3)\\s*:\\s*', '')] %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {% if ns.parts | length > 0 %}
+            {{ ns.parts[0] | truncate(240, true, '...') }}
+          {% elif gate_classification == 'PEOPLE' %}
+            Person activity at {{ gate_name }}
+          {% elif gate_classification == 'NOPEOPLE' %}
+            No people at {{ gate_name }}
+          {% else %}
+            Gate activity at {{ gate_name }}
+          {% endif %}
+        {% endif %}
+      mobile_short: >-
+        {% if gate_classification == 'PEOPLE' %}
+          Person at {{ gate_name }}
+        {% elif gate_classification == 'NOPEOPLE' %}
+          No people at {{ gate_name }}
+        {% else %}
+          Gate activity at {{ gate_name }}
+        {% endif %}
       notify_services: >-
         {% set ns = namespace(services=[]) %}
         {% for p in (notify_people | default([], true)) %}
@@ -196,7 +331,7 @@ actions:
       datetime: '{{ now().strftime("%Y-%m-%d %H:%M:%S") }}'
   - if:
     - condition: template
-      value_template: "{% set sl = reply.splitlines() %}{% set idx = gate_class_idx | default(-1) | int %}{% if idx < 0 %}false{% else %}{% set line = sl[idx] %}{% set cleaned = line | regex_replace('(?i)^[\\s*_`]*(?:line\\s*1\\s*[:.)-]*)?\\s*', '') | trim %}{% set cleaned = cleaned | regex_replace('(?i)^(?:\\d+\\s*[.)\\-])?\\s*', '') | trim %}{% set parts = cleaned.split() %}{% set w = parts[0] if parts | length > 0 else '' %}{% set tok = w | regex_replace('[^A-Za-z]', '') | upper %}{{ tok == 'PEOPLE' }}{% endif %}"
+      value_template: "{{ gate_classification == 'PEOPLE' }}"
     then:
     - action: persistent_notification.create
       data:
