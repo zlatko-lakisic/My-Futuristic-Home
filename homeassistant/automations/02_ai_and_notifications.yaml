@@ -37,6 +37,7 @@
       gate_open_state: 'on'
       # No camera.east_side_2 (AXIS) on this host; Frigate entity for snapshots.
       camera: camera.east_side
+      frigate_person_sensor: binary_sensor.east_side_gate_person_occupancy
       llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
       llmvision_model: gpt-4o-mini
       target_width: 1280
@@ -56,6 +57,7 @@
       gate_sensor: binary_sensor.west_side_gate_door
       gate_open_state: 'on'
       camera: camera.west_side_2
+      frigate_person_sensor: binary_sensor.west_side_gate_person_occupancy
       llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
       llmvision_model: gpt-4o-mini
       target_width: 1280
@@ -75,6 +77,7 @@
       gate_sensor: binary_sensor.fence_gate_door
       gate_open_state: 'on'
       camera: camera.back_yard_2
+      frigate_person_sensor: binary_sensor.back_yard_person_occupancy
       llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
       llmvision_model: gpt-4o-mini
       target_width: 1280
