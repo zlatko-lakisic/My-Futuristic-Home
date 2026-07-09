@@ -23,7 +23,7 @@ input_text:
     icon: mdi:identifier
 
   ai_watering_simulate_report:
-    name: AI Watering simulate — per-zone LLM lines
+    name: AI Watering per-zone run report
     max: 255
     mode: text
 
