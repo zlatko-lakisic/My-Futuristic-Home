@@ -14,6 +14,9 @@
 		},
 		{
 			"path": "../hacs-agentic-watering"
+		},
+		{
+			"path": "../hacs-mikrotik_router"
 		}
 	],
 	"settings": {}
