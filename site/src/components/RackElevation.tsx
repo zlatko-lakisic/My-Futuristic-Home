@@ -1,22 +1,69 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { SectionReveal } from './SectionReveal'
 
 type Unit = {
   u: number
   role: string
   detail: string
+  to: string
 }
 
 const UNITS: Unit[] = [
-  { u: 9, role: 'Gateway', detail: 'Edge routing and the house\'s front door to the wider network.' },
-  { u: 8, role: 'Switching', detail: '10 gigabit backbone that stitches cameras, storage, and servers together.' },
-  { u: 7, role: 'Patch Panel', detail: 'Forty-eight ports of house-wide copper, labeled and quiet.' },
-  { u: 6, role: 'PoE', detail: 'Power and data for access points and IoT endpoints in one midspan.' },
-  { u: 5, role: 'Controllers', detail: 'WiFi and infrastructure control planes that keep the airwaves tidy.' },
-  { u: 4, role: 'Storage', detail: 'Camera recordings and backups on hardware built by hand.' },
-  { u: 3, role: 'Storage', detail: 'Secondary NAS capacity for resilience and long-term keep.' },
-  { u: 2, role: 'Compute', detail: 'Virtualization hosts that run the services the house depends on.' },
-  { u: 1, role: 'Home Assistant Server', detail: 'The automation brain, always on, always local.' },
+  {
+    u: 9,
+    role: 'Gateway',
+    detail: 'Edge routing and the house\'s front door to the wider network.',
+    to: '/systems/moat',
+  },
+  {
+    u: 8,
+    role: 'Switching',
+    detail: '10 gigabit backbone that stitches cameras, storage, and servers together.',
+    to: '/systems/backbone',
+  },
+  {
+    u: 7,
+    role: 'Patch Panel',
+    detail: 'Forty-eight ports of house-wide copper, labeled and quiet.',
+    to: '/systems/backbone',
+  },
+  {
+    u: 6,
+    role: 'PoE',
+    detail: 'Power and data for access points and IoT endpoints in one midspan.',
+    to: '/systems/backbone',
+  },
+  {
+    u: 5,
+    role: 'Controllers',
+    detail: 'WiFi and infrastructure control planes that keep the airwaves tidy.',
+    to: '/systems/backbone',
+  },
+  {
+    u: 4,
+    role: 'Storage',
+    detail: 'Camera recordings and backups on hardware built by hand.',
+    to: '/systems/backbone#storage',
+  },
+  {
+    u: 3,
+    role: 'Storage',
+    detail: 'Secondary NAS capacity for resilience and long-term keep.',
+    to: '/systems/backbone#storage',
+  },
+  {
+    u: 2,
+    role: 'Compute',
+    detail: 'Virtualization hosts that run the services the house depends on.',
+    to: '/systems/backbone#compute',
+  },
+  {
+    u: 1,
+    role: 'Home Assistant Server',
+    detail: 'The automation brain, always on, always local.',
+    to: '/systems/brain',
+  },
 ]
 
 export function RackElevation() {
@@ -33,8 +80,8 @@ export function RackElevation() {
             Run like a datacenter.
           </h2>
           <p className="mt-4 max-w-md text-mist/85">
-            A 9U wall-mount rack holds the backbone of the house. Tap or hover a
-            unit to see what it does. Roles only. No model parade.
+            A 9U wall-mount rack holds the backbone of the house. Tap a unit to go
+            inside.
           </p>
           <p
             className="mt-6 min-h-[4.5rem] rounded-md border border-line bg-night/60 px-4 py-3 text-sm text-mist/90"
@@ -70,12 +117,11 @@ export function RackElevation() {
                 const isActive = active === index
                 return (
                   <li key={unit.u} role="listitem">
-                    <button
-                      type="button"
+                    <Link
+                      to={unit.to}
                       onMouseEnter={() => setActive(index)}
                       onFocus={() => setActive(index)}
-                      onClick={() => setActive(index)}
-                      className={`flex w-full items-stretch overflow-hidden rounded-md border text-left transition ${
+                      className={`flex w-full items-stretch overflow-hidden rounded-md border text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber ${
                         isActive
                           ? 'border-amber/50 bg-panel-raised'
                           : 'border-line bg-panel hover:border-sky/35'
@@ -93,7 +139,7 @@ export function RackElevation() {
                           aria-hidden="true"
                         />
                       </span>
-                    </button>
+                    </Link>
                   </li>
                 )
               })}
