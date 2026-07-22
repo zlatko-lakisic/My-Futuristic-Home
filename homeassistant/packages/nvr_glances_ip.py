@@ -7,7 +7,7 @@ import urllib.request
 BASE = "http://10.0.10.16:61208"
 PATHS = ("/api/4/ip", "/api/3/ip")
 TIMEOUT = 25
-IFACES = ("enp3s0", "enp4s0", "br-9229c4b7924f")
+IFACES = ("enp3s0", "enp4s0", "enp7s0", "br-9229c4b7924f")
 
 
 def _extract_ipv4(node) -> str:
@@ -44,7 +44,7 @@ def _lookup(data: object, iface: str) -> str:
 
 
 def main() -> None:
-    out = {"enp3s0": "—", "enp4s0": "—", "br_9229c4b7924f": "—"}
+    out = {"enp3s0": "—", "enp4s0": "—", "enp7s0": "—", "br_9229c4b7924f": "—"}
     err = None
     raw = None
     for path in PATHS:
@@ -64,6 +64,7 @@ def main() -> None:
     if isinstance(data, dict):
         out["enp3s0"] = _lookup(data, "enp3s0")
         out["enp4s0"] = _lookup(data, "enp4s0")
+        out["enp7s0"] = _lookup(data, "enp7s0")
         out["br_9229c4b7924f"] = _lookup(data, "br-9229c4b7924f")
     if err and all(v == "—" for v in out.values()):
         out["_error"] = err

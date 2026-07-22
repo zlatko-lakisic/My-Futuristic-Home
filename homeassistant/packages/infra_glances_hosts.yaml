@@ -1,0 +1,105 @@
+# Host metrics for infrastructure dashboard (Garden Speaker + Jetson + NVR core counts).
+# Uses Glances API v4 directly because the built-in Glances integration leaves
+# garden-speaker/jetson sensors unavailable even when the API is healthy.
+#
+# Include (already done via this package file once listed in configuration.yaml):
+#   homeassistant.packages.infra_glances_hosts
+#
+# Reload: Developer tools → YAML → Reload command line / all YAML, or restart HA.
+
+command_line:
+  - sensor:
+      name: Infra Glances hosts
+      unique_id: infra_glances_hosts_blob
+      icon: mdi:server-network
+      scan_interval: 30
+      command: /usr/local/bin/python3 /config/packages/infra_glances_hosts.py
+      value_template: >-
+        {% set j = value_json %}
+        {% if j.garden_speaker.ok and j.jetson.ok and j.nvr.ok %}ok
+        {% elif j.garden_speaker.ok or j.jetson.ok or j.nvr.ok %}partial
+        {% else %}error{% endif %}
+      json_attributes:
+        - garden_speaker
+        - jetson
+        - nvr
+
+template:
+  - sensor:
+      - name: Infra Garden Speaker CPU usage
+        unique_id: infra_garden_speaker_cpu_usage
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:cpu-64-bit
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'garden_speaker').cpu_usage | default('unknown') }}"
+
+      - name: Infra Garden Speaker Memory usage
+        unique_id: infra_garden_speaker_memory_usage
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:memory
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'garden_speaker').memory_usage | default('unknown') }}"
+
+      - name: Infra Garden Speaker total CPU
+        unique_id: infra_garden_speaker_total_cpu
+        icon: mdi:chip
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'garden_speaker').cpu_count | default(4) }}"
+
+      - name: Infra Jetson CPU usage
+        unique_id: infra_jetson_cpu_usage
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:cpu-64-bit
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'jetson').cpu_usage | default('unknown') }}"
+
+      - name: Infra Jetson Memory usage
+        unique_id: infra_jetson_memory_usage
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:memory
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'jetson').memory_usage | default('unknown') }}"
+
+      - name: Infra Jetson Memory use
+        unique_id: infra_jetson_memory_use
+        unit_of_measurement: MiB
+        state_class: measurement
+        icon: mdi:memory
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'jetson').memory_use_mib | default('unknown') }}"
+
+      - name: Infra Jetson Disk usage
+        unique_id: infra_jetson_disk_usage
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:harddisk
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'jetson').disk_usage | default('unknown') }}"
+
+      - name: Infra Jetson GPU usage
+        unique_id: infra_jetson_gpu_usage
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:expansion-card
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'jetson').gpu_usage | default('unknown') }}"
+
+      - name: Infra Jetson NIC RX
+        unique_id: infra_jetson_nic_rx
+        unit_of_measurement: B/s
+        state_class: measurement
+        icon: mdi:download-network
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'jetson').rx | default('unknown') }}"
+
+      - name: Infra Jetson NIC TX
+        unique_id: infra_jetson_nic_tx
+        unit_of_measurement: B/s
+        state_class: measurement
+        icon: mdi:upload-network
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'jetson').tx | default('unknown') }}"
+
+      - name: Infra Jetson Uptime
+        unique_id: infra_jetson_uptime
+        icon: mdi:clock-outline
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'jetson').uptime | default('unknown') }}"
+
+      - name: Infra NVR total CPU
+        unique_id: infra_nvr_total_cpu
+        icon: mdi:chip
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'nvr').cpu_count | default(12) }}"

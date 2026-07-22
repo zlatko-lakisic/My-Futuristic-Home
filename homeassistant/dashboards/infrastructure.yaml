@@ -1209,13 +1209,13 @@ views:
                               </div>`;
                             ]]]
                       - type: custom:button-card
-                        entity: sensor.garden_speaker_cpu_usage
+                        entity: sensor.infra_garden_speaker_cpu_usage
                         show_icon: false
                         show_name: false
                         show_state: false
                         show_label: false
                         triggers_update:
-                          - sensor.garden_speaker_memory_usage
+                          - sensor.infra_garden_speaker_memory_usage
                           - sensor.garden_speaker_glances_state
                         tap_action:
                           action: more-info
@@ -1251,8 +1251,8 @@ views:
                                 <div style="flex:1;min-width:0;">
                                 <div style="font-weight:700;font-size:0.95rem;margin-bottom:2px;color:#fff;">Garden speaker</div>
                                 <div style="font-size:0.65rem;opacity:0.7;margin-bottom:8px;">Glances · garden-speaker (host)</div>
-                                ${bar('CPU', 'sensor.garden_speaker_cpu_usage', 'linear-gradient(90deg,#66bb6a,#43a047)')}
-                                ${bar('Memory', 'sensor.garden_speaker_memory_usage', 'linear-gradient(90deg,#26a69a,#00695c)')}
+                                ${bar('CPU', 'sensor.infra_garden_speaker_cpu_usage', 'linear-gradient(90deg,#66bb6a,#43a047)')}
+                                ${bar('Memory', 'sensor.infra_garden_speaker_memory_usage', 'linear-gradient(90deg,#26a69a,#00695c)')}
                                 <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:2px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);">
                                   <span style="color:#b0bec5;">State</span><span>${st}</span>
                                 </div>
@@ -1260,19 +1260,19 @@ views:
                               </div>`;
                             ]]]
                       - type: custom:button-card
-                        entity: sensor.omega_jetson_orin_cpu_usage
+                        entity: sensor.infra_jetson_cpu_usage
                         show_icon: false
                         show_name: false
                         show_state: false
                         show_label: false
                         triggers_update:
-                          - sensor.omega_jetson_orin_memory_usage
-                          - sensor.omega_jetson_orin_memory_use
-                          - sensor.omega_jetson_orin_disk_usage
-                          - sensor.omega_jetson_orin_eno1_rx
-                          - sensor.omega_jetson_orin_eno1_tx
-                          - sensor.omega_jetson_orin_uptime
-                          - sensor.omega_jetson_orin_orin_nvgpu_gpu_nvidia0_processor_usage
+                          - sensor.infra_jetson_memory_usage
+                          - sensor.infra_jetson_memory_use
+                          - sensor.infra_jetson_disk_usage
+                          - sensor.infra_jetson_nic_rx
+                          - sensor.infra_jetson_nic_tx
+                          - sensor.infra_jetson_uptime
+                          - sensor.infra_jetson_gpu_usage
                         tap_action:
                           action: more-info
                         styles:
@@ -1308,9 +1308,9 @@ views:
                                 if (!Number.isFinite(v)) return '—';
                                 return `${fmt(v)} ${u}`.trim();
                               };
-                              const memMiB = hass.states['sensor.omega_jetson_orin_memory_use']?.state;
+                              const memMiB = hass.states['sensor.infra_jetson_memory_use']?.state;
                               const memExtra = Number.isFinite(parseFloat(memMiB)) ? `<div style="font-size:0.65rem;opacity:0.72;margin:-4px 0 6px 0;">${fmt(parseFloat(memMiB))} MiB in use</div>` : '';
-                              const up = hass.states['sensor.omega_jetson_orin_uptime'];
+                              const up = hass.states['sensor.infra_jetson_uptime'];
                               let upStr = '—';
                               if (up && !['unknown', 'unavailable', 'none', ''].includes(String(up.state).toLowerCase())) {
                                 const uu = up.attributes?.unit_of_measurement;
@@ -1321,18 +1321,18 @@ views:
                                 <div style="flex:1;min-width:0;">
                                 <div style="font-weight:700;font-size:0.95rem;margin-bottom:2px;color:#fff;">Jetson Orin</div>
                                 <div style="font-size:0.65rem;opacity:0.7;margin-bottom:8px;">Glances · omega-jetson-orin</div>
-                                ${bar('CPU', 'sensor.omega_jetson_orin_cpu_usage', 'linear-gradient(90deg,#8bc34a,#558b2f)')}
-                                ${bar('Memory', 'sensor.omega_jetson_orin_memory_usage', 'linear-gradient(90deg,#26c6da,#00838f)')}
+                                ${bar('CPU', 'sensor.infra_jetson_cpu_usage', 'linear-gradient(90deg,#8bc34a,#558b2f)')}
+                                ${bar('Memory', 'sensor.infra_jetson_memory_usage', 'linear-gradient(90deg,#26c6da,#00838f)')}
                                 ${memExtra}
-                                ${bar('Disk (/)', 'sensor.omega_jetson_orin_disk_usage', 'linear-gradient(90deg,#7e57c2,#5e35b1)')}
-                                ${bar('GPU (Orin)', 'sensor.omega_jetson_orin_orin_nvgpu_gpu_nvidia0_processor_usage', 'linear-gradient(90deg,#aed581,#33691e)')}
+                                ${bar('Disk (/)', 'sensor.infra_jetson_disk_usage', 'linear-gradient(90deg,#7e57c2,#5e35b1)')}
+                                ${bar('GPU (Orin)', 'sensor.infra_jetson_gpu_usage', 'linear-gradient(90deg,#aed581,#33691e)')}
                                 <div style="margin-top:4px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);font-family:var(--ha-font-family,sans-serif);color:#fff;">
-                                  <div style="font-size:0.68rem;font-weight:600;opacity:0.85;margin-bottom:6px;">Network (eno1)</div>
+                                  <div style="font-size:0.68rem;font-weight:600;opacity:0.85;margin-bottom:6px;">Network</div>
                                   <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px;">
-                                    <span style="color:#4fc3f7;">Download</span><span>${rate('sensor.omega_jetson_orin_eno1_rx')}</span>
+                                    <span style="color:#4fc3f7;">Download</span><span>${rate('sensor.infra_jetson_nic_rx')}</span>
                                   </div>
                                   <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:6px;">
-                                    <span style="color:#81c784;">Upload</span><span>${rate('sensor.omega_jetson_orin_eno1_tx')}</span>
+                                    <span style="color:#81c784;">Upload</span><span>${rate('sensor.infra_jetson_nic_tx')}</span>
                                   </div>
                                   <div style="display:flex;justify-content:space-between;font-size:0.72rem;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);">
                                     <span style="color:#b0bec5;">Uptime</span><span>${upStr}</span>
@@ -1370,13 +1370,13 @@ views:
                           - sensor.nvr_mostardesigns_com_memory_usage
                           - sensor.nvr_mostardesigns_com_etc_hostname_disk_usage
                           - sensor.nvr_glances_top_processes
-                          - sensor.nvr_glances_nic_ipv4_map
+                          - sensor.nvr_glances_nic_ipv4
                           - sensor.nvr_mostardesigns_com_br_9229c4b7924f_rx
                           - sensor.nvr_mostardesigns_com_br_9229c4b7924f_tx
                           - sensor.nvr_mostardesigns_com_enp3s0_rx
                           - sensor.nvr_mostardesigns_com_enp3s0_tx
-                          - sensor.nvr_mostardesigns_com_enp4s0_rx
-                          - sensor.nvr_mostardesigns_com_enp4s0_tx
+                          - sensor.nvr_mostardesigns_com_enp7s0_rx
+                          - sensor.nvr_mostardesigns_com_enp7s0_tx
                         tap_action:
                           action: more-info
                         styles:
@@ -1410,7 +1410,7 @@ views:
                                   </div>
                                 </div>`;
                               };
-                              const ipMapSt = hass.states['sensor.nvr_glances_nic_ipv4_map'];
+                              const ipMapSt = hass.states['sensor.nvr_glances_nic_ipv4'];
                               const ipv4 = (attrKey) => {
                                 if (!ipMapSt || !ipMapSt.attributes) return '—';
                                 const v = ipMapSt.attributes[attrKey];
@@ -1601,7 +1601,7 @@ views:
                         tap_action:
                           action: more-info
                       - type: custom:statistics-graph-chart-card
-                        card_header: enp4s0
+                        card_header: enp7s0
                         show_grid: false
                         show_tooltip: true
                         hide_legend: true
@@ -1641,7 +1641,7 @@ views:
                               display: none !important;
                             }
                         entities:
-                          - entity: sensor.nvr_mostardesigns_com_enp4s0_rx
+                          - entity: sensor.nvr_mostardesigns_com_enp7s0_rx
                             name: Download
                             color: '#ffa726'
                             graph_type: line
@@ -1650,7 +1650,7 @@ views:
                             smooth: true
                             decimals: 2
                             aggregate_func: avg
-                          - entity: sensor.nvr_mostardesigns_com_enp4s0_tx
+                          - entity: sensor.nvr_mostardesigns_com_enp7s0_tx
                             name: Upload
                             color: '#ab47bc'
                             graph_type: line
@@ -1911,7 +1911,10 @@ views:
                           const st = (id) => hass.states[id];
                           const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
                           const online = !bad(st(entity.entity_id));
-                          const detOn = st(W('detect'))?.state === 'on';
+                          const detSw = st(W('detect'));
+                          const detFps = st(S('detection_fps'));
+                          const detOn = (!bad(detSw) && detSw.state === 'on')
+                            || (bad(detSw) && !bad(detFps) && parseFloat(detFps.state) > 0);
                           const dayNight = st(B('daynight_1'));
                           let lightStr = '—';
                           let lightIcon = 'mdi:brightness-6';
@@ -2254,7 +2257,10 @@ views:
                           const st = (id) => hass.states[id];
                           const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
                           const online = !bad(st(entity.entity_id));
-                          const detOn = st(W('detect'))?.state === 'on';
+                          const detSw = st(W('detect'));
+                          const detFps = st(S('detection_fps'));
+                          const detOn = (!bad(detSw) && detSw.state === 'on')
+                            || (bad(detSw) && !bad(detFps) && parseFloat(detFps.state) > 0);
                           const dayNight = st(B('daynight_1'));
                           let lightStr = '—';
                           let lightIcon = 'mdi:brightness-6';
@@ -2597,7 +2603,10 @@ views:
                           const st = (id) => hass.states[id];
                           const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
                           const online = !bad(st(entity.entity_id));
-                          const detOn = st(W('detect'))?.state === 'on';
+                          const detSw = st(W('detect'));
+                          const detFps = st(S('detection_fps'));
+                          const detOn = (!bad(detSw) && detSw.state === 'on')
+                            || (bad(detSw) && !bad(detFps) && parseFloat(detFps.state) > 0);
                           const dayNight = st(B('daynight_1'));
                           let lightStr = '—';
                           let lightIcon = 'mdi:brightness-6';
@@ -2940,7 +2949,10 @@ views:
                           const st = (id) => hass.states[id];
                           const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
                           const online = !bad(st(entity.entity_id));
-                          const detOn = st(W('detect'))?.state === 'on';
+                          const detSw = st(W('detect'));
+                          const detFps = st(S('detection_fps'));
+                          const detOn = (!bad(detSw) && detSw.state === 'on')
+                            || (bad(detSw) && !bad(detFps) && parseFloat(detFps.state) > 0);
                           const dayNight = st(B('daynight_1'));
                           let lightStr = '—';
                           let lightIcon = 'mdi:brightness-6';
@@ -3283,7 +3295,10 @@ views:
                           const st = (id) => hass.states[id];
                           const bad = (e) => !e || ['unavailable', 'unknown', 'none', ''].includes(String(e.state).toLowerCase());
                           const online = !bad(st(entity.entity_id));
-                          const detOn = st(W('detect'))?.state === 'on';
+                          const detSw = st(W('detect'));
+                          const detFps = st(S('detection_fps'));
+                          const detOn = (!bad(detSw) && detSw.state === 'on')
+                            || (bad(detSw) && !bad(detFps) && parseFloat(detFps.state) > 0);
                           const dayNight = st(B('daynight_1'));
                           let lightStr = '—';
                           let lightIcon = 'mdi:brightness-6';
@@ -3741,8 +3756,8 @@ views:
                             show_state: false
                             show_label: false
                             triggers_update:
-                              - sensor.nvr_mostardesigns_com_total_cpu
-                              - sensor.garden_speaker_mostardesigns_com_total_cpu
+                              - sensor.infra_nvr_total_cpu
+                              - sensor.infra_garden_speaker_total_cpu
                             variables:
                               restart_btn: |
                                 [[[
@@ -3788,9 +3803,9 @@ views:
                                   };
                                   let cores = 1;
                                   if (slug.startsWith('nvr_') || viaDev === NVR_ENDPOINT_DEVICE) {
-                                    cores = hostCores('sensor.nvr_mostardesigns_com_total_cpu', 12);
+                                    cores = hostCores('sensor.infra_nvr_total_cpu', 12);
                                   } else if (slug.startsWith('garden_speaker_') || viaDev === GARDEN_SPEAKER_ENDPOINT_DEVICE) {
-                                    cores = hostCores('sensor.garden_speaker_mostardesigns_com_total_cpu', 4);
+                                    cores = hostCores('sensor.infra_garden_speaker_total_cpu', 4);
                                   }
                                   const cpuRaw = Math.max(0, parseFloat(hass.states[cpuE]?.state) || 0);
                                   const cpu = cores > 1

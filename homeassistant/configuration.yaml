@@ -57,6 +57,7 @@ homeassistant:
     - "/media/public_share_4_ha_media"
   packages:
     nvr_top_processes: !include packages/nvr_top_processes.yaml
+    infra_glances_hosts: !include packages/infra_glances_hosts.yaml
     qbittorrent_speed_k: !include packages/qbittorrent_speed_k.yaml
     axis_frigate_gauge_sensors: !include packages/axis_frigate_gauge_sensors.yaml
     bhyve_manual_zone_resolve: !include packages/bhyve_manual_zone_resolve.yaml

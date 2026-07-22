@@ -43,4 +43,5 @@ command_line:
       json_attributes:
         - enp3s0
         - enp4s0
+        - enp7s0
         - br_9229c4b7924f
