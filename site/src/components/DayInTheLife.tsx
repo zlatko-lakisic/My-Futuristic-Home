@@ -24,6 +24,12 @@ const STOPS: Stop[] = [
     sky: '#5a7a9a',
   },
   {
+    time: '10:05',
+    title: 'Late morning',
+    body: 'A gate at the edge of the yard opens. A long range sensor tells the house, the nearest camera takes a burst of snapshots, and an AI describes who is walking toward the home. If it is a person, a summary lands on our phones before they reach the door.',
+    sky: '#6a88a8',
+  },
+  {
     time: '11:50',
     title: 'Midday',
     body: 'A stubborn device stops responding somewhere in the house. A power watchdog notices, cycles its outlet, and it comes back before anyone knew it was gone.',
@@ -59,7 +65,7 @@ export function DayInTheLife() {
 
   const bg = useTransform(
     scrollYProgress,
-    [0, 0.18, 0.36, 0.54, 0.72, 0.9],
+    [0, 0.14, 0.28, 0.42, 0.56, 0.72, 0.88],
     STOPS.map((s) => s.sky),
   )
 
@@ -75,7 +81,7 @@ export function DayInTheLife() {
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(180deg, #3a4a6a 0%, #6a8aaa 35%, #8a5a3a 70%, #1a2238 100%)',
+              'linear-gradient(180deg, #3a4a6a 0%, #5a7a9a 18%, #6a88a8 32%, #6a8aaa 48%, #8a5a3a 72%, #1a2238 100%)',
           }}
         />
       ) : (
