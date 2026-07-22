@@ -10,8 +10,10 @@ For a detailed look at how the Zigbee and Z-Wave meshes are physically and logic
 👉 **[Wireless Mesh Architecture](./docs_ha/radio_topology.md)**
 
 ## **Quick Links**
-* ⚡ [**Z-Wave Device Inventory**](zwave_inventory.md) - Mesh lighting and switches.
-* 🐝 [**Zigbee Device Inventory**](zigbee_inventory.md) - Sensors and drivers.
+* ⚡ [**Z-Wave Network**](docs_ha/zwave_network.md) - Mesh narrative + inventory (table: [zwave_inventory.md](zwave_inventory.md)).
+* 🐝 [**Zigbee Lighting and Sensors**](docs_ha/zigbee_lighting_sensors.md) - ZHA narrative + inventory (table: [zigbee_inventory.md](zigbee_inventory.md)).
+* 📡 [**LoRa Perimeter (YoLink Gates)**](docs_ha/lorawan_perimeter.md) - Gate contacts and AI camera summary workflow.
+* 🔐 [**NFC Entry and Yale Locks**](docs_ha/nfc_entry.md) - Tap-to-enter architecture (no operational secrets).
 * 🛡️ [**Nest Protect Inventory**](nest_protect_inventory.md) - Smoke & CO detectors.
 * ☁️ [**SmartThings Inventory**](smartthings_inventory.md) - Samsung Smart TV integrations.
 * 🗣️ [**Google Nest Inventory**](google_nest_inventory.md) - Voice control and Gemini interface.

@@ -25,6 +25,12 @@ Welcome to the central documentation for my smart home ecosystem. This repositor
 * [**Frigate Environment**](services/frigate.env): Sanitized `.env` template for local deployment.
 * [**CodeProject.AI**](services/codeproject-ai.md): Dedicated AI inference server (Object/Face/ALPR).
 
+### **2b. Device Networks (The Senses)**
+* [**Z-Wave Network**](homeassistant/docs_ha/zwave_network.md): Z-Wave JS mesh, lighting inventory, and mesh notes.
+* [**Zigbee Lighting and Sensors**](homeassistant/docs_ha/zigbee_lighting_sensors.md): ZHA coordinator, IKEA drivers, Aqara presence, motion-to-light patterns.
+* [**LoRa Perimeter (YoLink Gates)**](homeassistant/docs_ha/lorawan_perimeter.md): YoLink gate contacts and gate-open to AI camera summary workflow.
+* [**NFC Entry and Yale Locks**](homeassistant/docs_ha/nfc_entry.md): Tap-to-enter architecture (no operational secrets) and Yale/August lock inventory.
+
 ### **3. Related GitHub / Git repos**
 | Repo | URL |
 |------|-----|
@@ -71,6 +77,10 @@ The network is split into two primary physical and logical segments to ensure th
 | **Automation** | **The Home Assistant Server** (i7-7700T) |
 | **Irrigation AI** | [Agentic Watering](https://github.com/zlatko-lakisic/hacs-agentic-watering) + Orbit BHyve |
 | **Edge LLM** | Jetson Orin k3s + [Agentic Orchestration](https://github.com/zlatko-lakisic/agentic-orchestration) + Ollama |
+| **Z-Wave** | Z-Wave JS + Silicon Labs 700/800 Series controller |
+| **Zigbee** | ZHA + SONOFF Zigbee 3.0 USB Dongle Plus V2 (EZSP) |
+| **LoRa perimeter** | YoLink DoorSensors (LoRa-family radio) via YoLink hub/cloud |
+| **Smart entry** | Yale locks via August HA integration + HA NFC tags |
 | **Routing** | RouterOS (MikroTik hAP ac) |
 | **Switching** | SwOS (CSS326) + Unmanaged (TP-Link) |
 | **Messaging** | Mosquitto MQTT (Pine64) |
