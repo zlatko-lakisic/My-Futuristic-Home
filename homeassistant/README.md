@@ -16,6 +16,9 @@ For a detailed look at how the Zigbee and Z-Wave meshes are physically and logic
 * 🔐 [**NFC Entry and Yale Locks**](docs_ha/nfc_entry.md) - Tap-to-enter architecture (no operational secrets).
 * 🔌 [**Integrations Catalog**](docs_ha/integrations_catalog.md) - All integrations and what they are used for.
 * 🌡️ [**Unified Climate Control**](docs_ha/unified_climate_control.md) - Nest heat + Midea AC as one thermostat.
+* ⚙️ [**Automations Catalog**](docs_ha/automations_catalog.md) - Automations by architecture role.
+* 📜 [**Scripts Catalog**](docs_ha/scripts_catalog.md) - Scripts, sources, and callers.
+* 🧩 [**HACS Plugins**](docs_ha/hacs_plugins.md) - Installed HACS integrations and Lovelace cards.
 * 🛡️ [**Nest Protect Inventory**](nest_protect_inventory.md) - Smoke & CO detectors.
 * ☁️ [**SmartThings Inventory**](smartthings_inventory.md) - Samsung Smart TV integrations.
 * 🗣️ [**Google Nest Inventory**](google_nest_inventory.md) - Voice control and Gemini interface.
