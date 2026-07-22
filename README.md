@@ -32,6 +32,9 @@ Welcome to the central documentation for my smart home ecosystem. This repositor
 * [**NFC Entry and Yale Locks**](homeassistant/docs_ha/nfc_entry.md): Tap-to-enter architecture (no operational secrets) and Yale/August lock inventory.
 * [**Integrations Catalog**](homeassistant/docs_ha/integrations_catalog.md): Every HA integration/domain and what it is used for.
 * [**Unified Climate Control**](homeassistant/docs_ha/unified_climate_control.md): Nest heat + Midea AC behind one living-room thermostat.
+* [**Automations Catalog**](homeassistant/docs_ha/automations_catalog.md): Live automations by architecture role.
+* [**Scripts Catalog**](homeassistant/docs_ha/scripts_catalog.md): Scripts, sources, and callers.
+* [**HACS Plugins**](homeassistant/docs_ha/hacs_plugins.md): Installed HACS integrations and Lovelace cards.
 
 ### **3. Related GitHub / Git repos**
 | Repo | URL |
