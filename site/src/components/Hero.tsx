@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { ArrowDown } from 'lucide-react'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 import { GitHubIcon } from './GitHubIcon'
+import { HeroPicture } from './HeroPicture'
 import { StatusLeds } from './StatusLeds'
 
 export function Hero() {
@@ -28,13 +29,7 @@ export function Hero() {
             'linear-gradient(to bottom, #000 0%, #000 48%, rgba(0,0,0,0.65) 72%, transparent 100%)',
         }}
       >
-        <img
-          src={`${import.meta.env.BASE_URL}hero-rack-house.jpg`}
-          alt=""
-          className="block h-auto w-full max-w-full"
-          decoding="async"
-          fetchPriority="high"
-        />
+        <HeroPicture stem="hero-rack-house" fetchPriority="high" />
         <StatusLeds />
       </div>
 

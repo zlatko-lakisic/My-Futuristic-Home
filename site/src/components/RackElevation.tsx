@@ -83,10 +83,7 @@ export function RackElevation() {
             A 9U wall-mount rack holds the backbone of the house. Tap a unit to go
             inside.
           </p>
-          <p
-            className="mt-6 min-h-[4.5rem] rounded-md border border-line bg-night/60 px-4 py-3 text-sm text-mist/90"
-            aria-live="polite"
-          >
+          <p className="mt-6 min-h-[5.5rem] rounded-md border border-line bg-night/60 px-4 py-3 text-sm text-mist/90">
             {active !== null ? (
               <>
                 <span className="font-mono text-xs text-amber">U{UNITS[active].u}</span>
@@ -100,23 +97,19 @@ export function RackElevation() {
         </SectionReveal>
 
         <SectionReveal delay={0.08}>
-          <div
-            className="mx-auto w-full max-w-md rounded-xl border border-line bg-night p-3 shadow-[inset_0_0_0_1px_rgba(245,168,60,0.08)]"
-            role="list"
-            aria-label="Nine unit rack elevation"
-          >
+          <div className="mx-auto w-full max-w-md rounded-xl border border-line bg-night p-3 shadow-[inset_0_0_0_1px_rgba(245,168,60,0.08)]">
             <div className="mb-2 flex items-center justify-between px-1">
               <span className="font-mono text-[10px] tracking-[0.14em] text-mist/50 uppercase">
                 9U wall rack
               </span>
-              <span className="font-mono text-[10px] text-amber/70">LIVE</span>
+              <span className="font-mono text-[10px] text-amber/70">9U</span>
             </div>
 
-            <ul className="space-y-1.5">
+            <ul className="space-y-1.5" aria-label="Nine unit rack elevation">
               {UNITS.map((unit, index) => {
                 const isActive = active === index
                 return (
-                  <li key={unit.u} role="listitem">
+                  <li key={unit.u}>
                     <Link
                       to={unit.to}
                       onMouseEnter={() => setActive(index)}
