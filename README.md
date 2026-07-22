@@ -12,16 +12,28 @@ Welcome to the central documentation for my smart home ecosystem. This repositor
 * [**Security Cameras**](infrastructure/cameras.md): IP camera inventory and stream paths.
 * [**NVR & AI Stack**](infrastructure/nvr.md): Frigate, TensorRT, and NVIDIA RTX A4000 logic.
 * [**Proxmox Virtualization**](infrastructure/proxmox.md): VM/LXC strategy and backup logic.
-* [**MSN Switch Watchdogs**](infrastructure/msn_switches.md): Automated power-cycle logic.
+* [**MSN Switch Watchdogs**](infrastructure/msn_switches.md): Automated power-cycle logic ([hacs-msnswitch](https://github.com/zlatko-lakisic/hacs-msnswitch)).
+* [**Jetson Agentic Orchestration**](infrastructure/jetson_agentic_orchestration.md): Omega Jetson Orin k3s edge AI (`172.16.90.20`).
 
 ### **2. Services (The Workloads)**
-* [**Traefik Edge Proxy**](services/traefik.md): Ingress, SSL extraction, and certificate distribution.
+* [**Traefik Edge Proxy**](services/traefik.md): Ingress, SSL extraction, and certificate distribution (`ai-orchestrator.mostardesigns.com`).
 * [**UniFi Controller**](services/unifi.md): WiFi SSIDs, Radio settings, and device adoption.
 * [**mDNS Repeater**](services/mdns_repeater.md): Cross-subnet device discovery for IoT and Media.
 * [**Home Assistant**](homeassistant/README.md): Core automation engine.
+* [**Garden Agentic Watering**](homeassistant/docs_ha/garden_agentic_watering.md): LLM dusk/dawn irrigation via [hacs-agentic-watering](https://github.com/zlatko-lakisic/hacs-agentic-watering).
 * [**Frigate NVR**](services/frigate.md): **(Primary)** AI detection and `config.yml`.
 * [**Frigate Environment**](services/frigate.env): Sanitized `.env` template for local deployment.
 * [**CodeProject.AI**](services/codeproject-ai.md): Dedicated AI inference server (Object/Face/ALPR).
+
+### **3. Related GitHub / Git repos**
+| Repo | URL |
+|------|-----|
+| This project | https://github.com/zlatko-lakisic/My-Futuristic-Home |
+| Project wiki | https://github.com/zlatko-lakisic/My-Futuristic-Home/wiki |
+| Agentic Orchestration (Jetson) | https://github.com/zlatko-lakisic/agentic-orchestration |
+| Agentic Watering (HACS) | https://github.com/zlatko-lakisic/hacs-agentic-watering |
+| MSNSwitch (HACS) | https://github.com/zlatko-lakisic/hacs-msnswitch |
+| Docker / Traefik stacks | https://git.omega-it.solutions/omegait/docker-infrastructure.git |
 
 ## 🗄️ Storage
 * [**NAS2**](storage/nas2.md): 10GbE Network Attached Storage for NVR recordings and backups.
@@ -57,11 +69,14 @@ The network is split into two primary physical and logical segments to ensure th
 | Category | Component |
 | :--- | :--- |
 | **Automation** | **The Home Assistant Server** (i7-7700T) |
+| **Irrigation AI** | [Agentic Watering](https://github.com/zlatko-lakisic/hacs-agentic-watering) + Orbit BHyve |
+| **Edge LLM** | Jetson Orin k3s + [Agentic Orchestration](https://github.com/zlatko-lakisic/agentic-orchestration) + Ollama |
 | **Routing** | RouterOS (MikroTik hAP ac) |
 | **Switching** | SwOS (CSS326) + Unmanaged (TP-Link) |
 | **Messaging** | Mosquitto MQTT (Pine64) |
 | **Controller** | UniFi Network Application (Docker on Beelink) |
 | **Storage** | Custom NAS1 & NAS2 |
+| **Power watchdogs** | MSNSwitch ([HACS](https://github.com/zlatko-lakisic/hacs-msnswitch)) |
 
 ---
 

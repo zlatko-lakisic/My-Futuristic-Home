@@ -29,5 +29,9 @@ Each MSN Switch is configured with **UIS (Uninterrupted Internet System)** rules
   - **Outlet 1:** NAS1 Server (`10.0.10.3`)
   - **Outlet 2:** MQTT Broker (`192.168.89.26`)
 
+### **4. NAS2 & Omega Jetson (basement)**
+- HA entities under `switch.basement_msnswitch_nas2_omega_jetson_*` (UIS + outlets for **NAS2** and **Omega Jetson**).
+- Jetson host (`172.16.90.20`) runs [Agentic Orchestration](https://github.com/zlatko-lakisic/agentic-orchestration) — see [jetson_agentic_orchestration.md](jetson_agentic_orchestration.md).
+
 ## **Integration**
-While the switches act autonomously, they can be managed from [Home Assistant](../homeassistant/README.md) using the **[MSNSwitch HACS integration](https://github.com/zlatko-lakisic/hacs-msnswitch)** (separate repo; config flow: one entry per device with IP, username, and password). Requires the Home Assistant host IP on each unit’s **API Whitelist**.
+While the switches act autonomously, they can be managed from [Home Assistant](../homeassistant/README.md) using the **[MSNSwitch HACS integration](https://github.com/zlatko-lakisic/hacs-msnswitch)** (`v1.0.6` on HA; config flow: one entry per device with IP, username, and password). Requires the Home Assistant host IP on each unit’s **API Whitelist**.
