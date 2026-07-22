@@ -43,6 +43,7 @@ To keep the setup organized, all camera-related documentation is split into two 
 * **AI Detection:** Real-time tracking for people, cars, and pets.
 * **Smart Alerts:** Critical notifications sent via Telegram/Mobile App.
 * **Dashboard:** High-performance viewing using the Advanced Camera Card.
+* **Garden Agentic Watering:** LLM dusk/dawn sequential irrigation — see **[Garden Agentic Watering](docs_ha/garden_agentic_watering.md)** ([HACS plugin](https://github.com/zlatko-lakisic/hacs-agentic-watering), LLM on [Jetson Agentic Orchestration](../infrastructure/jetson_agentic_orchestration.md)).
 
 ---
 
@@ -79,7 +80,15 @@ The repository now tracks the live HA bundle under `homeassistant/` so changes c
 - **`script.control_climate`:** Entity-based actions, `mode: single`, off/cool/heat branches aligned with the template logic and mutual exclusion.
 - **Automations:** Split under `automations/` with `automation: !include_dir_merge_list automations/`; includes `04_living_room_climate_exclusivity.yaml` so heat and AC cannot run together (including manual changes).
 - **BHyve manual watering:** `input_select` / `input_number` in `configuration.yaml`, `packages/bhyve_manual_zone_resolve.yaml` (`sensor.bhyve_zone_entity`), and script fixes in `scripts.yaml`.
+- **Agentic Watering (HACS):** packages included from `custom_components/agentic_watering/packages/`; site instance in `packages/smart_sequential_watering_instance.yaml`; dusk/dawn blueprints under `automations/03*.yaml` + `includes/smart_watering_*.yaml`. Full write-up: [docs_ha/garden_agentic_watering.md](docs_ha/garden_agentic_watering.md).
 - **Home Control dashboard:** Living room thermostat entity updated to `climate.new_livingroom_climate`.
+
+### Related repos (Home Assistant plugins & edge AI)
+| Repo | Why |
+|------|-----|
+| [hacs-agentic-watering](https://github.com/zlatko-lakisic/hacs-agentic-watering) | Blueprint + `script.ai_sequential_watering` + REST commands |
+| [hacs-msnswitch](https://github.com/zlatko-lakisic/hacs-msnswitch) | Local PDU / UIS watchdogs (incl. Jetson power) |
+| [agentic-orchestration](https://github.com/zlatko-lakisic/agentic-orchestration) | Jetson k3s OpenAI-compatible endpoint for watering LLM calls |
 
 Secrets stay on the HA host only: `secrets.yaml` and `service_account.json` are gitignored; copy or create them on new installs.
 
