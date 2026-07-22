@@ -30,6 +30,8 @@ Welcome to the central documentation for my smart home ecosystem. This repositor
 * [**Zigbee Lighting and Sensors**](homeassistant/docs_ha/zigbee_lighting_sensors.md): ZHA coordinator, IKEA drivers, Aqara presence, motion-to-light patterns.
 * [**LoRa Perimeter (YoLink Gates)**](homeassistant/docs_ha/lorawan_perimeter.md): YoLink gate contacts and gate-open to AI camera summary workflow.
 * [**NFC Entry and Yale Locks**](homeassistant/docs_ha/nfc_entry.md): Tap-to-enter architecture (no operational secrets) and Yale/August lock inventory.
+* [**Integrations Catalog**](homeassistant/docs_ha/integrations_catalog.md): Every HA integration/domain and what it is used for.
+* [**Unified Climate Control**](homeassistant/docs_ha/unified_climate_control.md): Nest heat + Midea AC behind one living-room thermostat.
 
 ### **3. Related GitHub / Git repos**
 | Repo | URL |
@@ -81,6 +83,7 @@ The network is split into two primary physical and logical segments to ensure th
 | **Zigbee** | ZHA + SONOFF Zigbee 3.0 USB Dongle Plus V2 (EZSP) |
 | **LoRa perimeter** | YoLink DoorSensors (LoRa-family radio) via YoLink hub/cloud |
 | **Smart entry** | Yale locks via August HA integration + HA NFC tags |
+| **Climate** | Nest heat + Midea AC LAN unified via `climate_template` |
 | **Routing** | RouterOS (MikroTik hAP ac) |
 | **Switching** | SwOS (CSS326) + Unmanaged (TP-Link) |
 | **Messaging** | Mosquitto MQTT (Pine64) |
