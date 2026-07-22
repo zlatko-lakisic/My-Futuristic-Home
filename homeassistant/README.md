@@ -14,6 +14,8 @@ For a detailed look at how the Zigbee and Z-Wave meshes are physically and logic
 * 🐝 [**Zigbee Lighting and Sensors**](docs_ha/zigbee_lighting_sensors.md) - ZHA narrative + inventory (table: [zigbee_inventory.md](zigbee_inventory.md)).
 * 📡 [**LoRa Perimeter (YoLink Gates)**](docs_ha/lorawan_perimeter.md) - Gate contacts and AI camera summary workflow.
 * 🔐 [**NFC Entry and Yale Locks**](docs_ha/nfc_entry.md) - Tap-to-enter architecture (no operational secrets).
+* 🔌 [**Integrations Catalog**](docs_ha/integrations_catalog.md) - All integrations and what they are used for.
+* 🌡️ [**Unified Climate Control**](docs_ha/unified_climate_control.md) - Nest heat + Midea AC as one thermostat.
 * 🛡️ [**Nest Protect Inventory**](nest_protect_inventory.md) - Smoke & CO detectors.
 * ☁️ [**SmartThings Inventory**](smartthings_inventory.md) - Samsung Smart TV integrations.
 * 🗣️ [**Google Nest Inventory**](google_nest_inventory.md) - Voice control and Gemini interface.
@@ -78,9 +80,10 @@ The script syncs **root-level YAML** and these trees both ways: `configuration.y
 ### Runtime config in Git (2026-04 sync)
 The repository now tracks the live HA bundle under `homeassistant/` so changes can be reviewed in Git before deploy. Highlights from the consolidated sync:
 
-- **Living room climate:** `climate.new_livingroom_climate` (`climate_template`) combines Nest `climate.living_room` and Midea `climate.150633094697190_climate` / `switch.150633094697190_power`; templates mirror manual changes; `hvac_action_template` exposes idle / heating / cooling from underlying `hvac_action` attributes.
+- **Living room climate:** Documented in [docs_ha/unified_climate_control.md](docs_ha/unified_climate_control.md). `climate.new_livingroom_climate` (`climate_template`) combines Nest `climate.living_room` and Midea `climate.150633094697190_climate` / `switch.150633094697190_power`; templates mirror manual changes; `hvac_action_template` exposes idle / heating / cooling from underlying `hvac_action` attributes.
 - **`script.control_climate`:** Entity-based actions, `mode: single`, off/cool/heat branches aligned with the template logic and mutual exclusion.
 - **Automations:** Split under `automations/` with `automation: !include_dir_merge_list automations/`; includes `04_living_room_climate_exclusivity.yaml` so heat and AC cannot run together (including manual changes).
+- **Integrations catalog:** [docs_ha/integrations_catalog.md](docs_ha/integrations_catalog.md) maps every live config entry domain to its role.
 - **BHyve manual watering:** `input_select` / `input_number` in `configuration.yaml`, `packages/bhyve_manual_zone_resolve.yaml` (`sensor.bhyve_zone_entity`), and script fixes in `scripts.yaml`.
 - **Agentic Watering (HACS):** packages included from `custom_components/agentic_watering/packages/`; site instance in `packages/smart_sequential_watering_instance.yaml`; dusk/dawn blueprints under `automations/03*.yaml` + `includes/smart_watering_*.yaml`. Full write-up: [docs_ha/garden_agentic_watering.md](docs_ha/garden_agentic_watering.md).
 - **Home Control dashboard:** Living room thermostat entity updated to `climate.new_livingroom_climate`.
