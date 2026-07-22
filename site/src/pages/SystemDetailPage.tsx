@@ -65,9 +65,11 @@ export function SystemDetailPage() {
   const Icon = systemIcon(system.icon)
   const next = getNextSystem(system.slug)
 
+  const heroSrc = `${import.meta.env.BASE_URL}hero-${system.slug}.png`
+
   return (
     <div className="min-h-svh bg-night">
-      <div className="border-b border-line bg-panel/50">
+      <div className="relative z-20 border-b border-line bg-panel/50 backdrop-blur-sm">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <Link
             to="/"
@@ -79,25 +81,48 @@ export function SystemDetailPage() {
         </div>
       </div>
 
-      <header className="border-b border-line">
-        <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
-          <SectionReveal>
-            <Icon className="h-7 w-7 text-amber" strokeWidth={1.75} aria-hidden="true" />
-            <h1 className="font-display mt-5 text-3xl font-semibold text-white sm:text-4xl md:text-5xl">
-              {system.name}
-            </h1>
-            <p className="mt-4 max-w-2xl text-lg text-mist/90">{system.tagline}</p>
-            <ul className="mt-6 flex flex-wrap gap-2">
-              {system.underTheHood.map((chip) => (
-                <li
-                  key={chip}
-                  className="font-mono rounded-md border border-line bg-panel px-2.5 py-1 text-[11px] tracking-wide text-sky/90"
-                >
-                  {chip}
-                </li>
-              ))}
-            </ul>
-          </SectionReveal>
+      <header className="relative bg-night">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none relative w-full max-w-full"
+          style={{
+            maskImage:
+              'linear-gradient(to bottom, #000 0%, #000 48%, rgba(0,0,0,0.65) 72%, transparent 100%)',
+            WebkitMaskImage:
+              'linear-gradient(to bottom, #000 0%, #000 48%, rgba(0,0,0,0.65) 72%, transparent 100%)',
+          }}
+        >
+          <img
+            src={heroSrc}
+            alt=""
+            className="block h-auto w-full max-w-full"
+            decoding="async"
+            fetchPriority="high"
+          />
+        </div>
+
+        <div className="relative z-10 -mt-16 sm:-mt-24 md:-mt-32 lg:-mt-40">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-night via-night/85 to-transparent" />
+
+          <div className="relative mx-auto w-full max-w-5xl px-5 pb-12 pt-10 sm:px-8 sm:pb-16 sm:pt-12">
+            <SectionReveal>
+              <Icon className="h-7 w-7 text-amber" strokeWidth={1.75} aria-hidden="true" />
+              <h1 className="font-display mt-5 max-w-3xl text-3xl font-semibold text-white sm:text-4xl md:text-5xl">
+                {system.name}
+              </h1>
+              <p className="mt-4 max-w-2xl text-lg text-mist/90">{system.tagline}</p>
+              <ul className="mt-6 flex flex-wrap gap-2">
+                {system.underTheHood.map((chip) => (
+                  <li
+                    key={chip}
+                    className="font-mono rounded-md border border-line bg-panel/80 px-2.5 py-1 text-[11px] tracking-wide text-sky/90 backdrop-blur-sm"
+                  >
+                    {chip}
+                  </li>
+                ))}
+              </ul>
+            </SectionReveal>
+          </div>
         </div>
       </header>
 
