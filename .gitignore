@@ -1,3 +1,7 @@
+# GitHub Pages site
+site/node_modules/
+site/dist/
+
 # Local symlink to live HA /config (see scripts/setup_ha_live_link.*)
 ha-live
 
