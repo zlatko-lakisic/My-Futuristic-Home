@@ -14,8 +14,8 @@ export function WhatIsThis() {
         <SectionReveal delay={0.05}>
           <p>
             My Futuristic Home is a fully self-hosted smart home. Cameras, watering,
-            networking, storage, and automation all run on hardware inside the house.
-            Nothing important depends on a vendor cloud staying online.
+            networking, storage, and automation live downstairs in the rack. The parts
+            that decide, record, and route all run on hardware inside the house.
           </p>
         </SectionReveal>
         <SectionReveal delay={0.1}>
@@ -27,8 +27,9 @@ export function WhatIsThis() {
         </SectionReveal>
         <SectionReveal delay={0.15}>
           <p>
-            One rule shapes every decision. Everything important runs at home. The cloud
-            can visit. It does not get the keys.
+            One rule shapes every decision. The decision layer never leaves the house.
+            Where a device forces a cloud, it gets a narrow job and no keys: a guest with
+            a task, not a shared trust model.
           </p>
         </SectionReveal>
       </div>

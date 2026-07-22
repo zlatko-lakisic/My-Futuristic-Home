@@ -1,10 +1,14 @@
 import { useEffect } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { getNextSystem, getSystem, type DiagramStep } from '../content/systems'
 import { systemIcon } from '../components/systems/iconMap'
 import { SectionReveal } from '../components/SectionReveal'
 import { Footer } from '../components/Footer'
+import { HeroPicture } from '../components/HeroPicture'
+import { SkipLink } from '../components/SkipLink'
+import { SystemSwitcher } from '../components/SystemSwitcher'
+import { NotFoundPage } from './NotFoundPage'
 
 function FlowDiagram({ steps }: { steps: DiagramStep[] }) {
   return (
@@ -59,25 +63,24 @@ export function SystemDetailPage() {
   }, [system])
 
   if (!system) {
-    return <Navigate to="/" replace />
+    return <NotFoundPage />
   }
 
   const Icon = systemIcon(system.icon)
   const next = getNextSystem(system.slug)
 
-  const heroSrc = `${import.meta.env.BASE_URL}hero-${system.slug}.png`
-
   return (
     <div className="min-h-svh bg-night">
+      <SkipLink />
       <div className="relative z-20 border-b border-line bg-panel/50 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+        <div className="mx-auto flex max-w-5xl items-center gap-4 px-5 py-4 sm:px-8">
           <Link
             to="/"
-            className="text-sm font-medium text-mist/90 transition hover:text-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber"
+            className="shrink-0 text-sm font-medium text-mist/90 transition hover:text-amber focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber"
           >
             ← Back to the house
           </Link>
-          <span className="font-mono text-[11px] tracking-wide text-mist/50">{system.name}</span>
+          <SystemSwitcher currentSlug={system.slug} />
         </div>
       </div>
 
@@ -92,13 +95,7 @@ export function SystemDetailPage() {
               'linear-gradient(to bottom, #000 0%, #000 48%, rgba(0,0,0,0.65) 72%, transparent 100%)',
           }}
         >
-          <img
-            src={heroSrc}
-            alt=""
-            className="block h-auto w-full max-w-full"
-            decoding="async"
-            fetchPriority="high"
-          />
+          <HeroPicture stem={`hero-${system.slug}`} fetchPriority="high" />
         </div>
 
         <div className="relative z-10 -mt-16 sm:-mt-24 md:-mt-32 lg:-mt-40">
@@ -126,7 +123,7 @@ export function SystemDetailPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-5 py-14 sm:px-8 sm:py-20">
+      <main id="main-content" className="mx-auto max-w-3xl px-5 py-14 sm:px-8 sm:py-20">
         <SectionReveal>
           <h2 className="font-display text-2xl font-semibold text-white">What it does</h2>
           <div className="mt-5 space-y-4 text-mist/90">

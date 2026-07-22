@@ -102,7 +102,7 @@ export function DayInTheLife() {
           </h2>
           <p className="mt-4 max-w-2xl text-mist/85">
             Scroll through a day in the house. Each stop is a moment the system
-            acts on its own, without a phone ping and without a cloud subscription.
+            acts on its own, before anyone asks it to.
           </p>
         </SectionReveal>
 
