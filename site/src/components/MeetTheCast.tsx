@@ -9,7 +9,7 @@ export function MeetTheCast() {
       <SectionReveal>
         <p className="font-mono text-xs tracking-[0.16em] text-sky uppercase">Meet the cast</p>
         <h2 className="font-display mt-3 max-w-2xl text-3xl font-semibold text-white sm:text-4xl">
-          Eight roles. One house.
+          Nine roles. One house.
         </h2>
         <p className="mt-4 max-w-2xl text-mist/85">
           Each part has a job. Together they behave like a small production system
@@ -17,7 +17,7 @@ export function MeetTheCast() {
         </p>
       </SectionReveal>
 
-      <ul className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {systems.map((member, i) => {
           const Icon = systemIcon(member.icon)
           return (
