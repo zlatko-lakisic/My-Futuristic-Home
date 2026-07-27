@@ -29,8 +29,8 @@ L2TP installs a preferred default toward NYC, so generic discovery (`/ip cloud`)
 
 Public-IP automation must force probes out the local ISP path:
 
-- Temporary `/32` via `192.168.100.1`
-- `/tool fetch` with `src-address=192.168.100.100`
+- Resolve `api.ipify.org` once, then install a temporary `/32` via `192.168.100.1`
+- `/tool fetch` by that IP with `Host: api.ipify.org` (hostname fetch re-resolves to another CDN IP and still exits via L2TP)
 - Store result in `:global PublicIP` for HACS Environment sensors
 
 See [`mikrotik_mostar_public_wan_ip.rsc`](mikrotik_mostar_public_wan_ip.rsc).
@@ -40,5 +40,5 @@ See [`mikrotik_mostar_public_wan_ip.rsc`](mikrotik_mostar_public_wan_ip.rsc).
 ## HA integration
 
 - Instance name: **Mikrotik-Mostar** (`hacs-mikrotik_router`)  
-- Enable **Environment variable sensors** to read `PublicIP`  
-- Dashboard WAN line currently uses ether1 `client_ip_address` (private CPE LAN IP) unless updated to the Environment sensor
+- Enable **Environment variable sensors** to read `PublicIP` → `sensor.mikrotik_mostar_environment_publicip`
+- Infrastructure dashboard Mostar card WAN line uses `sensor.mikrotik_mostar_environment_publicip`
