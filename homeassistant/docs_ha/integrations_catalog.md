@@ -68,7 +68,7 @@ Entries marked **ignored** or **not_loaded** are discovery leftovers or intentio
 | :--- | :--- | :--- | :--- |
 | `mqtt` | mqtt.mostardesigns.com | loaded | Mosquitto broker for Frigate, watering snapshots, and other MQTT devices. |
 | `mikrotik_router` | Mikrotik-Home, Mikrotik-Mostar | loaded | RouterOS sensors (ports, traffic, system). Fork HACS `hacs-mikrotik_router` v2.3.0. |
-| `mikrotik_switchos` | Mikrotik `http://10.0.10.2/` | loaded | CSS326 SwitchOS ports, link, traffic, reboot. Fork HACS `hacs-switchos` 0.1.1. |
+| `mikrotik_switchos` | Mikrotik `http://10.0.10.2/` | loaded | CSS326 SwitchOS ports, link, traffic, reboot. Fork HACS `hacs-switchos` 0.1.2. |
 | `unifi` | Home | loaded | UniFi Network Application clients/APs. |
 | `glances` | NVR `10.0.10.16`, HA localhost, garden speaker `192.168.89.27`, Jetson `172.16.90.20` | loaded (Jetson may retry) | Host CPU/mem/disk. Dashboard also uses package `infra_glances_hosts` as a direct API fallback. |
 | `systemmonitor` | System Monitor | loaded | HA host OS metrics. |
@@ -127,7 +127,7 @@ Present under `/config/custom_components` (not every folder has an active config
 | `agentic_watering` | 1.2.0 | Irrigation LLM pipeline |
 | `msnswitch` | 1.0.6 | PDU watchdogs |
 | `mikrotik_router` | 2.3.0 | RouterOS (fork) |
-| `mikrotik_switchos` | 0.1.1 | SwitchOS (fork) |
+| `mikrotik_switchos` | 0.1.2 | SwitchOS (fork) |
 | `frigate` | 5.15.4 | Frigate HA integration |
 | `llmvision` | 1.7.0 | Vision LLM actions |
 | `climate_template` | 1.4.0 | Unified climate + helpers |
