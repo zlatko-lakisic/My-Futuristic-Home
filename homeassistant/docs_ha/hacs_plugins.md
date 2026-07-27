@@ -64,7 +64,7 @@ Owner-maintained forks used in production:
 | Package | Version | Used for | Architecture slot |
 | :--- | :--- | :--- | :--- |
 | `zlatko-lakisic/hacs-mikrotik_router` | v2.3.0 | MikroTik Home + Mostar RouterOS sensors | Network monitoring |
-| `zlatko-lakisic/hacs-switchos` | 0.1.0 | MikroTik CSS326 SwitchOS ports/stats/control | Switching |
+| `zlatko-lakisic/hacs-switchos` | 0.1.1 | MikroTik CSS326 SwitchOS ports/stats/control | Switching |
 | `zlatko-lakisic/hacs-msnswitch` | v1.0.6 | UIS PDU outlet watchdogs | Power recovery |
 | `dougiteixeira/proxmoxve` | 4.0.2 | Proxmox VMs/LXCs | Hypervisor |
 | `tomaae/homeassistant-openmediavault` | v1.4.2 | NAS1 / NAS2 | Storage health |
