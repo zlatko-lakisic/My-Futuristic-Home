@@ -9,7 +9,8 @@
 #
 # Mostar prefers NYC via L2TP for the main default route, so hostname-based
 # fetches (and /ip cloud) report the NYC egress IP. This script:
-#   1) resolves api.ipify.org once
+#   1) resolves api.ipify.org once (via explicit public DNS — FreeIPA/L2TP DNS
+#      can be flaky when use-peer-dns=exclusively)
 #   2) installs a temporary /32 via the ISP CPE gateway (192.168.100.1)
 #   3) fetches by that IP with a Host header (avoids a second DNS lookup to a
 #      different CDN address that would again follow the L2TP default)
@@ -37,11 +38,21 @@
     :local ispGateway "192.168.100.1"
     :local checkHost "api.ipify.org"
     :local routeComment "hacs-public-wan-ip-temp"
+    :local dnsA "8.8.8.8"
+    :local dnsB "1.1.1.1"
 
     :do {
         /ip route remove [find where comment=$routeComment]
 
-        :local resolved [:resolve $checkHost]
+        :local resolved
+        :do {
+            :set resolved [:resolve $checkHost server=$dnsA]
+        } on-error={}
+        :if ([:typeof $resolved] != "ip") do={
+            :do {
+                :set resolved [:resolve $checkHost server=$dnsB]
+            } on-error={}
+        }
         :if ([:typeof $resolved] != "ip") do={
             :error ("failed to resolve " . $checkHost)
         }
@@ -71,10 +82,9 @@
             :error "ISP-path fetch did not return a public IPv4 address"
         }
 
-        :if ($PublicIP != $discovered) do={
-            :set PublicIP $discovered
-            :log info ("hacs-public-wan-ip: PublicIP=" . $discovered . " via " . $ispGateway)
-        }
+        # Always write so HA environment sensors refresh even when IP is unchanged
+        :set PublicIP $discovered
+        :log info ("hacs-public-wan-ip: PublicIP=" . $discovered . " via " . $ispGateway)
     } on-error={
         /ip route remove [find where comment=$routeComment]
         /file remove [find where name="hacs-public-wan-ip.txt"]

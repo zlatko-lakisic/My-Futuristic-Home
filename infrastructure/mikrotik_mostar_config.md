@@ -59,10 +59,10 @@ L2TP installs a preferred default toward NYC, so `/ip cloud` and naive HTTPS fet
 
 Live automation (`hacs-public-wan-ip`, every 5m):
 
-1. Resolve `api.ipify.org` once  
+1. Resolve `api.ipify.org` via explicit DNS (`8.8.8.8`, fallback `1.1.1.1`) — default L2TP peer DNS (`10.0.10.10`) can fail intermittently  
 2. Temporary `/32` via `192.168.100.1`  
 3. HTTP fetch **by that IP** with `Host: api.ipify.org` (avoids CDN re-resolve via L2TP)  
-4. Store `:global PublicIP`
+4. Always store `:global PublicIP` (so HA environment sensors refresh)
 
 HA: enable **Environment variable sensors** on instance **Mikrotik-Mostar** → `sensor.mikrotik_mostar_environment_publicip`. Infrastructure dashboard WAN line uses that entity.
 
