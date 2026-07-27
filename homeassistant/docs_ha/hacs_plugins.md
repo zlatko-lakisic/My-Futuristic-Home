@@ -29,6 +29,7 @@ Owner-maintained forks used in production:
 | [hacs-agentic-watering](https://github.com/zlatko-lakisic/hacs-agentic-watering) | Irrigation LLM pipeline + blueprint + packages |
 | [hacs-msnswitch](https://github.com/zlatko-lakisic/hacs-msnswitch) | PDU power watchdogs |
 | [hacs-mikrotik_router](https://github.com/zlatko-lakisic/hacs-mikrotik_router) | RouterOS integration fork (login fix / sync) |
+| [hacs-switchos](https://github.com/zlatko-lakisic/hacs-switchos) | SwitchOS fork (ports, stats, PoE control) |
 
 ## Integrations (custom_components)
 
@@ -63,7 +64,7 @@ Owner-maintained forks used in production:
 | Package | Version | Used for | Architecture slot |
 | :--- | :--- | :--- | :--- |
 | `zlatko-lakisic/hacs-mikrotik_router` | v2.3.0 | MikroTik Home + Mostar RouterOS sensors | Network monitoring |
-| `probert94/ha-switchos` | 0.0.9 | MikroTik SwitchOS | Switching metrics |
+| `zlatko-lakisic/hacs-switchos` | 0.1.0 | MikroTik CSS326 SwitchOS ports/stats/control | Switching |
 | `zlatko-lakisic/hacs-msnswitch` | v1.0.6 | UIS PDU outlet watchdogs | Power recovery |
 | `dougiteixeira/proxmoxve` | 4.0.2 | Proxmox VMs/LXCs | Hypervisor |
 | `tomaae/homeassistant-openmediavault` | v1.4.2 | NAS1 / NAS2 | Storage health |
