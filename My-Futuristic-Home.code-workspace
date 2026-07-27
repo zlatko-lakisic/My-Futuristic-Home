@@ -17,6 +17,9 @@
 		},
 		{
 			"path": "../hacs-mikrotik_router"
+		},
+		{
+			"path": "../hacs-switchos"
 		}
 	],
 	"settings": {}

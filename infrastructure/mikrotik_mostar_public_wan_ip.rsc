@@ -7,18 +7,21 @@
 # With "Environment variable sensors" enabled, it exposes each
 # /system/script/environment entry as a sensor whose state is the variable value.
 #
-# Mostar prefers NYC via L2TP/WireGuard for many flows, so /ip cloud would report
-# the NYC egress IP. This script instead fetches the Internet-visible IPv4 address
-# forced out the local ISP CPE (ether1 WAN) and stores it as:
+# Mostar prefers NYC via L2TP for the main default route, so hostname-based
+# fetches (and /ip cloud) report the NYC egress IP. This script:
+#   1) resolves api.ipify.org once
+#   2) installs a temporary /32 via the ISP CPE gateway (192.168.100.1)
+#   3) fetches by that IP with a Host header (avoids a second DNS lookup to a
+#      different CDN address that would again follow the L2TP default)
+#   4) stores the result as:
 #
 #   :global PublicIP "<public-ipv4>"
 #
-# After import + HA option enable, expect roughly:
-#   sensor.mikrotik_mostar_publicip
+# After import + HA option enable, expect:
+#   sensor.mikrotik_mostar_environment_publicip
 #
-# WAN addressing (from Mostar backup):
+# WAN addressing (from Mostar backup / live):
 #   ether1 address 192.168.100.100/24, ISP gateway 192.168.100.1
-# If your CPE gateway really is 192.168.1.1, change $ispGateway / $wanSrc below.
 #
 # This deliberately does NOT assign the public IP to ether1. The address belongs
 # to the ISP router, so assigning it locally could break or misroute traffic.
@@ -32,7 +35,6 @@
     :global PublicIP
 
     :local ispGateway "192.168.100.1"
-    :local wanSrc "192.168.100.100"
     :local checkHost "api.ipify.org"
     :local routeComment "hacs-public-wan-ip-temp"
 
@@ -50,10 +52,18 @@
 
         :delay 1s
 
-        :local result [/tool fetch url=("https://" . $checkHost) \
-            src-address=$wanSrc http-method=get output=user as-value]
-        :local discovered [:tostr ($result->"data")]
+        # Fetch by IP + Host header so /tool fetch does not re-resolve to another
+        # CDN address that would still follow the L2TP default route.
+        /file remove [find where name="hacs-public-wan-ip.txt"]
+        /tool fetch url=("http://" . $resolved . "/") \
+            http-header-field=("Host:" . $checkHost) \
+            dst-path=hacs-public-wan-ip.txt
+        :delay 2s
+
+        :local discovered [/file get hacs-public-wan-ip.txt contents]
+        :set discovered [:tostr $discovered]
         :set discovered [:pick $discovered 0 [:find ($discovered . "\n") "\n"]]
+        /file remove [find where name="hacs-public-wan-ip.txt"]
 
         /ip route remove [find where comment=$routeComment]
 
@@ -67,6 +77,7 @@
         }
     } on-error={
         /ip route remove [find where comment=$routeComment]
+        /file remove [find where name="hacs-public-wan-ip.txt"]
         :log warning "hacs-public-wan-ip: public IPv4 discovery via ISP WAN failed"
     }
 }
