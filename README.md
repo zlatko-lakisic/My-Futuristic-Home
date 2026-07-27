@@ -8,6 +8,8 @@ Welcome to the central documentation for my smart home ecosystem. This repositor
 
 ### **1. Infrastructure (The Foundation)**
 * [**Networking**](infrastructure/networking.md): VLANs, subnets, and the specialized NAS2 bridge.
+* [**MikroTik NYC / Home (`Kuca`)**](infrastructure/mikrotik_config.md): Primary gateway docs + scrubbed export ([`.rsc`](infrastructure/mikrotik_home_config.rsc)).
+* [**MikroTik Mostar (`Kuca-Mostar`)**](infrastructure/mikrotik_mostar_config.md): Remote site docs + scrubbed export ([`.rsc`](infrastructure/mikrotik_mostar_config.rsc)).
 * [**Hardware Inventory**](infrastructure/hardware.md): Beelink EQ14 and Proxmox Cluster specs.
 * [**Security Cameras**](infrastructure/cameras.md): IP camera inventory and stream paths.
 * [**NVR & AI Stack**](infrastructure/nvr.md): Frigate, TensorRT, and NVIDIA RTX A4000 logic.
