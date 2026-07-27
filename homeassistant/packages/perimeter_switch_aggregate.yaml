@@ -1,0 +1,72 @@
+# Aggregate CSS326 / SwitchOS port metrics for the infrastructure dashboard.
+# Sums per-port RX/TX rates and negotiated link capacity of ports that are up.
+
+template:
+  - sensor:
+      - name: Perimeter Switch total RX
+        unique_id: perimeter_switch_total_rx_rate
+        state_class: measurement
+        device_class: data_rate
+        unit_of_measurement: "Mbit/s"
+        icon: mdi:download-network-outline
+        state: >
+          {% set rates = states.sensor
+            | selectattr('entity_id', 'search', 'basement_perimiter_switch_.*_rx_rate$')
+            | map(attribute='state')
+            | reject('in', ['unknown', 'unavailable', 'none', ''])
+            | map('float', 0)
+            | list %}
+          {{ (rates | sum) | round(2) }}
+
+      - name: Perimeter Switch total TX
+        unique_id: perimeter_switch_total_tx_rate
+        state_class: measurement
+        device_class: data_rate
+        unit_of_measurement: "Mbit/s"
+        icon: mdi:upload-network-outline
+        state: >
+          {% set rates = states.sensor
+            | selectattr('entity_id', 'search', 'basement_perimiter_switch_.*_tx_rate$')
+            | map(attribute='state')
+            | reject('in', ['unknown', 'unavailable', 'none', ''])
+            | map('float', 0)
+            | list %}
+          {{ (rates | sum) | round(2) }}
+
+      - name: Perimeter Switch link capacity
+        unique_id: perimeter_switch_link_capacity_mbps
+        state_class: measurement
+        device_class: data_rate
+        unit_of_measurement: "Mbit/s"
+        icon: mdi:lan
+        state: >
+          {% set speed_map = {
+            '10M': 10,
+            '100M': 100,
+            '200M': 200,
+            '1G': 1000,
+            '2.5G': 2500,
+            '5G': 5000,
+            '10G': 10000
+          } %}
+          {% set ns = namespace(total=0) %}
+          {% for s in states.binary_sensor
+               | selectattr('entity_id', 'search', 'basement_perimiter_switch_.*_link$')
+               | list %}
+            {% if s.state == 'on' %}
+              {% set spd = s.attributes.get('speed') %}
+              {% set ns.total = ns.total + speed_map.get(spd, 0) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.total }}
+        attributes:
+          ports_up: >
+            {% set links = states.binary_sensor
+              | selectattr('entity_id', 'search', 'basement_perimiter_switch_.*_link$')
+              | list %}
+            {{ links | selectattr('state', 'eq', 'on') | list | count }}
+          ports_total: >
+            {{ states.binary_sensor
+              | selectattr('entity_id', 'search', 'basement_perimiter_switch_.*_link$')
+              | list
+              | count }}

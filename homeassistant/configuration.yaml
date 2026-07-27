@@ -65,6 +65,7 @@ homeassistant:
     smart_sequential_watering_script: !include custom_components/agentic_watering/packages/smart_sequential_watering_script.yaml
     smart_sequential_watering_instance: !include packages/smart_sequential_watering_instance.yaml
     irrigation_zone_runtime_7d: !include packages/irrigation_zone_runtime_7d.yaml
+    perimeter_switch_aggregate: !include packages/perimeter_switch_aggregate.yaml
     www_tmp_cleanup_shell: !include packages/www_tmp_cleanup_shell.yaml
 
 influxdb:
