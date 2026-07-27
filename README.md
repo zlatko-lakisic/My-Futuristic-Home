@@ -68,13 +68,40 @@ All core equipment is housed in a **Tecmojo 9U Wall Mount Server Cabinet** featu
 ---
 
 ## 🌐 Network Architecture
-The network is split into two primary physical and logical segments to ensure that high-bandwidth server traffic does not interfere with standard house operations.
 
-### **Subnet Strategy**
-- **Perimeter (10.0.10.x):** Secured server management, storage (NAS), and surveillance (NVR).
-- **House LAN (192.168.89.x):** General wired devices, Access Points, and the dedicated MQTT broker.
-- **House WLAN (192.168.90.x):** Home wifi devices.
-- **IOT WLAN (172.16.90.x):** Home iot wifi devices.
+Two sites: **NYC (`Kuca`)** is the primary gateway; **Mostar (`Kuca-Mostar`)** dials back over L2TP/IPsec and provides torrent egress via its ISP public IP.
+
+```mermaid
+flowchart LR
+  Internet((Internet))
+  NYC[NYC MikroTik Kuca]
+  MOST[Mostar MikroTik]
+  PER[Perimeter 10.0.10.0/24]
+  HOME[House 192.168.89.0/24]
+  TOR[Torrent 172.16.55.2]
+  Internet --- NYC
+  Internet --- MOST
+  NYC --- PER & HOME
+  TOR -->|L2TP policy route| MOST
+  MOST -->|ISP NAT| Internet
+  NYC <-.->|L2TP/IPsec| MOST
+```
+
+### Subnet strategy
+
+| Segment | CIDR | Role |
+| --- | --- | --- |
+| Perimeter | `10.0.10.0/24` | Servers, NAS, switches, Traefik/UniFi |
+| House LAN | `192.168.89.0/24` | Wired house, APs, MQTT, HA |
+| House WLAN | `192.168.90.0/24` | Trusted Wi‑Fi (VLAN 2) |
+| IoT VLAN | `172.16.90.0/24` | Isolated IoT / Jetson (VLAN 4) |
+| Torrent VLAN | `172.16.55.0/29` | qBittorrent → Mostar public IP |
+| VPN / Mostar tunnel | `172.16.91.0/27` | L2TP/OVPN endpoints (`172.16.91.30` = Mostar) |
+| Storage backplane | `172.16.100.0/24` | NAS2 ↔ NVR direct NFS |
+| Mostar CPE LAN | `192.168.100.0/24` | Mostar WAN behind ISP CPE |
+| Mostar NYC-bridge | `192.168.88.0/24` | Local clients egress via NYC |
+
+Full diagrams: [Networking](infrastructure/networking.md).
 
 ---
 
@@ -89,7 +116,7 @@ The network is split into two primary physical and logical segments to ensure th
 | **LoRa perimeter** | YoLink DoorSensors (LoRa-family radio) via YoLink hub/cloud |
 | **Smart entry** | Yale locks via August HA integration + HA NFC tags |
 | **Climate** | Nest heat + Midea AC LAN unified via `climate_template` |
-| **Routing** | RouterOS (MikroTik hAP ac) |
+| **Routing** | RouterOS (NYC hAP ac + Mostar RB951G, L2TP) |
 | **Switching** | SwOS (CSS326) + Unmanaged (TP-Link) |
 | **Messaging** | Mosquitto MQTT (Pine64) |
 | **Controller** | UniFi Network Application (Docker on Beelink) |
