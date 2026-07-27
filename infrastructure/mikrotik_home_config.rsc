@@ -604,7 +604,7 @@ add disabled=yes dst-address=34.199.7.183/32 peer="Omega AWS Peer 2" \
     proposal="Aws 2" src-address=100.37.100.177/32 tunnel=yes
 /ip route
 add check-gateway=ping disabled=no distance=1 dst-address=0.0.0.0/0 gateway=\
-    172.16.91.2 routing-table=torrent_over_mostar scope=30 target-scope=10
+    172.16.91.30 routing-table=torrent_over_mostar scope=30 target-scope=10
 add check-gateway=ping disabled=yes dst-address=0.0.0.0/0 gateway=\
     192.168.42.129
 add check-gateway=ping disabled=yes distance=1 dst-address=192.168.100.0/24 \

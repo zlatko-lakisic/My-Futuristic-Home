@@ -98,9 +98,11 @@ add action=mark-routing chain=prerouting dst-address-list=!Local \
     new-routing-mark=torrent_over_mostar passthrough=no src-address=172.16.55.2
 
 /ip route
-add check-gateway=ping dst-address=0.0.0.0/0 gateway=172.16.91.2 \
+add check-gateway=ping dst-address=0.0.0.0/0 gateway=172.16.91.30 \
     routing-table=torrent_over_mostar
 ```
+
+Gateway is the Mostar L2TP peer (`172.16.91.30`). WireGuard `wg-mostar` / `172.16.91.2` is disabled; do not point this table at it unless WG is re-enabled on both ends.
 
 NAT masquerades Mostar L2TP (`192.168.88.0/24`) and WireGuard (`172.16.91.0/24`) clients out WAN when they break out through NYC.
 
