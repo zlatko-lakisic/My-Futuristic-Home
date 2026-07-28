@@ -20,6 +20,9 @@
 		},
 		{
 			"path": "../hacs-switchos"
+		},
+		{
+			"path": "../hacs-nest-protect"
 		}
 	],
 	"settings": {}
