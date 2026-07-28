@@ -20,3 +20,4 @@ homeassistant/*.log
 # Ignore MikroTik private backups
 infrastructure/configs/*.backup
 infrastructure/configs/*.rsc
+.DS_Store
