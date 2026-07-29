@@ -44,6 +44,13 @@ lovelace:
       show_in_sidebar: true
       require_admin: false
       filename: dashboards/home_control.yaml
+    dashboard-garage:
+      mode: yaml
+      title: Garage
+      icon: mdi:garage
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/garage.yaml
 
 homeassistant:
   country: US

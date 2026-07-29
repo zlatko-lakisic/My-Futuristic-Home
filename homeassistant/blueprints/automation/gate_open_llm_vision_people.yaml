@@ -10,7 +10,8 @@ blueprint:
     notifications (Android 14+ animates GIFs) and dashboard “last clip” cards.
 
     Notifies when classification is **PEOPLE**. If the vision provider returns tool-call JSON / unusable text,
-    optionally falls back to a Frigate person occupancy (or count) sensor.
+    errors, or empty output, still notifies with the GIF and a simple "{gate name} opened" message.
+    Optionally falls back to a Frigate person occupancy (or count) sensor when classifying PEOPLE vs noise.
 
     Configure one automation per gate (east, west, back yard) with its sensor, camera, and dashboard path.
   domain: automation
@@ -171,6 +172,7 @@ actions:
       notify_media_image: '{{ public_gif_url }}'
       dashboard_media_rel: '{{ clip_gif_rel }}'
   - action: llmvision.image_analyzer
+    continue_on_error: true
     data:
       provider: !input llmvision_provider
       model: !input llmvision_model
@@ -214,11 +216,13 @@ actions:
     response_variable: ai_response
   - variables:
       reply_raw: >-
-        {% set r = ai_response.response_text | default(ai_response.text, true) | default('', true) %}
-        {% if r is mapping or r is iterable and r is not string %}
-          {{ r | to_json }}
+        {% if ai_response is not defined or ai_response is none %}
+        {% elif ai_response is mapping %}
+          {% set r = ai_response.get('response_text', ai_response.get('text', '')) %}
+          {% if r is mapping or (r is iterable and r is not string) %}{{ r | to_json }}{% else %}{{ r }}{% endif %}
         {% else %}
-          {{ r }}
+          {% set r = ai_response.response_text | default(ai_response.text, true) | default('', true) %}
+          {% if r is mapping or (r is iterable and r is not string) %}{{ r | to_json }}{% else %}{{ r }}{% endif %}
         {% endif %}
       reply: >-
         {% set raw = reply_raw | string %}
@@ -259,9 +263,11 @@ actions:
         {% set raw = reply_raw | string %}
         {% set cleaned = reply | string | trim %}
         {% set label = llm_label | string | trim | upper %}
-        {% if raw | regex_findall('(?i)"name"\\s*:\\s*"(describe_image|python_m_mcp|media_understand)') | length > 0 %}
+        {% if ai_response is not defined or ai_response is none %}
           yes
-        {% elif cleaned in ['', '}', '{', "Couldn't generate content. Check logs for details."] %}
+        {% elif raw | regex_findall('(?i)"name"\\s*:\\s*"(describe_image|python_m_mcp|media_understand)') | length > 0 %}
+          yes
+        {% elif cleaned in ['', '}', '{', "Couldn't generate content. Check logs for details.", 'None', 'none'] %}
           yes
         {% elif cleaned | regex_findall('(?i)(Describe local image files|For each frame analyzed|List the person/pet)') | length > 0 %}
           yes
@@ -285,12 +291,8 @@ actions:
       log_description: >-
         {% set unusable = (llm_unusable | string | trim) == 'yes' %}
         {% set label = llm_label | string | trim | upper %}
-        {% if unusable and label not in ['PEOPLE', 'NOPEOPLE'] %}
-          {% if (frigate_people | string | trim) == 'yes' %}
-            Frigate detected a person near {{ gate_name }}
-          {% else %}
-            No person detected at {{ gate_name }}
-          {% endif %}
+        {% if unusable %}
+          {{ gate_name }} opened
         {% else %}
           {% set text = reply | string %}
           {% set sl = text.split('\n') %}
@@ -320,20 +322,22 @@ actions:
             No people at {{ gate_name }}
           {% endif %}
         {% endif %}
-      # If the model says NOPEOPLE but the summary clearly describes a person, trust the summary.
+      # PEOPLE when model sees a person; FALLBACK when LLM fails/junk/errors (still notify + GIF).
       gate_classification: >-
         {% set label = llm_label | string | trim | upper %}
+        {% set unusable = (llm_unusable | string | trim) == 'yes' %}
         {% set summary = log_description | string | lower %}
         {% set describes_person = summary | regex_findall('(?i)\\b(person|people|someone|man|woman|child|human)\\b') | length > 0
-           and summary | regex_findall('(?i)\\bno (person|people)\\b') | length == 0 %}
-        {% if (llm_unusable | string | trim) == 'yes' and label not in ['PEOPLE', 'NOPEOPLE'] %}
-          {{ 'PEOPLE' if (frigate_people | string | trim) == 'yes' else 'NOPEOPLE' }}
+           and summary | regex_findall('(?i)\\bno (person|people)\\b') | length == 0
+           and 'opened' not in summary %}
+        {% if unusable %}
+          FALLBACK
         {% elif label == 'NOPEOPLE' and describes_person %}
           PEOPLE
         {% elif label in ['PEOPLE', 'NOPEOPLE'] %}
           {{ label }}
         {% else %}
-          UNKNOWN
+          FALLBACK
         {% endif %}
       notify_title: >-
         {% if gate_classification == 'PEOPLE' %}
@@ -345,16 +349,16 @@ actions:
             {{ gate_name }} · Person
           {% endif %}
         {% else %}
-          {{ gate_name }}
+          {{ gate_name }} opened
         {% endif %}
       mobile_short: >-
         {% if gate_classification == 'PEOPLE' %}
           {{ log_description | truncate(120, true, '…') }}
-        {% elif gate_classification == 'NOPEOPLE' %}
-          No people at {{ gate_name }}
         {% else %}
-          Gate activity at {{ gate_name }}
+          {{ gate_name }} opened
         {% endif %}
+      should_notify: >-
+        {{ 'yes' if gate_classification in ['PEOPLE', 'FALLBACK'] else 'no' }}
       notify_services: >-
         {% set ns = namespace(services=[]) %}
         {% for p in (notify_people | default([], true)) %}
@@ -391,7 +395,7 @@ actions:
       datetime: '{{ now().strftime("%Y-%m-%d %H:%M:%S") }}'
   - if:
     - condition: template
-      value_template: "{{ gate_classification == 'PEOPLE' }}"
+      value_template: "{{ (should_notify | string | trim) == 'yes' }}"
     then:
     - action: persistent_notification.create
       data:

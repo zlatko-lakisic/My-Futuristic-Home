@@ -1,0 +1,394 @@
+# Garage / Driveway — full-width mockup (panel + grid_options full, same pattern as torrents.yaml)
+#
+# Mockup:
+#   [ Controls 4-across ] [ Live Driveway Feed + stats ]
+#   [ Camera 2×4        ] [ (feed spans both left rows) ]
+#   [ Snapshots — full width ]
+#   [ Status & Alerts — full width ]
+views:
+  - title: Garage & Driveway
+    icon: mdi:garage
+    type: panel
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            grid_options:
+              columns: full
+            layout:
+              width: 100%
+              max_width: 100%
+              padding: 8px 16px 4px
+              margin: 0
+              grid-template-columns: minmax(300px, 2fr) minmax(0, 3fr)
+              grid-template-rows: auto 1fr
+              grid-template-areas: |
+                "controls feed"
+                "camera feed"
+              grid-gap: 10px 16px
+              place-items: stretch
+              mediaquery:
+                "(max-width: 1100px)":
+                  grid-template-columns: 100%
+                  grid-template-areas: |
+                    "controls"
+                    "camera"
+                    "feed"
+            cards:
+              - type: vertical-stack
+                view_layout:
+                  grid-area: controls
+                cards:
+                  - type: heading
+                    heading: Controls
+                    heading_style: title
+                    icon: mdi:toggle-switch
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    grid_options:
+                      columns: full
+                    layout:
+                      grid-template-columns: repeat(4, minmax(0, 1fr))
+                      grid-gap: 8px
+                      place-items: stretch
+                      mediaquery:
+                        "(max-width: 700px)":
+                          grid-template-columns: repeat(2, minmax(0, 1fr))
+                    cards:
+                      - type: tile
+                        entity: light.flood_lights
+                        name: Flood Lights
+                        icon: mdi:flood-light
+                        vertical: true
+                        features_position: bottom
+                      - type: tile
+                        entity: cover.garage_door_door
+                        name: Garage Opener
+                        icon: mdi:garage
+                        vertical: true
+                        features_position: bottom
+                      - type: tile
+                        entity: light.garage_light
+                        name: Garage Light
+                        icon: mdi:lightbulb
+                        vertical: true
+                        features_position: bottom
+                      - type: tile
+                        entity: light.garage_door_light
+                        name: Opener Light
+                        icon: mdi:lightbulb-outline
+                        vertical: true
+                        features_position: bottom
+
+              - type: vertical-stack
+                view_layout:
+                  grid-area: camera
+                cards:
+                  - type: heading
+                    heading: Camera
+                    heading_style: title
+                    icon: mdi:cctv
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    grid_options:
+                      columns: full
+                    layout:
+                      grid-template-columns: repeat(4, minmax(0, 1fr))
+                      grid-gap: 8px
+                      place-items: stretch
+                      mediaquery:
+                        "(max-width: 700px)":
+                          grid-template-columns: repeat(2, minmax(0, 1fr))
+                    cards:
+                      - type: tile
+                        entity: switch.driveway_detect
+                        name: Detection
+                        icon: mdi:motion-sensor
+                        vertical: true
+                      - type: tile
+                        entity: switch.driveway_recordings
+                        name: Recordings
+                        icon: mdi:record-rec
+                        vertical: true
+                      - type: tile
+                        entity: binary_sensor.driveway_daynight_1
+                        name: Day / Night
+                        icon: mdi:theme-light-dark
+                        vertical: true
+                        color: amber
+                      - type: tile
+                        entity: binary_sensor.driveway_person_occupancy
+                        name: Person
+                        icon: mdi:walk
+                        vertical: true
+                        color: green
+                      - type: tile
+                        entity: binary_sensor.driveway_motion_2
+                        name: Motion
+                        icon: mdi:motion-sensor
+                        vertical: true
+                      - type: tile
+                        entity: binary_sensor.driveway_car_occupancy
+                        name: Car
+                        icon: mdi:car
+                        vertical: true
+                        color: green
+                      - type: tile
+                        entity: binary_sensor.driveway_dog_occupancy
+                        name: Dog
+                        icon: mdi:dog
+                        vertical: true
+                        color: green
+                      - type: tile
+                        entity: binary_sensor.driveway_all_occupancy
+                        name: Any object
+                        icon: mdi:eye-check
+                        vertical: true
+                        color: green
+
+              - type: vertical-stack
+                view_layout:
+                  grid-area: feed
+                cards:
+                  - type: heading
+                    heading: Live Driveway Feed
+                    heading_style: title
+                    icon: mdi:video
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    grid_options:
+                      columns: full
+                    layout:
+                      grid-template-columns: minmax(0, 1fr) 150px
+                      grid-gap: 10px
+                      place-items: stretch
+                      mediaquery:
+                        "(max-width: 700px)":
+                          grid-template-columns: 100%
+                    cards:
+                      - type: custom:advanced-camera-card
+                        cameras:
+                          - camera_entity: camera.driveway
+                            frigate:
+                              camera_name: driveway
+                            live_provider: go2rtc
+                        dimensions:
+                          aspect_ratio_mode: static
+                          aspect_ratio: '16/9'
+                        live:
+                          preload: false
+                          controls:
+                            builtin: true
+                        menu:
+                          style: overlay
+                          position: bottom
+                          buttons:
+                            fullscreen:
+                              enabled: true
+                            cameras:
+                              enabled: false
+                            live:
+                              enabled: true
+                            clips:
+                              enabled: true
+                            snapshots:
+                              enabled: true
+                        status_bar:
+                          style: overlay
+                          position: top
+                      - type: vertical-stack
+                        cards:
+                          - type: custom:button-card
+                            entity: sensor.driveway_frigate_fps
+                            name: Driveway FPS
+                            show_state: true
+                            show_icon: false
+                            styles:
+                              card:
+                                - padding: 14px 10px
+                                - border-radius: 12px
+                              name:
+                                - font-size: 12px
+                                - opacity: 0.75
+                              state:
+                                - font-size: 22px
+                                - font-weight: 700
+                                - padding-top: 4px
+                          - type: custom:button-card
+                            entity: sensor.driveway_pipeline_cpu
+                            name: Pipeline CPU
+                            show_state: true
+                            show_icon: false
+                            styles:
+                              card:
+                                - padding: 14px 10px
+                                - border-radius: 12px
+                              name:
+                                - font-size: 12px
+                                - opacity: 0.75
+                              state:
+                                - font-size: 22px
+                                - font-weight: 700
+                                - padding-top: 4px
+                          - type: custom:button-card
+                            entity: sensor.driveway_last_recognized_face
+                            name: Face ID
+                            show_state: true
+                            show_icon: false
+                            tap_action:
+                              action: more-info
+                            styles:
+                              card:
+                                - padding: 14px 10px
+                                - border-radius: 12px
+                              name:
+                                - font-size: 12px
+                                - opacity: 0.75
+                              state:
+                                - font-size: 14px
+                                - font-weight: 600
+                                - padding-top: 4px
+                                - white-space: normal
+                          - type: custom:button-card
+                            entity: sensor.driveway_last_recognized_plate
+                            name: Plate ID
+                            show_state: true
+                            show_icon: false
+                            tap_action:
+                              action: more-info
+                            styles:
+                              card:
+                                - padding: 14px 10px
+                                - border-radius: 12px
+                              name:
+                                - font-size: 12px
+                                - opacity: 0.75
+                              state:
+                                - font-size: 14px
+                                - font-weight: 600
+                                - padding-top: 4px
+                                - white-space: normal
+
+          - type: heading
+            heading: Snapshots
+            heading_style: title
+            icon: mdi:image-multiple
+
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            grid_options:
+              columns: full
+            layout:
+              width: 100%
+              max_width: 100%
+              padding: 0 16px
+              grid-template-columns: repeat(3, minmax(0, 1fr))
+              grid-gap: 8px
+              place-items: stretch
+              mediaquery:
+                "(max-width: 700px)":
+                  grid-template-columns: 100%
+            cards:
+              - type: picture-entity
+                entity: image.driveway_person
+                name: Person
+                show_state: true
+                show_name: true
+                fit_mode: cover
+                tap_action:
+                  action: more-info
+              - type: picture-entity
+                entity: image.driveway_car
+                name: Car
+                show_state: true
+                show_name: true
+                fit_mode: cover
+                tap_action:
+                  action: more-info
+              - type: picture-entity
+                entity: image.driveway_dog
+                name: Dog
+                show_state: true
+                show_name: true
+                fit_mode: cover
+                tap_action:
+                  action: more-info
+
+          - type: heading
+            heading: Status & Alerts
+            heading_style: title
+            icon: mdi:bell-outline
+
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            grid_options:
+              columns: full
+            layout:
+              width: 100%
+              max_width: 100%
+              padding: 0 16px 20px
+              grid-template-columns: repeat(6, minmax(0, 1fr))
+              grid-gap: 8px
+              place-items: stretch
+              mediaquery:
+                "(max-width: 1100px)":
+                  grid-template-columns: repeat(3, minmax(0, 1fr))
+                "(max-width: 700px)":
+                  grid-template-columns: repeat(2, minmax(0, 1fr))
+            cards:
+              - type: tile
+                entity: light.flood_lights
+                name: Flood Light Status
+                icon: mdi:flood-light
+                vertical: false
+              - type: tile
+                entity: light.garage_light
+                name: Garage Light Status
+                icon: mdi:lightbulb
+                vertical: false
+              - type: tile
+                entity: lock.door_to_garage
+                name: Entry Lock
+                icon: mdi:lock
+                vertical: false
+              - type: tile
+                entity: binary_sensor.driveway_yell_sound
+                name: Audio · Yell
+                icon: mdi:bullhorn
+                vertical: false
+                color: green
+              - type: tile
+                entity: binary_sensor.driveway_bark_sound
+                name: Audio · Bark
+                icon: mdi:dog-side
+                vertical: false
+                color: green
+              - type: tile
+                entity: binary_sensor.driveway_speech_sound
+                name: Audio · Speech
+                icon: mdi:account-voice
+                vertical: false
+                color: green
+
+  - title: Driveway
+    path: driveway
+    icon: mdi:cctv
+    subview: true
+    back_path: /dashboard-garage
+    type: panel
+    cards:
+      - type: custom:advanced-camera-card
+        cameras:
+          - camera_entity: camera.driveway
+            frigate:
+              camera_name: driveway
+          - camera_entity: camera.driveway_2
+        dimensions:
+          aspect_ratio_mode: dynamic
+        live:
+          preload: false
+        menu:
+          style: outside
+          position: top
+        view_default: live
