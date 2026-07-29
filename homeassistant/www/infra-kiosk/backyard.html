@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0b0f14" />
-  <title>Infrastructure · Kiosk</title>
+  <title>Backyard · Kiosk</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="config.js"></script>
 </head>
@@ -18,8 +18,8 @@
       <div class="sidebar-title">Kiosk</div>
     </div>
     <nav class="sidebar-nav">
-      <a class="nav-link active" data-page="infrastructure" href="index.html">Infrastructure</a>
-      <a class="nav-link" data-page="backyard" href="backyard.html">Backyard</a>
+      <a class="nav-link" data-page="infrastructure" href="index.html">Infrastructure</a>
+      <a class="nav-link active" data-page="backyard" href="backyard.html">Backyard</a>
     </nav>
     <div class="sidebar-foot">
       <div id="clock" class="clock">--:--</div>
@@ -30,51 +30,53 @@
   <div class="shell">
     <header class="top">
       <div class="top-left">
-        <h1>TOTAL INFRASTRUCTURE MONITORING</h1>
+        <h1>BACKYARD OVERVIEW</h1>
       </div>
     </header>
 
     <main id="app">
       <section class="band">
-        <h2 class="band-title">CORE NETWORK STATUS</h2>
-        <div class="row row-gateway">
-          <div class="card gateway-hero" id="card-gateway-hero"></div>
-          <div class="card gateway-status" id="card-gateway-status"></div>
-          <div class="device-grid" id="card-network-devices"></div>
+        <h2 class="band-title">SURVEILLANCE &amp; SECURITY</h2>
+        <div class="row by-surveillance">
+          <div class="stack">
+            <div class="card cam-snap" id="cam-back_yard_2" data-camera="camera.back_yard_2">
+              <div class="cam-label">Back Yard</div>
+              <div class="cam-frame"><span class="cam-placeholder">Tap to load snapshot</span></div>
+            </div>
+            <div class="row cols-3" id="card-by-stats"></div>
+          </div>
+          <div class="stack">
+            <div class="row cols-2" id="card-by-cams"></div>
+            <div class="row cols-3" id="card-by-gates"></div>
+          </div>
         </div>
-        <div class="row row-gauges" id="card-gateway-gauges"></div>
       </section>
 
       <section class="band">
-        <h2 class="band-title">POWER WATCHDOGS (MSNSWITCH)</h2>
-        <p class="band-sub">Hardware PDU watchdogs — outlet power, UIS auto-reset, and ping checker health</p>
-        <div class="row cols-3" id="card-watchdogs"></div>
-      </section>
-
-      <section class="band">
-        <h2 class="band-title">PHYSICAL SERVERS &amp; NVR CLUSTER</h2>
         <div class="row cols-2">
           <div>
-            <h3 class="subhead">Home Assistant &amp; VMs</h3>
-            <div class="stack" id="card-servers"></div>
+            <h2 class="band-title">ENVIRONMENTS &amp; SOIL</h2>
+            <div class="row cols-2" id="card-by-env"></div>
+            <div class="card" style="margin-top:10px">
+              <div class="card-title">Soil moisture</div>
+              <div id="card-by-soil"></div>
+            </div>
           </div>
           <div>
-            <h3 class="subhead">NVR &amp; GPU</h3>
-            <div class="stack" id="card-nvr"></div>
+            <h2 class="band-title">LIGHTING &amp; CONTROLS</h2>
+            <div class="row cols-2" id="card-by-lights"></div>
           </div>
         </div>
       </section>
 
       <section class="band">
-        <h2 class="band-title">CAMERA PIPELINE HEALTH</h2>
-        <p class="band-sub">Frigate FPS / CPU only — no live video on this page</p>
-        <div class="row cols-5" id="card-cameras"></div>
-      </section>
-
-      <section class="band">
-        <h2 class="band-title">STORAGE &amp; SERVICES</h2>
-        <p class="band-sub">OMV storage health</p>
-        <div class="row cols-2" id="card-storage"></div>
+        <h2 class="band-title">IRRIGATION ZONES</h2>
+        <h3 class="subhead">Flower beds &amp; lawn</h3>
+        <div class="row cols-5" id="card-by-valves-lawn"></div>
+        <h3 class="subhead">Vegetable garden</h3>
+        <div class="row cols-3" id="card-by-valves-veg"></div>
+        <h3 class="subhead">Daily watering by zone — last 7 days (hours)</h3>
+        <div class="row cols-4" id="card-by-irr-7d"></div>
       </section>
     </main>
   </div>
@@ -90,6 +92,6 @@
   </div>
 
   <script src="ha.js"></script>
-  <script src="infrastructure.js"></script>
+  <script src="backyard.js"></script>
 </body>
 </html>

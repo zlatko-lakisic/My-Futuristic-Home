@@ -1148,6 +1148,11 @@ views:
           - type: markdown
             content: >
               **Back Yard details**: Frigate live stream (HD) plus latest detections for people, dogs, and faces.
+          - type: markdown
+            title: Last gate AI clip
+            content: >
+              {% set ts = as_timestamp(states('input_datetime.gate_ai_last_analysis_time'), 0) | int %}
+              ![Back yard gate clip](/local/tmp/back_yard_gate_latest.gif?v={{ ts }})
           - type: custom:advanced-camera-card
             cameras:
               - camera_entity: camera.back_yard
@@ -1193,6 +1198,11 @@ views:
           - type: markdown
             content: >
               **East Side details**: Frigate live stream (HD) plus latest detections for people, dogs, and face matches.
+          - type: markdown
+            title: Last gate AI clip
+            content: >
+              {% set ts = as_timestamp(states('input_datetime.gate_ai_last_analysis_time'), 0) | int %}
+              ![East gate clip](/local/tmp/east_gate_latest.gif?v={{ ts }})
           - type: custom:advanced-camera-card
             cameras:
               - camera_entity: camera.east_side
@@ -1240,6 +1250,11 @@ views:
           - type: markdown
             content: >
               **West Side details**: Frigate live stream (HD) plus latest detections for people, dogs, and face matches.
+          - type: markdown
+            title: Last gate AI clip
+            content: >
+              {% set ts = as_timestamp(states('input_datetime.gate_ai_last_analysis_time'), 0) | int %}
+              ![West gate clip](/local/tmp/west_gate_latest.gif?v={{ ts }})
           - type: custom:advanced-camera-card
             cameras:
               - camera_entity: camera.west_side
