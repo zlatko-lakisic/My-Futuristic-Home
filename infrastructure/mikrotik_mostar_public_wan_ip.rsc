@@ -24,6 +24,11 @@
 # WAN addressing (from Mostar backup / live):
 #   ether1 address 192.168.100.100/24, ISP gateway 192.168.100.1
 #
+# Policy note (RouterOS 7.13+): /tool fetch requires the "ftp" policy when writing
+# files. Scheduler-invoked runs only get the policies listed on the script and
+# scheduler entries — without ftp, fetch fails silently from the scheduler while
+# the same script still works when run interactively as admin.
+#
 # This deliberately does NOT assign the public IP to ether1. The address belongs
 # to the ISP router, so assigning it locally could break or misroute traffic.
 #
@@ -32,7 +37,7 @@
 # connectivity or port forwarding.
 
 /system script remove [find where name="hacs-public-wan-ip"]
-/system script add name="hacs-public-wan-ip" policy=read,write,test,policy source={
+/system script add name="hacs-public-wan-ip" policy=ftp,read,write,test,policy source={
     :global PublicIP
 
     :local ispGateway "192.168.100.1"
@@ -40,15 +45,19 @@
     :local routeComment "hacs-public-wan-ip-temp"
     :local dnsA "8.8.8.8"
     :local dnsB "1.1.1.1"
+    :local stage "start"
 
     :do {
+        :set stage "cleanup-route"
         /ip route remove [find where comment=$routeComment]
 
         :local resolved
+        :set stage "resolve-a"
         :do {
             :set resolved [:resolve $checkHost server=$dnsA]
         } on-error={}
         :if ([:typeof $resolved] != "ip") do={
+            :set stage "resolve-b"
             :do {
                 :set resolved [:resolve $checkHost server=$dnsB]
             } on-error={}
@@ -58,6 +67,7 @@
         }
 
         # Prefer ISP CPE over L2TP/NYC default for this probe only
+        :set stage ("route-add-" . $resolved)
         /ip route add dst-address=($resolved . "/32") gateway=$ispGateway \
             comment=$routeComment distance=1
 
@@ -65,12 +75,14 @@
 
         # Fetch by IP + Host header so /tool fetch does not re-resolve to another
         # CDN address that would still follow the L2TP default route.
+        :set stage "fetch"
         /file remove [find where name="hacs-public-wan-ip.txt"]
         /tool fetch url=("http://" . $resolved . "/") \
             http-header-field=("Host:" . $checkHost) \
             dst-path=hacs-public-wan-ip.txt
         :delay 2s
 
+        :set stage "read"
         :local discovered [/file get hacs-public-wan-ip.txt contents]
         :set discovered [:tostr $discovered]
         :set discovered [:pick $discovered 0 [:find ($discovered . "\n") "\n"]]
@@ -88,12 +100,12 @@
     } on-error={
         /ip route remove [find where comment=$routeComment]
         /file remove [find where name="hacs-public-wan-ip.txt"]
-        :log warning "hacs-public-wan-ip: public IPv4 discovery via ISP WAN failed"
+        :log warning ("hacs-public-wan-ip: FAIL stage=" . $stage . " err=" . $error)
     }
 }
 
 /system scheduler remove [find where name="hacs-public-wan-ip"]
 /system scheduler add name="hacs-public-wan-ip" start-time=startup interval=5m \
-    policy=read,write,test,policy on-event="/system script run hacs-public-wan-ip"
+    policy=ftp,read,write,test,policy on-event="/system script run hacs-public-wan-ip"
 
 /system script run hacs-public-wan-ip

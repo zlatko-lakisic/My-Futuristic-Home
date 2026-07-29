@@ -53,7 +53,7 @@ add disabled=no fib name=torrent_over_mostar
 add fib name=via_nyc
 /system script
 add dont-require-permissions=no name=hacs-public-wan-ip owner=admin policy=\
-    read,write,policy,test source="\
+    ftp,read,write,policy,test source="\
     \n    :global PublicIP\
     \n\
     \n    :do {\
@@ -252,7 +252,7 @@ add comment="Flush DNS cache every 10 minutes to clear stale entries" \
     interval=10m name=clear-dns-cache-10m on-event="/ip dns cache flush" \
     policy=write,test start-time=startup
 add interval=5m name=hacs-public-wan-ip on-event=\
-    "/system script run hacs-public-wan-ip" policy=read,write,policy,test \
+    "/system script run hacs-public-wan-ip" policy=ftp,read,write,policy,test \
     start-time=startup
 /tool mac-server
 set allowed-interface-list=LAN

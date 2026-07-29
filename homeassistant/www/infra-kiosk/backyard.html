@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#0b0f14" />
+  <meta name="theme-color" content="#111111" />
   <title>Backyard · Kiosk</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="config.js"></script>
@@ -18,8 +18,14 @@
       <div class="sidebar-title">Kiosk</div>
     </div>
     <nav class="sidebar-nav">
-      <a class="nav-link" data-page="infrastructure" href="index.html">Infrastructure</a>
-      <a class="nav-link active" data-page="backyard" href="backyard.html">Backyard</a>
+      <a class="nav-link" data-page="infrastructure" href="index.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20v-2H2v2zm2-4h3V6H4v10zm5 0h3V4H9v12zm5 0h3V9h-3v7zm5 0h3V2h-3v14z"/></svg>
+        <span>Infrastructure</span>
+      </a>
+      <a class="nav-link active" data-page="backyard" href="backyard.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-1.5 3.5-4.5 5.5-8 6 2.5 1 4 3.5 4 6.5V21h8v-5.5c0-3 1.5-5.5 4-6.5-3.5-.5-6.5-2.5-8-6z"/></svg>
+        <span>Backyard</span>
+      </a>
     </nav>
     <div class="sidebar-foot">
       <div id="clock" class="clock">--:--</div>
@@ -38,16 +44,16 @@
       <section class="band">
         <h2 class="band-title">SURVEILLANCE &amp; SECURITY</h2>
         <div class="row by-surveillance">
-          <div class="stack">
-            <div class="card cam-snap" id="cam-back_yard_2" data-camera="camera.back_yard_2">
+          <div class="by-left">
+            <div class="card cam-snap by-primary" id="cam-primary" data-camera="camera.back_yard_2" data-name="Back Yard">
               <div class="cam-label">Back Yard</div>
-              <div class="cam-frame"><span class="cam-placeholder">Tap to load snapshot</span></div>
+              <div class="cam-frame"><span class="cam-placeholder">Waiting for camera…</span></div>
             </div>
-            <div class="row cols-3" id="card-by-stats"></div>
+            <div class="by-stats" id="card-by-stats"></div>
           </div>
-          <div class="stack">
-            <div class="row cols-2" id="card-by-cams"></div>
-            <div class="row cols-3" id="card-by-gates"></div>
+          <div class="by-right">
+            <div class="by-cams" id="card-by-cams"></div>
+            <div class="by-gates" id="card-by-gates"></div>
           </div>
         </div>
       </section>
@@ -57,7 +63,7 @@
           <div>
             <h2 class="band-title">ENVIRONMENTS &amp; SOIL</h2>
             <div class="row cols-2" id="card-by-env"></div>
-            <div class="card" style="margin-top:10px">
+            <div class="card" style="margin-top:8px">
               <div class="card-title">Soil moisture</div>
               <div id="card-by-soil"></div>
             </div>
@@ -75,10 +81,30 @@
         <div class="row cols-5" id="card-by-valves-lawn"></div>
         <h3 class="subhead">Vegetable garden</h3>
         <div class="row cols-3" id="card-by-valves-veg"></div>
-        <h3 class="subhead">Daily watering by zone — last 7 days (hours)</h3>
-        <div class="row cols-4" id="card-by-irr-7d"></div>
+        <h3 class="subhead">Daily watering by zone — last 7 days</h3>
+        <div class="card chart-card">
+          <div class="chart-head">
+            <div class="card-title">All zones — open time (min, 7 days)</div>
+            <div class="chart-sub" id="irr-chart-status">Loading…</div>
+          </div>
+          <div class="chart-wrap" id="irr-chart"></div>
+          <div class="chart-legend" id="irr-chart-legend"></div>
+        </div>
       </section>
     </main>
+  </div>
+
+  <div id="cam-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cam-modal-title">
+    <div class="modal-panel">
+      <div class="modal-head">
+        <h3 id="cam-modal-title">Camera</h3>
+        <button type="button" class="modal-close" id="cam-modal-close">Close</button>
+      </div>
+      <div class="modal-body">
+        <img id="cam-modal-img" alt="Live camera" />
+      </div>
+      <div class="modal-hint">Live stream · closes when you tap Close or outside</div>
+    </div>
   </div>
 
   <div id="auth-gate" class="auth-gate hidden">

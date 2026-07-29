@@ -536,26 +536,93 @@ h1 {
 .auth-hint { font-size: 0.72rem !important; opacity: 0.55 !important; margin-top: 10px !important; }
 
 .by-surveillance {
-  grid-template-columns: 0.95fr 1.35fr;
+  grid-template-columns: 30% 70%;
+  align-items: stretch;
+  gap: 8px;
+}
+.by-left, .by-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+}
+.by-primary {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+.by-primary .cam-frame {
+  flex: 1;
+  aspect-ratio: auto;
+  min-height: 180px;
+  border-radius: 0;
+}
+.by-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.by-cams {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.by-cams .cam-snap {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.by-cams .cam-frame {
+  flex: 1;
+  aspect-ratio: 16 / 10;
+  border-radius: 0;
+  min-height: 90px;
+}
+.by-gates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  flex: 0 0 auto;
 }
 .cam-snap {
-  padding: 10px;
+  padding: 0;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 .cam-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
   font-size: 0.78rem;
-  font-weight: 700;
-  margin-bottom: 8px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  padding: 18px 8px 8px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.72));
+  pointer-events: none;
 }
 .cam-frame {
   aspect-ratio: 16 / 10;
-  background: #0d1117;
-  border-radius: 10px;
+  background: #0d0d0d;
+  border-radius: 8px;
   overflow: hidden;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 0;
 }
+.cam-frame.tall { aspect-ratio: 4 / 3; }
 .cam-frame img {
   width: 100%;
   height: 100%;
@@ -571,20 +638,56 @@ h1 {
 .stat-tile {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 56px;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 8px;
 }
-.stat-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+.stat-icon {
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #111;
+  background: currentColor;
 }
+.stat-icon span { color: #111; filter: none; }
 .stat-text {
   font-weight: 700;
-  font-size: 0.875rem;
-  line-height: 1.25;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  color: #fff;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.gate-card {
+  text-align: center;
+  padding: 10px 8px;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.gate-card .card-title { font-size: 0.88rem; }
+.gate-status {
+  font-weight: 600;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: capitalize;
+}
+.gate-open { color: #f44336; }
+.gate-closed { color: #4caf50; }
+.gate-unk { color: rgba(255,255,255,0.5); }
+
 button.card {
   width: 100%;
   text-align: left;
@@ -598,7 +701,7 @@ button.card {
   font-weight: 800;
   letter-spacing: 0.04em;
 }
-.toggle.on { border-color: rgba(129,199,132,0.35); }
+.toggle.on { border-color: rgba(76,175,80,0.35); }
 .toggle.on .toggle-state { color: var(--green); }
 .toggle.off .toggle-state { color: rgba(255,255,255,0.45); }
 .toggle.unk .toggle-state { color: #9e9e9e; }
@@ -606,34 +709,158 @@ button.card {
   font-size: 1.15rem;
   font-weight: 700;
   margin-top: 6px;
+  color: #fff;
 }
 .unit { font-size: 0.65rem; opacity: 0.65; font-weight: 600; }
 
-@media (max-width: 1100px) {
-  body.has-sidebar {
-    grid-template-columns: 1fr;
+.chart-card { padding: 12px 12px 8px; }
+.chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.chart-head .card-title { font-size: 0.88rem; }
+.chart-sub { font-size: 0.68rem; opacity: 0.55; }
+.chart-wrap {
+  width: 100%;
+  height: 220px;
+  position: relative;
+}
+.chart-wrap svg { width: 100%; height: 100%; display: block; }
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  justify-content: center;
+  margin-top: 8px;
+  padding-top: 4px;
+}
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.78);
+}
+.chart-swatch {
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0,0,0,0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal.hidden { display: none; }
+.modal-panel {
+  width: min(1100px, 100%);
+  background: #1c1c1c;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.modal-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+}
+.modal-close {
+  border: 0;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.modal-body {
+  background: #000;
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+}
+.modal-body img {
+  width: 100%;
+  max-height: 78vh;
+  object-fit: contain;
+  display: block;
+}
+.modal-hint {
+  padding: 8px 14px 12px;
+  font-size: 0.72rem;
+  opacity: 0.55;
+}
+
+/* iPad Air 2 portrait (~768 CSS px) — keep side panel, HA proportions */
+@media (max-width: 1024px) {
+  :root { --sidebar-w: 72px; --gap: 6px; }
+  .sidebar-eyebrow, .sidebar-title, .nav-link span, .sidebar-foot .conn { display: none; }
+  .sidebar { padding: 10px 6px; }
+  .sidebar-brand { padding: 8px; text-align: center; border-bottom: 0; margin-bottom: 0; }
+  .nav-link {
+    justify-content: center;
+    border-radius: 12px;
+    margin-right: 0;
+    padding: 14px 8px;
   }
-  .sidebar {
-    position: relative;
-    height: auto;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    border-right: 0;
-    border-bottom: 1px solid var(--stroke);
+  .sidebar-foot { text-align: center; padding: 8px; }
+  .shell { padding: 10px 10px 20px; }
+  .top { margin-bottom: 10px; padding-bottom: 8px; }
+  h1 { font-size: 1.02rem; }
+  .band { margin-bottom: 14px; }
+  .band-title { font-size: 0.75rem; margin-bottom: 6px; }
+  .by-surveillance {
+    grid-template-columns: 32% 68%;
+    min-height: 320px;
   }
-  .sidebar-nav {
-    flex-direction: row;
-    flex: 1;
-  }
-  .sidebar-foot { margin-left: auto; text-align: right; }
+  .by-primary .cam-frame { min-height: 160px; }
+  .by-cams .cam-frame { min-height: 72px; aspect-ratio: 4 / 3; }
+  .stat-tile { min-height: 40px; padding: 5px 6px; }
+  .stat-text { font-size: 0.7rem; }
+  .gate-card { min-height: 56px; padding: 8px 4px; }
+  .gate-card .card-title { font-size: 0.78rem; }
+  .chart-wrap { height: 200px; }
+  .cols-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .row-gateway { grid-template-columns: 1fr 1fr; }
-  .device-grid { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-  .row-gauges, .traffic-strip, .cols-5 { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
-  .cols-3, .cols-2, .by-surveillance { grid-template-columns: 1fr; }
+  .device-grid { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .row-gauges, .traffic-strip { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
 }
 
 @media (max-width: 700px) {
-  h1 { font-size: 0.92rem; }
+  .by-surveillance { grid-template-columns: 1fr; min-height: 0; }
+  .by-primary .cam-frame { aspect-ratio: 16 / 10; min-height: 0; }
+  .by-cams { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cols-2 { grid-template-columns: 1fr; }
+  .cols-5, .cols-4, .cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .row-gateway { grid-template-columns: 1fr; }
+  h1 { font-size: 0.95rem; }
+}
+
+@media (orientation: portrait) and (min-width: 701px) and (max-width: 1024px) {
+  .by-surveillance {
+    grid-template-columns: 34% 66%;
+    min-height: 360px;
+  }
+  .by-cams .cam-frame { aspect-ratio: 1 / 1; }
+  .chart-wrap { height: 240px; }
 }
