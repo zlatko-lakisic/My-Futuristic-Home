@@ -190,14 +190,9 @@ climate:
         data:
           preset_mode: "{{ preset_mode }}"
 
-notify:
-  - name: ALL_DEVICES
-    platform: group
-    services:
-      - action: notify_mobile_app_zlatko_fold5
-      # Add more devices here, e.g.:
-      # - action: notify_mobile_app_another_phone
-      # - action: notify_mobile_app_tablet
+# Mobile push: use notify.notify (routes to Fold 5) or notify.send_message targeting
+# notify.zlatko_fold_5. YAML notify groups that call notify.zlatko_fold_5 return HTTP 400
+# on this HA version, so ALL_DEVICES was removed — callers use notify.notify instead.
 
 sensor:
   - platform: openweathermap_all

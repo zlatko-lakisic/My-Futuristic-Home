@@ -21,3 +21,4 @@ homeassistant/*.log
 infrastructure/configs/*.backup
 infrastructure/configs/*.rsc
 .DS_Store
+homeassistant/www/infra-kiosk/config.js

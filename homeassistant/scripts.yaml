@@ -89,9 +89,9 @@
           {% for dt in state_attr(p, 'device_trackers') | default([], true) %}
             {% if dt is string and dt.startswith('device_tracker.') %}
               {% set slug = dt | replace('device_tracker.', '') %}
-              {% set svc = 'notify.mobile_app_' ~ slug %}
-              {% if svc not in ns.services %}
-                {% set ns.services = ns.services + [svc] %}
+              {% set ent = 'notify.' ~ slug %}
+              {% if states(ent) not in ['unknown', 'unavailable'] and ent not in ns.services %}
+                {% set ns.services = ns.services + [ent] %}
               {% endif %}
             {% endif %}
           {% endfor %}
@@ -109,44 +109,25 @@
         message: '{{ ai_text_final }}
 
           ![image](/api/camera_proxy/{{ camera_id }})'
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ (notify_services | from_json | count) > 0 }}'
-      sequence:
-      - repeat:
-          for_each: '{{ notify_services | from_json }}'
-          sequence:
-          - action: '{{ repeat.item }}'
-            continue_on_error: true
-            metadata: {}
-            data:
-              message: '{{ ai_text_final }} '
-              title: '{{ notification_title_final }}'
-              data:
-                image: /api/camera_proxy/{{ camera_id }}
-                url: '{{ notification_click_url }}'
-                clickAction: '{{ notification_click_url }}'
-                push:
-                  sound:
-                    name: default
-                    critical: 1
-                    volume: 1
-    default:
-    - action: notify.ALL_DEVICES
-      metadata: {}
+  - action: notify.notify
+    metadata: {}
+    data:
+      message: '{{ ai_text_final }} '
+      title: '{{ notification_title_final }}'
       data:
-        message: '{{ ai_text_final }} '
-        title: '{{ notification_title_final }}'
-        data:
-          image: /api/camera_proxy/{{ camera_id }}
-          url: '{{ notification_click_url }}'
-          clickAction: '{{ notification_click_url }}'
-          push:
-            sound:
-              name: default
-              critical: 1
-              volume: 1
+        image: /api/camera_proxy/{{ camera_id }}
+        url: '{{ notification_click_url }}'
+        clickAction: '{{ notification_click_url }}'
+        ttl: 0
+        priority: high
+        importance: high
+        group: ha-cameras
+        channel: HA Cameras
+        push:
+          sound:
+            name: default
+            critical: 1
+            volume: 1
   alias: Process AI Analysis and Notification
   description: ''
 control_climate:

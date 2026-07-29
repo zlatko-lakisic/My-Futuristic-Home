@@ -125,6 +125,7 @@ automation:
                 irrigation_start_service: "{{ state_attr('sensor.ai_watering_active_run_config', 'irrigation_start_service') }}"
                 irrigation_stop_service: "{{ state_attr('sensor.ai_watering_active_run_config', 'irrigation_stop_service') }}"
                 max_zone_index: "{{ state_attr('sensor.ai_watering_active_run_config', 'max_zone_index') }}"
+                mobile_notify_service: "{{ state_attr('sensor.ai_watering_active_run_config', 'mobile_notify_service') | default('notify.notify', true) }}"
         default:
           - action: input_boolean.turn_off
             data:
@@ -200,3 +201,4 @@ script:
             irrigation_start_service: bhyve.start_watering
             irrigation_stop_service: bhyve.stop_watering
             max_zone_index: 16
+            mobile_notify_service: notify.notify

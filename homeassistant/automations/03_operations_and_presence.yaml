@@ -313,10 +313,18 @@
     trigger: device
   conditions: []
   actions:
-  - action: notify.mobile_app_zlatko_fold_5
+  - action: notify.notify
     metadata: {}
     data:
       message: Boiler bucket full!
+      title: Boiler alert
+      data:
+        ttl: 0
+        priority: high
+        importance: high
+        channel: HA Alerts
+        group: ha-alerts
+        notification_icon: mdi:water-alert
   mode: single
 - id: '1771793860550'
   alias: Open Garage - Car Arrived

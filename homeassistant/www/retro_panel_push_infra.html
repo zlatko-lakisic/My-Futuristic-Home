@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Push Retro Panel Infrastructure Layout</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; line-height: 1.45; }
+    button { font-size: 16px; padding: 12px 18px; cursor: pointer; }
+    pre { background: #111; color: #ddd; padding: 12px; overflow: auto; border-radius: 8px; }
+    .ok { color: #2e7d32; }
+    .err { color: #c62828; }
+  </style>
+</head>
+<body>
+  <h1>Retro Panel → Infrastructure</h1>
+  <p>Open this page while logged into Home Assistant as an <strong>admin</strong>, then click the button. It creates an Ingress session and saves the infrastructure rooms/tiles into Retro Panel.</p>
+  <p><button id="go">Push infrastructure layout</button></p>
+  <pre id="log">Ready.</pre>
+  <script>
+  const INGRESS = '/api/hassio_ingress/iD_Ntv8qisX5nMZokJFycR4wigpSOZimfjtIKkAK8X8';
+  const logEl = document.getElementById('log');
+  function log(msg, cls) {
+    logEl.className = cls || '';
+    logEl.textContent = msg;
+  }
+  document.getElementById('go').onclick = async function () {
+    try {
+      log('Loading config…');
+      const cfgResp = await fetch('/local/retro_panel_infra_config.json', { credentials: 'same-origin' });
+      if (!cfgResp.ok) throw new Error('Could not load /local/retro_panel_infra_config.json (' + cfgResp.status + ')');
+      const cfg = await cfgResp.json();
+
+      log('Creating Ingress session…');
+      const sessResp = await fetch('/api/hassio/ingress/session', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+      if (!sessResp.ok) throw new Error('Ingress session failed (' + sessResp.status + '). Are you logged in as admin?');
+      const sessBody = await sessResp.json();
+      const session = (sessBody.data && sessBody.data.session) || sessBody.session;
+      if (!session) throw new Error('No session in response: ' + JSON.stringify(sessBody));
+      document.cookie = 'ingress_session=' + session + '; path=/api/hassio_ingress/';
+
+      log('Saving Retro Panel config…');
+      const saveResp = await fetch(INGRESS + '/api/config', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cfg)
+      });
+      const saveText = await saveResp.text();
+      if (!saveResp.ok) throw new Error('Save failed (' + saveResp.status + '): ' + saveText);
+      log('Saved. Open Retro Panel (port 7654 or Open Web UI). Rooms: Network, Power watchdogs, Servers & NVR, Camera health, Storage.', 'ok');
+    } catch (e) {
+      log(String(e && e.message ? e.message : e), 'err');
+    }
+  };
+  </script>
+</body>
+</html>
