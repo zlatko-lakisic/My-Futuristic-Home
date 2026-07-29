@@ -643,18 +643,21 @@ h1 {
   padding: 6px 8px;
 }
 .stat-icon {
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
-  border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: #111;
-  background: currentColor;
+  background: transparent;
+  border-radius: 0;
 }
-.stat-icon span { color: #111; filter: none; }
+.stat-icon svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+  fill: currentColor;
+}
+.stat-icon span { display: none; }
 .stat-text {
   font-weight: 700;
   font-size: 0.78rem;
@@ -687,6 +690,7 @@ h1 {
 .gate-open { color: #f44336; }
 .gate-closed { color: #4caf50; }
 .gate-unk { color: rgba(255,255,255,0.5); }
+.gate-alert svg { width: 18px; height: 18px; fill: currentColor; display: block; }
 
 button.card {
   width: 100%;

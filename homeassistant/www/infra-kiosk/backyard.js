@@ -97,12 +97,27 @@
     return "Facial Match: " + s.state;
   }
 
-  function statTile(color, glyph, label) {
+  function iconSvg(name) {
+    /* MDI paths: account-multiple, dog-side, face-recognition, alert */
+    if (name === "people") {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 12c1.38 0 2.64.76 3.24 1.91l1.92-.75C20.76 11.31 18.79 10 16.5 10s-4.26 1.31-5.16 3.16l1.92.75c.6-1.15 1.86-1.91 3.24-1.91M9 12c1.38 0 2.64.76 3.24 1.91l1.92-.75C13.26 11.31 11.29 10 9 10S4.74 11.31 3.84 13.16l1.92.75C6.36 12.76 7.62 12 9 12m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4m7.5 0c-.44 0-1 .05-1.61.13C16.19 14.9 17 16.04 17 17.47V20h6v-2c0-2.54-4.17-4-6.5-4z"/></svg>';
+    }
+    if (name === "dog") {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.28 8.6c.34.34.34.89 0 1.23l-.71.71c-.34.34-.89.34-1.23 0L15.5 8.63V13a2 2 0 0 1-2 2H12v5H4v-5.18C2.84 14.4 2 13.3 2 12V7h2.5L7 4h4l1.5 1.5.5.5H16a1 1 0 0 1 1 1v1.38l2.28-2.28c.34-.34.89-.34 1.23 0l.77.78M8 16.5A1.5 1.5 0 1 0 9.5 15 1.5 1.5 0 0 0 8 16.5z"/></svg>';
+    }
+    if (name === "face") {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11.75A1.25 1.25 0 1 0 10.25 13 1.25 1.25 0 0 0 9 11.75m6 0A1.25 1.25 0 1 0 16.25 13 1.25 1.25 0 0 0 15 11.75M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2m0 18a8 8 0 0 1-8-8c0-.61.08-1.21.21-1.8C5.66 9.32 8.6 8.5 12 8.5s6.34.82 7.79 1.7c.13.59.21 1.19.21 1.8a8 8 0 0 1-8 8m0-6.5c-1.75 0-3.29.72-4.19 1.81.83.59 1.79.99 2.81 1.16.44.08.88.12 1.38.12s.94-.04 1.38-.12c1.02-.17 1.98-.57 2.81-1.16-.9-1.09-2.44-1.81-4.19-1.81M4 4h3V2H2v5h2V4m18 0h-3V2h5v5h-2V4M4 20h3v2H2v-5h2v3m18 0h-3v2h5v-5h-2v3z"/></svg>';
+    }
+    if (name === "alert") {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 14h-2V9h2m0 9h-2v-2h2M1 21h22L12 2 1 21z"/></svg>';
+    }
+    return "";
+  }
+
+  function statTile(color, iconName, label) {
     return (
       '<div class="card stat-tile">' +
-        '<div class="stat-icon" style="background:' + color + '">' +
-          '<span>' + glyph + "</span>" +
-        "</div>" +
+        '<div class="stat-icon" style="color:' + color + '">' + iconSvg(iconName) + "</div>" +
         '<div class="stat-text">' + label + "</div>" +
       "</div>"
     );
@@ -115,7 +130,9 @@
     var open = !unknown && !closed;
     var cls = unknown ? "gate-unk" : (open ? "gate-open" : "gate-closed");
     var txt = unknown ? "—" : (closed ? "Closed" : "Open");
-    var warn = open ? '<span aria-hidden="true">⚠</span>' : "";
+    var warn = open
+      ? '<span class="gate-alert" style="color:#f44336;display:inline-flex;width:18px;height:18px">' + iconSvg("alert") + "</span>"
+      : "";
     return (
       '<div class="card gate-card">' +
         '<div class="card-title">' + title + "</div>" +
@@ -379,9 +396,9 @@
 
   function paint() {
     $("card-by-stats").innerHTML =
-      statTile("#43a047", "P", countLabel("sensor.back_yard_person_count", "Person", "People")) +
-      statTile("#fdd835", "D", countLabel("sensor.back_yard_dog_count", "Dog Detected", "Dogs Detected")) +
-      statTile("#ff6e40", "F", faceLabel());
+      statTile("#43a047", "people", countLabel("sensor.back_yard_person_count", "Person", "People")) +
+      statTile("#fdd835", "dog", countLabel("sensor.back_yard_dog_count", "Dog Detected", "Dogs Detected")) +
+      statTile("#ff6e40", "face", faceLabel());
 
     paintCams(false);
 
