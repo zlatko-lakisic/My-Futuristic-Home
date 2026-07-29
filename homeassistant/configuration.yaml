@@ -67,6 +67,7 @@ homeassistant:
     irrigation_zone_runtime_7d: !include packages/irrigation_zone_runtime_7d.yaml
     perimeter_switch_aggregate: !include packages/perimeter_switch_aggregate.yaml
     www_tmp_cleanup_shell: !include packages/www_tmp_cleanup_shell.yaml
+    gate_clip_media: !include packages/gate_clip_media.yaml
 
 influxdb:
   api_version: "1"

@@ -1,15 +1,8 @@
 (function () {
   "use strict";
+  var H = window.KioskHA;
 
-  var cfg = window.INFRA_KIOSK || {};
-  var STORAGE_KEY = "infra_kiosk_token";
-  var states = {};
-  var ws = null;
-  var msgId = 1;
-  var reconnectTimer = null;
-  var paintTimer = null;
-
-  var ENTITIES = [
+var ENTITIES = [
     "binary_sensor.mikrotik_home_ether1_connection",
     "update.mikrotik_home_hap_ac_routeros_update",
     "sensor.mikrotik_home_hap_ac_uptime",
@@ -102,59 +95,12 @@
   ];
 
   function $(id) { return document.getElementById(id); }
-
-  function getToken() {
-    if (cfg.token) return String(cfg.token).trim();
-    try { return (localStorage.getItem(STORAGE_KEY) || "").trim(); } catch (e) { return ""; }
-  }
-
-  function setToken(t) {
-    try { localStorage.setItem(STORAGE_KEY, t); } catch (e) {}
-  }
-
-  function haBase() {
-    if (cfg.haUrl) return String(cfg.haUrl).replace(/\/$/, "");
-    return location.origin;
-  }
-
-  function wsUrl() {
-    var base = haBase();
-    if (base.indexOf("https:") === 0) return base.replace(/^https/, "wss") + "/api/websocket";
-    return base.replace(/^http/, "ws") + "/api/websocket";
-  }
-
-  function st(id) { return states[id] || null; }
-
-  function bad(v) {
-    if (v == null) return true;
-    var s = String(v).toLowerCase();
-    return s === "" || s === "unknown" || s === "unavailable" || s === "none";
-  }
-
-  function num(id) {
-    var s = st(id);
-    if (!s || bad(s.state)) return null;
-    var n = parseFloat(s.state);
-    return isFinite(n) ? n : null;
-  }
-
-  function attr(id, key) {
-    var s = st(id);
-    if (!s || !s.attributes) return null;
-    return s.attributes[key];
-  }
-
-  function fmt(n, d) {
-    if (n == null || !isFinite(n)) return "—";
-    var x = Number(n);
-    if (d == null) d = 1;
-    return String(parseFloat(x.toFixed(d)));
-  }
-
-  function clampPct(n) {
-    if (n == null || !isFinite(n)) return 0;
-    return Math.min(100, Math.max(0, n));
-  }
+  function st(id) { return H.st(id); }
+  function num(id) { return H.num(id); }
+  function attr(id, key) { return H.attr(id, key); }
+  function bad(v) { return H.bad(v); }
+  function fmt(n, d) { return H.fmt(n, d); }
+  function clampPct(n) { return H.clampPct(n); }
 
   function wanIp(id) {
     var raw = attr(id, "client_ip_address");
@@ -164,7 +110,8 @@
   }
 
   function uptime(id) {
-    var iso = st(id) && st(id).state;
+    var s = st(id);
+    var iso = s && s.state;
     if (bad(iso)) return "—";
     var t = new Date(iso).getTime();
     if (!isFinite(t)) return String(iso);
@@ -226,20 +173,7 @@
     return "#0d47a1";
   }
 
-  function setConn(mode, text) {
-    var el = $("conn");
-    el.className = "conn " + mode;
-    el.textContent = text;
-  }
-
-  function tickClock() {
-    var d = new Date();
-    var hh = String(d.getHours()).padStart(2, "0");
-    var mm = String(d.getMinutes()).padStart(2, "0");
-    $("clock").textContent = hh + ":" + mm;
-  }
-
-  function renderGateway() {
+function renderGateway() {
     var onlineSt = st("binary_sensor.mikrotik_home_ether1_connection");
     var online = onlineSt && onlineSt.state === "on";
     var unknown = !onlineSt || bad(onlineSt.state);
@@ -635,126 +569,9 @@
     renderStorage();
   }
 
-  function ingestStates(list) {
-    if (!list) return;
-    for (var i = 0; i < list.length; i++) {
-      var e = list[i];
-      if (e && e.entity_id) states[e.entity_id] = e;
-    }
-  }
-
-  function send(obj) {
-    if (!ws || ws.readyState !== 1) return;
-    ws.send(JSON.stringify(obj));
-  }
-
-  function subscribe() {
-    /* Only these entities — never full get_states (too heavy for Air 2). */
-    send({
-      id: msgId++,
-      type: "subscribe_entities",
-      entity_ids: ENTITIES
-    });
-  }
-
-  function connect() {
-    var token = getToken();
-    if (!token) {
-      $("auth-gate").classList.remove("hidden");
-      setConn("conn-off", "Auth required");
-      return;
-    }
-    $("auth-gate").classList.add("hidden");
-    setConn("conn-off", "Connecting…");
-    if (ws) {
-      try { ws.close(); } catch (e) {}
-      ws = null;
-    }
-    ws = new WebSocket(wsUrl());
-    ws.onopen = function () {};
-    ws.onclose = function () {
-      setConn("conn-err", "Disconnected");
-      clearTimeout(reconnectTimer);
-      reconnectTimer = setTimeout(connect, 3000);
-    };
-    ws.onerror = function () {
-      setConn("conn-err", "Socket error");
-    };
-    ws.onmessage = function (ev) {
-      var msg;
-      try { msg = JSON.parse(ev.data); } catch (e) { return; }
-      if (msg.type === "auth_required") {
-        send({ type: "auth", access_token: token });
-        return;
-      }
-      if (msg.type === "auth_invalid") {
-        setConn("conn-err", "Auth invalid");
-        $("auth-gate").classList.remove("hidden");
-        return;
-      }
-      if (msg.type === "auth_ok") {
-        setConn("conn-on", "Live");
-        subscribe();
-        return;
-      }
-      if (msg.type === "event" && msg.event) {
-        if (msg.event.a || msg.event.c || msg.event.r) {
-          /* compressed entity updates from subscribe_entities */
-          var a = msg.event.a || {};
-          Object.keys(a).forEach(function (id) {
-            var cur = states[id] || { entity_id: id, attributes: {} };
-            var patch = a[id] || {};
-            states[id] = {
-              entity_id: id,
-              state: patch.s != null ? patch.s : cur.state,
-              attributes: Object.assign({}, cur.attributes || {}, patch.a || {})
-            };
-          });
-          var c = msg.event.c || {};
-          Object.keys(c).forEach(function (id) {
-            var cur = states[id] || { entity_id: id, attributes: {} };
-            var patch = (c[id] && c[id]["+"]) || c[id] || {};
-            states[id] = {
-              entity_id: id,
-              state: patch.s != null ? patch.s : cur.state,
-              attributes: Object.assign({}, cur.attributes || {}, patch.a || {})
-            };
-          });
-          paint();
-          return;
-        }
-        if (msg.event.data && msg.event.data.new_state) {
-          var ns = msg.event.data.new_state;
-          if (ns && ns.entity_id) {
-            states[ns.entity_id] = ns;
-            paint();
-          }
-        }
-      }
-    };
-  }
-
-  function initAuthUi() {
-    $("token-save").onclick = function () {
-      var t = ($("token-input").value || "").trim();
-      if (!t) return;
-      setToken(t);
-      connect();
-    };
-  }
-
-  function init() {
-    initAuthUi();
-    tickClock();
-    setInterval(tickClock, 15000);
-    paint();
-    connect();
-    var ms = cfg.paintIntervalMs || 2000;
-    paintTimer = setInterval(function () {
-      if (Object.keys(states).length) paint();
-    }, ms);
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+  H.start({
+    page: "infrastructure",
+    entities: ENTITIES,
+    paint: paint
+  });
 })();

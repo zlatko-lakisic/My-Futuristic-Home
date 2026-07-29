@@ -1,0 +1,11 @@
+# Gate AI clip media: stitch snapshot bursts into GIF/MP4 for Companion + dashboard.
+shell_command:
+  gate_frames_to_gif: >-
+    bash /config/shell/gate_frames_to_gif.sh
+    "{{ slug }}" "{{ stamp }}" "{{ count | default(8) }}"
+
+input_text:
+  gate_ai_last_media:
+    name: Gate AI Last Media Path
+    max: 255
+    icon: mdi:file-gif-box

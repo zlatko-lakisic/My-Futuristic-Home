@@ -7,66 +7,77 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0b0f14" />
-  <title>Infrastructure Monitoring</title>
+  <title>Infrastructure · Kiosk</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="config.js"></script>
 </head>
-<body>
-  <header class="top">
-    <div class="top-left">
-      <div class="eyebrow">My Futuristic Home</div>
-      <h1>TOTAL INFRASTRUCTURE MONITORING</h1>
+<body class="has-sidebar">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-eyebrow">My Futuristic Home</div>
+      <div class="sidebar-title">Kiosk</div>
     </div>
-    <div class="top-right">
+    <nav class="sidebar-nav">
+      <a class="nav-link active" data-page="infrastructure" href="index.html">Infrastructure</a>
+      <a class="nav-link" data-page="backyard" href="backyard.html">Backyard</a>
+    </nav>
+    <div class="sidebar-foot">
       <div id="clock" class="clock">--:--</div>
       <div id="conn" class="conn conn-off">Connecting…</div>
     </div>
-  </header>
+  </aside>
 
-  <main id="app">
-    <section class="band">
-      <h2 class="band-title">CORE NETWORK STATUS</h2>
-      <div class="row row-gateway">
-        <div class="card gateway-hero" id="card-gateway-hero"></div>
-        <div class="card gateway-status" id="card-gateway-status"></div>
-        <div class="device-grid" id="card-network-devices"></div>
+  <div class="shell">
+    <header class="top">
+      <div class="top-left">
+        <h1>TOTAL INFRASTRUCTURE MONITORING</h1>
       </div>
-      <div class="row row-gauges" id="card-gateway-gauges"></div>
-      <div class="row traffic-strip" id="card-traffic"></div>
-    </section>
+    </header>
 
-    <section class="band">
-      <h2 class="band-title">POWER WATCHDOGS (MSNSWITCH)</h2>
-      <p class="band-sub">Hardware PDU watchdogs — outlet power, UIS auto-reset, and ping checker health</p>
-      <div class="row cols-3" id="card-watchdogs"></div>
-    </section>
-
-    <section class="band">
-      <h2 class="band-title">PHYSICAL SERVERS &amp; NVR CLUSTER</h2>
-      <div class="row cols-2">
-        <div>
-          <h3 class="subhead">Home Assistant &amp; VMs</h3>
-          <div class="stack" id="card-servers"></div>
+    <main id="app">
+      <section class="band">
+        <h2 class="band-title">CORE NETWORK STATUS</h2>
+        <div class="row row-gateway">
+          <div class="card gateway-hero" id="card-gateway-hero"></div>
+          <div class="card gateway-status" id="card-gateway-status"></div>
+          <div class="device-grid" id="card-network-devices"></div>
         </div>
-        <div>
-          <h3 class="subhead">NVR &amp; GPU</h3>
-          <div class="stack" id="card-nvr"></div>
+        <div class="row row-gauges" id="card-gateway-gauges"></div>
+      </section>
+
+      <section class="band">
+        <h2 class="band-title">POWER WATCHDOGS (MSNSWITCH)</h2>
+        <p class="band-sub">Hardware PDU watchdogs — outlet power, UIS auto-reset, and ping checker health</p>
+        <div class="row cols-3" id="card-watchdogs"></div>
+      </section>
+
+      <section class="band">
+        <h2 class="band-title">PHYSICAL SERVERS &amp; NVR CLUSTER</h2>
+        <div class="row cols-2">
+          <div>
+            <h3 class="subhead">Home Assistant &amp; VMs</h3>
+            <div class="stack" id="card-servers"></div>
+          </div>
+          <div>
+            <h3 class="subhead">NVR &amp; GPU</h3>
+            <div class="stack" id="card-nvr"></div>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="band">
-      <h2 class="band-title">CAMERA PIPELINE HEALTH</h2>
-      <p class="band-sub">Frigate FPS / CPU only — no live video on this kiosk</p>
-      <div class="row cols-5" id="card-cameras"></div>
-    </section>
+      <section class="band">
+        <h2 class="band-title">CAMERA PIPELINE HEALTH</h2>
+        <p class="band-sub">Frigate FPS / CPU only — no live video on this page</p>
+        <div class="row cols-5" id="card-cameras"></div>
+      </section>
 
-    <section class="band">
-      <h2 class="band-title">STORAGE &amp; SERVICES</h2>
-      <p class="band-sub">OMV storage health</p>
-      <div class="row cols-2" id="card-storage"></div>
-    </section>
-  </main>
+      <section class="band">
+        <h2 class="band-title">STORAGE &amp; SERVICES</h2>
+        <p class="band-sub">OMV storage health</p>
+        <div class="row cols-2" id="card-storage"></div>
+      </section>
+    </main>
+  </div>
 
   <div id="auth-gate" class="auth-gate hidden">
     <div class="auth-box">
@@ -78,6 +89,7 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="ha.js"></script>
+  <script src="infrastructure.js"></script>
 </body>
 </html>
