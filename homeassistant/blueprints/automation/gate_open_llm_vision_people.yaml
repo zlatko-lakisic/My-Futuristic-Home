@@ -178,12 +178,39 @@ actions:
       include_filename: false
       store_in_timeline: false
       use_memory: false
-      temperature: 0.2
+      temperature: 0.1
       max_tokens: 900
       generate_title: false
       expose_images: false
       target_width: !input target_width
-      message: "You are viewing multiple still frames from the {{ gate_name }} security camera, captured in order over a few seconds. Infer motion and activity across frames — paths people take, pauses, interacting with the gate or objects, carrying items, gestures, entering or leaving view.\n\nCRITICAL OUTPUT RULES:\n- Do NOT call tools, functions, or MCP servers.\n- Do NOT output JSON, code fences, file paths, or tool-call blocks.\n- Do NOT invent pets or people that are not visible.\n- Your entire reply must be exactly 3 lines of plain text and nothing else.\n\nLine 1 — classification only: PEOPLE if any human appears in any frame (partial/small counts). Otherwise NOPEOPLE. No other words on this line.\nLine 2 — home log: concrete observation across frames (who/where/what they do). Max 240 characters. One paragraph. Do not mention images/frames/camera.\nLine 3 — phone alert: shorter factual summary. Max 120 characters. No meta text."
+      message: >-
+        You are viewing multiple still frames from the {{ gate_name }} security camera,
+        captured in order over a few seconds. Treat them as one short video clip of the
+        SAME scene, not as separate events.
+
+        COUNTING RULES (critical — models often get this wrong):
+        - Count UNIQUE people only. The same person appearing in different frames or
+          positions is ONE person, not several.
+        - Only say two or more people if DISTINCT humans are visible at the SAME TIME
+          in at least one frame (different bodies side-by-side).
+        - If unsure whether two detections are the same person moving, say ONE person.
+        - Dogs, cats, and other pets are NOT people. Mention pets only if clearly visible;
+          never invent pets or people.
+        - Ignore false shapes: covered grill, flags, fence posts, tree trunks, shadows,
+          reflections in windows.
+
+        CRITICAL OUTPUT RULES:
+        - Do NOT call tools, functions, or MCP servers.
+        - Do NOT output JSON, code fences, file paths, or tool-call blocks.
+        - Your entire reply must be exactly 3 lines of plain text and nothing else.
+
+        Line 1 — classification only: exactly PEOPLE or NOPEOPLE (nothing else on this line).
+        Use PEOPLE if any human appears in any frame (partial/small counts). Otherwise NOPEOPLE.
+        Line 2 — home log ONLY (no PEOPLE/NOPEOPLE words): concrete observation (who/where/what
+        they do). Start with the unique person count when PEOPLE (e.g. "One person…").
+        Max 180 characters. One paragraph. Do not mention images/frames/camera.
+        Line 3 — phone alert ONLY (no PEOPLE/NOPEOPLE words): shorter factual summary with the
+        same unique count. Max 100 characters. No meta text.
     response_variable: ai_response
   - variables:
       reply_raw: >-
@@ -210,16 +237,22 @@ actions:
         {% endif %}
       llm_label: >-
         {% set text = reply | string %}
-        {% set labeled = text | regex_findall('(?im)(?:^|\\n)\\s*People\\s*:\\s*(NOPEOPLE|PEOPLE)\\b') %}
-        {% if labeled | length > 0 %}
-          {{ labeled[-1] | upper }}
+        {% set first = (text.split('\n') | first) | default('', true) | trim %}
+        {% set first_only = first | regex_findall('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE)\\s*[.!]?\s*$') %}
+        {% if first_only | length > 0 %}
+          {{ first_only[0] | upper }}
         {% else %}
-          {% set exact = text | regex_findall('(?m)^\\s*(NOPEOPLE|PEOPLE)\\s*[.!]?\\s*$') %}
-          {% if exact | length > 0 %}
-            {{ exact[0] | upper }}
+          {% set first_prefix = first | regex_findall('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE)\\b') %}
+          {% if first_prefix | length > 0 %}
+            {{ first_prefix[0] | upper }}
           {% else %}
-            {% set caps = text | regex_findall('\\b(NOPEOPLE|PEOPLE)\\b') %}
-            {{ (caps[-1] | upper) if caps | length > 0 else '' }}
+            {% set labeled = text | regex_findall('(?im)(?:^|\\n)\\s*People\\s*:\\s*(NOPEOPLE|PEOPLE)\\b') %}
+            {% if labeled | length > 0 %}
+              {{ labeled[0] | upper }}
+            {% else %}
+              {% set exact = text | regex_findall('(?m)^\\s*(NOPEOPLE|PEOPLE)\\s*[.!]?\\s*$') %}
+              {{ (exact[0] | upper) if exact | length > 0 else '' }}
+            {% endif %}
           {% endif %}
         {% endif %}
       llm_unusable: >-
@@ -248,69 +281,75 @@ actions:
         {% else %}
           no
         {% endif %}
-      gate_class_idx: >-
-        {% set sl = (reply | string).split('\n') %}
-        {% set ns = namespace(idx=-1) %}
-        {% for i in range(sl | length) %}
-          {% if ns.idx < 0 %}
-            {% set line = sl[i] | trim %}
-            {% if line | regex_findall('(?i)^People\\s*:\\s*(NOPEOPLE|PEOPLE)\\b') | length > 0
-               or line | regex_findall('^(NOPEOPLE|PEOPLE)\\s*[.!]?\\s*$') | length > 0 %}
-              {% set ns.idx = i %}
-            {% endif %}
+      # Clean human-readable summary — never include PEOPLE/NOPEOPLE tokens.
+      log_description: >-
+        {% set unusable = (llm_unusable | string | trim) == 'yes' %}
+        {% set label = llm_label | string | trim | upper %}
+        {% if unusable and label not in ['PEOPLE', 'NOPEOPLE'] %}
+          {% if (frigate_people | string | trim) == 'yes' %}
+            Frigate detected a person near {{ gate_name }}
+          {% else %}
+            No person detected at {{ gate_name }}
           {% endif %}
-        {% endfor %}
-        {{ ns.idx }}
+        {% else %}
+          {% set text = reply | string %}
+          {% set sl = text.split('\n') %}
+          {% set ns = namespace(cand='') %}
+          {% for line in sl %}
+            {% if ns.cand | length < 1 %}
+              {% set t = line | trim %}
+              {% set t = t
+                | regex_replace('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE)\\s*[.!:\\-]*\\s*', '')
+                | regex_replace('(?i)^(Alert|Phone alert|Person alert|Home log|Line\\s*[123])\\s*:\\s*', '')
+                | regex_replace('(?i)\\b(NOPEOPLE|PEOPLE)\\b[.!:\\-]*\\s*', '')
+                | regex_replace('(?i)\\b(Phone alert|Person alert|Home log|Alert)\\s*:\\s*', '. ')
+                | regex_replace('\\s+', ' ')
+                | trim %}
+              {% if t | length > 12
+                 and (t | regex_findall('(?i)(List the person|For each frame|Describe local|tool-call)') | length) == 0 %}
+                {% set first = t.split('.')[0] | trim %}
+                {% set ns.cand = (first ~ '.') if first | length > 8 else t %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {% if ns.cand | length > 0 %}
+            {{ ns.cand | truncate(140, true, '…') }}
+          {% elif label == 'PEOPLE' or (frigate_people | string | trim) == 'yes' %}
+            Person at {{ gate_name }}
+          {% else %}
+            No people at {{ gate_name }}
+          {% endif %}
+        {% endif %}
+      # If the model says NOPEOPLE but the summary clearly describes a person, trust the summary.
       gate_classification: >-
         {% set label = llm_label | string | trim | upper %}
-        {% if label in ['PEOPLE', 'NOPEOPLE'] %}
-          {{ label }}
-        {% elif (llm_unusable | string | trim) == 'yes' %}
+        {% set summary = log_description | string | lower %}
+        {% set describes_person = summary | regex_findall('(?i)\\b(person|people|someone|man|woman|child|human)\\b') | length > 0
+           and summary | regex_findall('(?i)\\bno (person|people)\\b') | length == 0 %}
+        {% if (llm_unusable | string | trim) == 'yes' and label not in ['PEOPLE', 'NOPEOPLE'] %}
           {{ 'PEOPLE' if (frigate_people | string | trim) == 'yes' else 'NOPEOPLE' }}
+        {% elif label == 'NOPEOPLE' and describes_person %}
+          PEOPLE
+        {% elif label in ['PEOPLE', 'NOPEOPLE'] %}
+          {{ label }}
         {% else %}
           UNKNOWN
         {% endif %}
-      log_description: >-
-        {% set label = llm_label | string | trim | upper %}
-        {% set unusable = (llm_unusable | string | trim) == 'yes' %}
-        {% if unusable and label not in ['PEOPLE', 'NOPEOPLE'] %}
-          {% if gate_classification == 'PEOPLE' %}
-            Frigate detected a person near {{ gate_name }} (vision model unavailable)
+      notify_title: >-
+        {% if gate_classification == 'PEOPLE' %}
+          {% set s = log_description | string %}
+          {% set short = s | regex_findall('(?i)^((?:one|two|three|\\d+)\\s+people?[^.]*)') %}
+          {% if short | length > 0 %}
+            {{ gate_name }} · {{ short[0] | truncate(40, true, '…') }}
           {% else %}
-            No person detected by Frigate at {{ gate_name }} (vision model unavailable)
+            {{ gate_name }} · Person
           {% endif %}
-        {% elif unusable and label == 'NOPEOPLE' %}
-          No people at {{ gate_name }}
-        {% elif unusable and label == 'PEOPLE' %}
-          Person activity at {{ gate_name }}
         {% else %}
-          {% set sl = (reply | string).split('\n') %}
-          {% set idx = gate_class_idx | default(-1) | int %}
-          {% set ns = namespace(parts=[]) %}
-          {% if idx >= 0 %}
-            {% for i in range(idx + 1, sl | length) %}
-              {% set t = sl[i] | trim %}
-              {% if t | length > 0
-                 and (t | regex_findall('(?i)^People\\s*:') | length) == 0
-                 and (t | regex_findall('^(NOPEOPLE|PEOPLE)\\s*$') | length) == 0
-                 and (t | regex_findall('(?i)(List the person|For each frame|Describe local)') | length) == 0 %}
-                {% set ns.parts = ns.parts + [t | regex_replace('(?i)^(Alert|Line\\s*2|Line\\s*3)\\s*:\\s*', '')] %}
-              {% endif %}
-            {% endfor %}
-          {% endif %}
-          {% if ns.parts | length > 0 %}
-            {{ ns.parts[0] | truncate(240, true, '...') }}
-          {% elif gate_classification == 'PEOPLE' %}
-            Person activity at {{ gate_name }}
-          {% elif gate_classification == 'NOPEOPLE' %}
-            No people at {{ gate_name }}
-          {% else %}
-            Gate activity at {{ gate_name }}
-          {% endif %}
+          {{ gate_name }}
         {% endif %}
       mobile_short: >-
         {% if gate_classification == 'PEOPLE' %}
-          Person at {{ gate_name }}
+          {{ log_description | truncate(120, true, '…') }}
         {% elif gate_classification == 'NOPEOPLE' %}
           No people at {{ gate_name }}
         {% else %}
@@ -357,16 +396,14 @@ actions:
     - action: persistent_notification.create
       data:
         notification_id: '{{ gate_slug }}_ai_{{ snapshot_timestamp }}'
-        title: '{{ gate_name }} · {{ log_description | truncate(65, true, ''...'') }}'
+        title: '{{ notify_title }}'
         message: |
           {{ log_description }}
 
           ![{{ gate_name }}](/local/{{ dashboard_media_rel }})
-    # Animated GIF attachment (Android 14+ animates in the shade).
-    # Do not also set `video` here — Companion shows video instead of the GIF when both are present.
     - action: !input notify_service
       data:
-        title: '{{ gate_name }} · {{ mobile_short | truncate(48, true, ''...'') }}'
+        title: '{{ notify_title }}'
         message: '{{ mobile_short }}'
         data:
           image: '{{ notify_media_image }}'

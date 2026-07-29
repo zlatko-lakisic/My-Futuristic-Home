@@ -64,6 +64,8 @@ Live automation (`hacs-public-wan-ip`, every 5m):
 3. HTTP fetch **by that IP** with `Host: api.ipify.org` (avoids CDN re-resolve via L2TP)  
 4. Always store `:global PublicIP` (so HA environment sensors refresh)
 
+Script **and** scheduler must include the `ftp` policy (RouterOS 7.13+ requires it for `/tool fetch` file writes). Without `ftp`, interactive `/system script run` still works as admin, but every scheduler tick fails at fetch — after `daily-reboot-3am`, `:global PublicIP` stays empty until someone runs the script by hand.
+
 HA: enable **Environment variable sensors** on instance **Mikrotik-Mostar** → `sensor.mikrotik_mostar_environment_publicip`. Infrastructure dashboard WAN line uses that entity.
 
 Import: `/import file-name=mikrotik_mostar_public_wan_ip.rsc`

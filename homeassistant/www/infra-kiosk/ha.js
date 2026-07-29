@@ -129,6 +129,29 @@
     return haBase() + "/api/camera_proxy/" + encodeURIComponent(entityId) + "?_=" + Date.now();
   }
 
+  /* Still uses entity access_token so <img> works without Auth headers. */
+  function cameraStillUrl(entityId, bust) {
+    var pic = attr(entityId, "entity_picture");
+    if (pic) {
+      var url = pic.indexOf("http") === 0 ? pic : (haBase() + pic);
+      if (bust) url += (url.indexOf("?") >= 0 ? "&" : "?") + "_=" + Date.now();
+      return url;
+    }
+    var camTok = attr(entityId, "access_token");
+    if (camTok) {
+      return haBase() + "/api/camera_proxy/" + encodeURIComponent(entityId) +
+        "?token=" + encodeURIComponent(camTok) + (bust ? "&_=" + Date.now() : "");
+    }
+    return null;
+  }
+
+  function cameraStreamUrl(entityId) {
+    var camTok = attr(entityId, "access_token");
+    if (!camTok) return null;
+    return haBase() + "/api/camera_proxy_stream/" + encodeURIComponent(entityId) +
+      "?token=" + encodeURIComponent(camTok);
+  }
+
   function fetchCameraBlob(entityId) {
     var token = getToken();
     return fetch(cameraUrl(entityId), {
@@ -139,6 +162,27 @@
       return r.blob();
     }).then(function (blob) {
       return URL.createObjectURL(blob);
+    });
+  }
+
+  /* History for charts — REST keeps WS free of bulky payloads. */
+  function fetchHistory(entityIds, hours) {
+    var token = getToken();
+    if (!token || !entityIds || !entityIds.length) {
+      return Promise.resolve([]);
+    }
+    var end = new Date();
+    var start = new Date(end.getTime() - (hours || 168) * 3600 * 1000);
+    var url = haBase() + "/api/history/period/" + encodeURIComponent(start.toISOString()) +
+      "?filter_entity_id=" + encodeURIComponent(entityIds.join(",")) +
+      "&end_time=" + encodeURIComponent(end.toISOString()) +
+      "&significant_changes_only=0";
+    return fetch(url, {
+      headers: { Authorization: "Bearer " + token },
+      cache: "no-store"
+    }).then(function (r) {
+      if (!r.ok) throw new Error("history " + r.status);
+      return r.json();
     });
   }
 
@@ -285,7 +329,10 @@
     clampPct: clampPct,
     toggleEntity: toggleEntity,
     callService: callService,
+    cameraStillUrl: cameraStillUrl,
+    cameraStreamUrl: cameraStreamUrl,
     fetchCameraBlob: fetchCameraBlob,
+    fetchHistory: fetchHistory,
     getToken: getToken,
     haBase: haBase,
     states: function () { return states; }

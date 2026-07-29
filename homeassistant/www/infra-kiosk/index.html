@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#0b0f14" />
+  <meta name="theme-color" content="#111111" />
   <title>Infrastructure · Kiosk</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="config.js"></script>
@@ -18,8 +18,14 @@
       <div class="sidebar-title">Kiosk</div>
     </div>
     <nav class="sidebar-nav">
-      <a class="nav-link active" data-page="infrastructure" href="index.html">Infrastructure</a>
-      <a class="nav-link" data-page="backyard" href="backyard.html">Backyard</a>
+      <a class="nav-link active" data-page="infrastructure" href="index.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20v-2H2v2zm2-4h3V6H4v10zm5 0h3V4H9v12zm5 0h3V9h-3v7zm5 0h3V2h-3v14z"/></svg>
+        <span>Infrastructure</span>
+      </a>
+      <a class="nav-link" data-page="backyard" href="backyard.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-1.5 3.5-4.5 5.5-8 6 2.5 1 4 3.5 4 6.5V21h8v-5.5c0-3 1.5-5.5 4-6.5-3.5-.5-6.5-2.5-8-6z"/></svg>
+        <span>Backyard</span>
+      </a>
     </nav>
     <div class="sidebar-foot">
       <div id="clock" class="clock">--:--</div>
