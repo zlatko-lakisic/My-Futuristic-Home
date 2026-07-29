@@ -21,6 +21,7 @@ var ENTITIES = [
     "sensor.mikrotik_mostar_rb951g_2hnd_memory_usage",
     "sensor.mikrotik_mostar_ether1_rx",
     "sensor.mikrotik_mostar_ether1_tx",
+    "sensor.mikrotik_mostar_environment_publicip",
     "sensor.perimiter_switch_cpu_temperature",
     "sensor.perimeter_switch_total_rx",
     "sensor.perimeter_switch_total_tx",
@@ -131,6 +132,13 @@ var ENTITIES = [
     if (bad(raw)) return "—";
     var s = String(raw);
     return s.indexOf("/") >= 0 ? s.split("/")[0] : s;
+  }
+
+  /* Mostar WAN: ether1 client_ip is often "unknown"; Environment PublicIP is authoritative. */
+  function mostarWanIp() {
+    var pub = st("sensor.mikrotik_mostar_environment_publicip");
+    if (pub && !bad(pub.state)) return String(pub.state).trim();
+    return wanIp("binary_sensor.mikrotik_mostar_ether1_connection");
   }
 
   function uptime(id) {
@@ -244,7 +252,7 @@ function renderGateway() {
         title: "Mikrotik-Mostar",
         sub: "RB951G · remote · " + (mBad ? "—" : (mOn ? "Online" : "Offline")),
         dot: mBad ? "dot-unk" : (mOn ? "dot-ok" : "dot-bad"),
-        extra: '<div class="mono">WAN IP · ' + wanIp("binary_sensor.mikrotik_mostar_ether1_connection") + "</div>",
+        extra: '<div class="mono">WAN IP · ' + mostarWanIp() + "</div>",
         body:
           metric("CPU", mCpu, "fill-cpu", mCpu == null ? "—" : Math.round(mCpu) + "%") +
           metric("Memory", mMem, "fill-mem", mMem == null ? "—" : Math.round(mMem) + "%") +
