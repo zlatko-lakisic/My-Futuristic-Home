@@ -45,7 +45,7 @@
       notification_click_path: /backyard-yaml/backyard-east-side
       notify_people:
       - person.zlatko_lakisic
-      notify_service: notify.mobile_app_zlatko_fold_5
+      notify_service: notify.notify
 - id: gate_open_llm_west
   alias: West Gate Open AI Analysis
   description: Blueprint gate_open_llm_vision_people â€” west gate.
@@ -65,7 +65,7 @@
       notification_click_path: /backyard-yaml/backyard-west-side
       notify_people:
       - person.zlatko_lakisic
-      notify_service: notify.mobile_app_zlatko_fold_5
+      notify_service: notify.notify
 - id: gate_open_llm_back_yard_gate
   alias: Back Yard Gate Open AI Analysis
   description: Blueprint gate_open_llm_vision_people â€” fence / back yard gate.
@@ -85,7 +85,7 @@
       notification_click_path: /backyard-yaml/backyard-back-yard
       notify_people:
       - person.zlatko_lakisic
-      notify_service: notify.mobile_app_zlatko_fold_5
+      notify_service: notify.notify
 - id: '1757732558171'
   alias: East Gate Open Notification
   description: ''

@@ -45,3 +45,4 @@ ha_api_base_url: http://127.0.0.1:8123
 irrigation_start_service: bhyve.start_watering
 irrigation_stop_service: bhyve.stop_watering
 max_zone_index: 16
+mobile_notify_service: notify.notify

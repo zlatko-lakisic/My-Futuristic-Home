@@ -1,18 +1,20 @@
 # Host metrics for infrastructure dashboard (Garden Speaker + Jetson + NVR core counts).
-# Uses Glances API v4 directly because the built-in Glances integration leaves
-# garden-speaker/jetson sensors unavailable even when the API is healthy.
+# Uses Glances API v4 light endpoints (not /api/4/all) because Jetson fs plugin hangs
+# on Docker overlay mounts and stalls /api/4/all past HA command_line timeout.
 #
 # Include (already done via this package file once listed in configuration.yaml):
 #   homeassistant.packages.infra_glances_hosts
 #
-# Reload: Developer tools → YAML → Reload command line / all YAML, or restart HA.
+# Reload: Developer tools → YAML → Reload command line / Reload template entities,
+# or call command_line.reload + template.reload.
 
 command_line:
   - sensor:
       name: Infra Glances hosts
       unique_id: infra_glances_hosts_blob
       icon: mdi:server-network
-      scan_interval: 30
+      scan_interval: 45
+      command_timeout: 25
       command: /usr/local/bin/python3 /config/packages/infra_glances_hosts.py
       value_template: >-
         {% set j = value_json %}

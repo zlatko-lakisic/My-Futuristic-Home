@@ -1,0 +1,633 @@
+{
+  "title": "Infrastructure",
+  "theme": "dark",
+  "refresh_interval": 30,
+  "version": "2.24.0",
+  "header_sensors": [
+    {
+      "entity_id": "binary_sensor.mikrotik_home_ether1_connection",
+      "icon": "router-network",
+      "label": "Gateway"
+    },
+    {
+      "entity_id": "sensor.homeassistant_cpu_usage",
+      "icon": "cpu-64-bit",
+      "label": "HA CPU"
+    },
+    {
+      "entity_id": "sensor.nvr_mostardesigns_com_cpu_usage",
+      "icon": "server",
+      "label": "NVR CPU"
+    }
+  ],
+  "overview": {
+    "title": "Overview",
+    "icon": "server-network",
+    "sections": [
+      {
+        "id": "sec_ov_core",
+        "title": "Core status",
+        "items": [
+          {
+            "type": "entity",
+            "entity_id": "binary_sensor.mikrotik_home_ether1_connection",
+            "label": "MikroTik gateway",
+            "icon": "router-network",
+            "hidden": false,
+            "visual_type": "",
+            "device_class": "connectivity"
+          },
+          {
+            "type": "entity",
+            "entity_id": "sensor.mikrotik_home_hap_ac_cpu_load",
+            "label": "Gateway CPU",
+            "icon": "cpu-64-bit",
+            "hidden": false,
+            "visual_type": "",
+            "device_class": ""
+          },
+          {
+            "type": "entity",
+            "entity_id": "sensor.mikrotik_home_hap_ac_memory_usage",
+            "label": "Gateway memory",
+            "icon": "memory",
+            "hidden": false,
+            "visual_type": "",
+            "device_class": ""
+          },
+          {
+            "type": "entity",
+            "entity_id": "sensor.homeassistant_cpu_usage",
+            "label": "HA CPU",
+            "icon": "home-assistant",
+            "hidden": false,
+            "visual_type": "",
+            "device_class": ""
+          },
+          {
+            "type": "entity",
+            "entity_id": "sensor.homeassistant_memory_usage",
+            "label": "HA memory",
+            "icon": "memory",
+            "hidden": false,
+            "visual_type": "",
+            "device_class": ""
+          },
+          {
+            "type": "entity",
+            "entity_id": "sensor.nvr_mostardesigns_com_cpu_usage",
+            "label": "NVR CPU",
+            "icon": "server",
+            "hidden": false,
+            "visual_type": "",
+            "device_class": ""
+          },
+          {
+            "type": "entity",
+            "entity_id": "binary_sensor.codeproject_ai_server_status",
+            "label": "CodeProject AI",
+            "icon": "brain",
+            "hidden": false,
+            "visual_type": "",
+            "device_class": ""
+          }
+        ]
+      }
+    ]
+  },
+  "rooms": [
+    {
+      "id": "room_network",
+      "title": "Network",
+      "icon": "lan",
+      "hidden": false,
+      "sections": [
+        {
+          "id": "sec_net_core",
+          "title": "Core network",
+          "items": [
+            {
+              "type": "entity",
+              "entity_id": "binary_sensor.mikrotik_home_ether1_connection",
+              "label": "Gateway online",
+              "icon": "router-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "connectivity"
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.mikrotik_home_hap_ac_cpu_load",
+              "label": "hAP ax³ CPU",
+              "icon": "cpu-64-bit",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.mikrotik_home_hap_ac_memory_usage",
+              "label": "hAP ax³ memory",
+              "icon": "memory",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.mikrotik_mostar_rb951g_2hnd_cpu_load",
+              "label": "Mostar RB951 CPU",
+              "icon": "router",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.perimiter_switch_cpu_temperature",
+              "label": "Perimeter switch temp",
+              "icon": "thermometer",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "temperature"
+            }
+          ]
+        },
+        {
+          "id": "sec_net_wifi",
+          "title": "Access points",
+          "items": [
+            {
+              "type": "entity",
+              "entity_id": "sensor.ap_back_yard_clients",
+              "label": "AP Back Yard clients",
+              "icon": "wifi",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.ap_bottom_floor_clients",
+              "label": "AP Bottom Floor clients",
+              "icon": "wifi",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.ap_top_floor_clients",
+              "label": "AP Top Floor clients",
+              "icon": "wifi",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            }
+          ]
+        },
+        {
+          "id": "sec_net_traffic",
+          "title": "Traffic",
+          "items": [
+            {
+              "type": "entity",
+              "entity_id": "sensor.mikrotik_home_ether1_rx",
+              "label": "WAN RX",
+              "icon": "download-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.mikrotik_home_ether1_tx",
+              "label": "WAN TX",
+              "icon": "upload-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.mikrotik_home_ether3_rx",
+              "label": "LAN RX",
+              "icon": "download-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.mikrotik_home_ether3_tx",
+              "label": "LAN TX",
+              "icon": "upload-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.mikrotik_home_home_wifi_vlan_rx",
+              "label": "Home Wi‑Fi RX",
+              "icon": "download-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.mikrotik_home_home_wifi_vlan_tx",
+              "label": "Home Wi‑Fi TX",
+              "icon": "upload-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.mikrotik_home_iot_vlan_rx",
+              "label": "IoT VLAN RX",
+              "icon": "download-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.mikrotik_home_iot_vlan_tx",
+              "label": "IoT VLAN TX",
+              "icon": "upload-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.perimeter_switch_total_rx",
+              "label": "Perimeter RX",
+              "icon": "download-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.perimeter_switch_total_tx",
+              "label": "Perimeter TX",
+              "icon": "upload-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "room_power",
+      "title": "Power watchdogs",
+      "icon": "power-plug",
+      "hidden": false,
+      "sections": [
+        {
+          "id": "sec_pdu",
+          "title": "MSNSwitch UIS auto-reset",
+          "items": [
+            {
+              "type": "entity",
+              "entity_id": "switch.basement_msnswitch_router_modem_uis_auto_reset",
+              "label": "Router / modem",
+              "icon": "restart",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "switch.basement_msnswitch_traefik_nas1_uis_auto_reset",
+              "label": "Traefik / NAS1",
+              "icon": "restart",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "switch.basement_msnswitch_nas2_omega_jetson_uis_auto_reset",
+              "label": "NAS2 / Omega / Jetson",
+              "icon": "restart",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "room_servers",
+      "title": "Servers & NVR",
+      "icon": "server",
+      "hidden": false,
+      "sections": [
+        {
+          "id": "sec_ha_vms",
+          "title": "Home Assistant & VMs",
+          "items": [
+            {
+              "type": "entity",
+              "entity_id": "sensor.homeassistant_cpu_usage",
+              "label": "HA CPU",
+              "icon": "home-assistant",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.homeassistant_memory_usage",
+              "label": "HA memory",
+              "icon": "memory",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.homeassistant_data_disk_usage",
+              "label": "HA disk /data",
+              "icon": "harddisk",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.qemu_nginx_prod_100_cpu_used",
+              "label": "nginx-prod CPU",
+              "icon": "virtual-reality",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.infra_garden_speaker_cpu_usage",
+              "label": "Garden speaker CPU",
+              "icon": "speaker",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.infra_jetson_cpu_usage",
+              "label": "Jetson CPU",
+              "icon": "chip",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            }
+          ]
+        },
+        {
+          "id": "sec_nvr",
+          "title": "NVR & GPU",
+          "items": [
+            {
+              "type": "entity",
+              "entity_id": "sensor.nvr_mostardesigns_com_cpu_usage",
+              "label": "NVR CPU",
+              "icon": "server",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.nvr_mostardesigns_com_nvidia_rtx_4000_sff_ada_generation_gpu_nvidia0_processor_usage",
+              "label": "GPU compute",
+              "icon": "expansion-card",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.nvr_mostardesigns_com_nvidia_rtx_4000_sff_ada_generation_gpu_nvidia0_memory_usage",
+              "label": "GPU memory",
+              "icon": "memory",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "binary_sensor.codeproject_ai_server_status",
+              "label": "CodeProject AI",
+              "icon": "brain",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.nvr_mostardesigns_com_enp3s0_rx",
+              "label": "NVR enp3s0 RX",
+              "icon": "download-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.nvr_mostardesigns_com_enp3s0_tx",
+              "label": "NVR enp3s0 TX",
+              "icon": "upload-network",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "data_rate"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "room_cameras",
+      "title": "Camera health",
+      "icon": "cctv",
+      "hidden": false,
+      "sections": [
+        {
+          "id": "sec_cam_health",
+          "title": "Frigate pipelines (no live video)",
+          "items": [
+            {
+              "type": "entity",
+              "entity_id": "sensor.back_yard_pipeline_cpu",
+              "label": "Back Yard CPU",
+              "icon": "cpu-64-bit",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.back_yard_frigate_fps",
+              "label": "Back Yard FPS",
+              "icon": "speedometer",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.garden_north_pipeline_cpu",
+              "label": "Garden North CPU",
+              "icon": "cpu-64-bit",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.garden_north_frigate_fps",
+              "label": "Garden North FPS",
+              "icon": "speedometer",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.west_side_pipeline_cpu",
+              "label": "West Side CPU",
+              "icon": "cpu-64-bit",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.west_side_frigate_fps",
+              "label": "West Side FPS",
+              "icon": "speedometer",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.driveway_pipeline_cpu",
+              "label": "Driveway CPU",
+              "icon": "cpu-64-bit",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.driveway_frigate_fps",
+              "label": "Driveway FPS",
+              "icon": "speedometer",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.garden_south_pipeline_cpu",
+              "label": "Garden South CPU",
+              "icon": "cpu-64-bit",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.garden_south_frigate_fps",
+              "label": "Garden South FPS",
+              "icon": "speedometer",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "room_storage",
+      "title": "Storage",
+      "icon": "nas",
+      "hidden": false,
+      "sections": [
+        {
+          "id": "sec_nas",
+          "title": "OMV storage",
+          "items": [
+            {
+              "type": "entity",
+              "entity_id": "sensor.nas1_filesystem_md0",
+              "label": "NAS1 md0",
+              "icon": "harddisk",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            },
+            {
+              "type": "entity",
+              "entity_id": "sensor.nas2_filesystem",
+              "label": "NAS2 filesystem",
+              "icon": "harddisk",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": ""
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "scenarios": [],
+  "scenarios_section": {
+    "title": "Scenarios",
+    "icon": "palette",
+    "hidden": true
+  },
+  "cameras": [],
+  "cameras_section": {
+    "title": "Cameras",
+    "icon": "cctv",
+    "hidden": true
+  },
+  "alarms": [],
+  "alarms_section": {
+    "title": "Alarm",
+    "icon": "shield-home",
+    "hidden": true
+  },
+  "calendars": [],
+  "calendars_section": {
+    "title": "Calendar",
+    "icon": "calendar",
+    "hidden": true
+  },
+  "energy_section": {
+    "title": "Energy",
+    "icon": "lightning-bolt",
+    "hidden": true
+  },
+  "energy_cards": [],
+  "nav_order": [
+    "rooms",
+    "energy",
+    "scenarios",
+    "cameras",
+    "alarms",
+    "calendars"
+  ],
+  "layout": "standard",
+  "device_profiles": []
+}
