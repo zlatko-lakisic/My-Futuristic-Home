@@ -59,14 +59,21 @@
 
       <section class="band">
         <h2 class="band-title">PHYSICAL SERVERS &amp; NVR CLUSTER</h2>
-        <div class="row cols-2">
-          <div>
+        <div class="infra-servers">
+          <div class="infra-servers-left">
             <h3 class="subhead">Home Assistant &amp; VMs</h3>
             <div class="stack" id="card-servers"></div>
           </div>
-          <div>
-            <h3 class="subhead">NVR &amp; GPU</h3>
-            <div class="stack" id="card-nvr"></div>
+          <div class="infra-servers-right">
+            <div class="infra-nvr-col">
+              <h3 class="subhead">NVR &amp; GPU Acceleration</h3>
+              <div class="stack" id="card-nvr"></div>
+              <div class="stack" id="card-nvr-nics"></div>
+            </div>
+            <div class="infra-gpu-col">
+              <h3 class="subhead">GPU MONITORING (NVIDIA)</h3>
+              <div class="stack" id="card-gpu"></div>
+            </div>
           </div>
         </div>
       </section>

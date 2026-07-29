@@ -56,14 +56,38 @@ var ENTITIES = [
     "sensor.homeassistant_enp1s0_rx",
     "sensor.homeassistant_enp1s0_tx",
     "sensor.qemu_nginx_prod_100_cpu_used",
+    "sensor.qemu_nginx_prod_100_memory_used_percentage",
+    "sensor.qemu_mariadb_101_cpu_used",
+    "sensor.qemu_mariadb_101_memory_used_percentage",
+    "sensor.qemu_gitlab2_102_cpu_used",
+    "sensor.qemu_gitlab2_102_memory_used_percentage",
+    "sensor.qemu_active_directory_104_cpu_used",
+    "sensor.qemu_active_directory_104_memory_used_percentage",
     "sensor.infra_garden_speaker_cpu_usage",
+    "sensor.infra_garden_speaker_memory_usage",
+    "sensor.garden_speaker_glances_state",
     "sensor.infra_jetson_cpu_usage",
+    "sensor.infra_jetson_memory_usage",
+    "sensor.infra_jetson_memory_use",
+    "sensor.infra_jetson_disk_usage",
+    "sensor.infra_jetson_gpu_usage",
+    "sensor.infra_jetson_nic_rx",
+    "sensor.infra_jetson_nic_tx",
+    "sensor.infra_jetson_uptime",
     "sensor.nvr_mostardesigns_com_cpu_usage",
+    "sensor.nvr_mostardesigns_com_memory_usage",
+    "sensor.nvr_mostardesigns_com_etc_hostname_disk_usage",
+    "sensor.nvr_glances_top_processes",
     "sensor.nvr_mostardesigns_com_nvidia_rtx_4000_sff_ada_generation_gpu_nvidia0_processor_usage",
     "sensor.nvr_mostardesigns_com_nvidia_rtx_4000_sff_ada_generation_gpu_nvidia0_memory_usage",
     "binary_sensor.codeproject_ai_server_status",
+    "sensor.codeproject_ai_server_state",
+    "sensor.nvr_mostardesigns_com_br_9229c4b7924f_rx",
+    "sensor.nvr_mostardesigns_com_br_9229c4b7924f_tx",
     "sensor.nvr_mostardesigns_com_enp3s0_rx",
     "sensor.nvr_mostardesigns_com_enp3s0_tx",
+    "sensor.nvr_mostardesigns_com_enp7s0_rx",
+    "sensor.nvr_mostardesigns_com_enp7s0_tx",
     "sensor.back_yard_pipeline_cpu",
     "sensor.back_yard_frigate_fps",
     "sensor.garden_north_pipeline_cpu",
@@ -389,79 +413,307 @@ function renderGateway() {
     );
   }
 
+  function pctBar(label, pct, grad, thick) {
+    var v = clampPct(pct);
+    return (
+      '<div class="bar-row' + (thick ? " thick" : "") + '">' +
+        '<div class="bar-head"><span>' + label + "</span><span>" +
+          (pct == null || !isFinite(pct) ? "—" : fmt(pct, 2) + "%") +
+        "</span></div>" +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + v + "%;background:" + grad + '"></div></div>' +
+      "</div>"
+    );
+  }
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function parseProcList() {
+    var s = st("sensor.nvr_glances_top_processes");
+    if (!s || bad(s.state)) return [];
+    var raw = s.attributes && (s.attributes.processes != null ? s.attributes.processes : s.attributes.processes_json);
+    if (typeof raw === "string") {
+      try { raw = JSON.parse(raw); } catch (e) { return []; }
+    }
+    return Array.isArray(raw) ? raw : [];
+  }
+
+  var NIC_IFACES = [
+    { name: "br-9229c4b7924f", rx: "sensor.nvr_mostardesigns_com_br_9229c4b7924f_rx", tx: "sensor.nvr_mostardesigns_com_br_9229c4b7924f_tx" },
+    { name: "enp3s0", rx: "sensor.nvr_mostardesigns_com_enp3s0_rx", tx: "sensor.nvr_mostardesigns_com_enp3s0_tx" },
+    { name: "enp7s0", rx: "sensor.nvr_mostardesigns_com_enp7s0_rx", tx: "sensor.nvr_mostardesigns_com_enp7s0_tx" }
+  ];
+  var nicHistory = {};
+  var nicBusy = false;
+  var nicLastAt = 0;
+
+  function downsample(vals, n) {
+    if (!vals || !vals.length) return [];
+    if (vals.length <= n) return vals.slice();
+    var out = [];
+    for (var i = 0; i < n; i++) {
+      var idx = Math.floor((i / (n - 1)) * (vals.length - 1));
+      out.push(vals[idx]);
+    }
+    return out;
+  }
+
+  function historySeries(raw, entityId) {
+    var series = null;
+    if (!raw || !raw.length) return [];
+    for (var i = 0; i < raw.length; i++) {
+      if (raw[i] && raw[i].length && raw[i][0] && raw[i][0].entity_id === entityId) {
+        series = raw[i];
+        break;
+      }
+    }
+    if (!series) return [];
+    var pts = [];
+    series.forEach(function (pt) {
+      if (!pt || pt.state == null) return;
+      var n = parseFloat(pt.state);
+      if (!isFinite(n)) return;
+      pts.push(Math.max(0, n));
+    });
+    return downsample(pts, 48);
+  }
+
+  function sparkSvg(rxVals, txVals) {
+    var W = 280;
+    var H = 56;
+    var all = rxVals.concat(txVals);
+    var maxY = 0;
+    all.forEach(function (v) { if (v > maxY) maxY = v; });
+    if (maxY <= 0) maxY = 1;
+    function path(vals, fill) {
+      if (!vals.length) return "";
+      var n = vals.length;
+      var d = "";
+      vals.forEach(function (v, i) {
+        var x = n <= 1 ? W / 2 : (i / (n - 1)) * W;
+        var y = H - (v / maxY) * (H - 4) - 2;
+        d += (i === 0 ? "M" : "L") + x.toFixed(1) + " " + y.toFixed(1) + " ";
+      });
+      if (fill) {
+        d += "L" + W + " " + H + " L0 " + H + " Z";
+        return '<path d="' + d + '" fill="' + fill + '" stroke="none"/>';
+      }
+      return '<path d="' + d + '" fill="none" stroke="#ab47bc" stroke-width="1.5"/>';
+    }
+    return (
+      '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none">' +
+        path(rxVals, "rgba(255,167,38,0.28)") +
+        path(txVals, null) +
+      "</svg>"
+    );
+  }
+
+  function loadNicHistory(force) {
+    var now = Date.now();
+    if (nicBusy) return;
+    if (!force && nicLastAt && now - nicLastAt < 120000) return;
+    nicBusy = true;
+    var ids = [];
+    NIC_IFACES.forEach(function (nic) {
+      ids.push(nic.rx);
+      ids.push(nic.tx);
+    });
+    H.fetchHistory(ids, 6).then(function (raw) {
+      NIC_IFACES.forEach(function (nic) {
+        nicHistory[nic.name] = {
+          rx: historySeries(raw, nic.rx),
+          tx: historySeries(raw, nic.tx)
+        };
+      });
+      nicLastAt = Date.now();
+      nicBusy = false;
+      renderNvrNics();
+    }).catch(function () {
+      nicBusy = false;
+    });
+  }
+
+  function renderNvrNics() {
+    var el = $("card-nvr-nics");
+    if (!el) return;
+    el.innerHTML = NIC_IFACES.map(function (nic) {
+      var hist = nicHistory[nic.name] || { rx: [], tx: [] };
+      return (
+        '<div class="card nic-card">' +
+          '<div class="card-title">' + nic.name + "</div>" +
+          '<div class="nic-rates">' +
+            '<span class="rx">● Download ' + rateText(nic.rx) + "</span>" +
+            '<span class="tx">● Upload ' + rateText(nic.tx) + "</span>" +
+          "</div>" +
+          '<div class="nic-spark">' + sparkSvg(hist.rx, hist.tx) + "</div>" +
+        "</div>"
+      );
+    }).join("");
+  }
+
   function renderServers() {
     var cpu = num("sensor.homeassistant_cpu_usage");
     var mem = num("sensor.homeassistant_memory_usage");
     var disk = num("sensor.homeassistant_data_disk_usage");
     var memMiB = num("sensor.homeassistant_memory_use");
+
+    var vms = [
+      ["nginx-prod (100)", "sensor.qemu_nginx_prod_100_cpu_used", "sensor.qemu_nginx_prod_100_memory_used_percentage",
+        "linear-gradient(90deg,#66bb6a,#43a047)", "linear-gradient(90deg,#81c784,#2e7d32)"],
+      ["mariadb (101)", "sensor.qemu_mariadb_101_cpu_used", "sensor.qemu_mariadb_101_memory_used_percentage",
+        "linear-gradient(90deg,#ffa726,#fb8c00)", "linear-gradient(90deg,#ffcc80,#e65100)"],
+      ["gitlab (102)", "sensor.qemu_gitlab2_102_cpu_used", "sensor.qemu_gitlab2_102_memory_used_percentage",
+        "linear-gradient(90deg,#42a5f5,#1e88e5)", "linear-gradient(90deg,#90caf9,#0d47a1)"],
+      ["kubernetes-test (104)", "sensor.qemu_active_directory_104_cpu_used", "sensor.qemu_active_directory_104_memory_used_percentage",
+        "linear-gradient(90deg,#ab47bc,#8e24aa)", "linear-gradient(90deg,#ce93d8,#4a148c)"]
+    ];
+    var vmHtml = vms.map(function (row) {
+      var c = num(row[1]);
+      var m = num(row[2]);
+      return (
+        '<div class="vm-block">' +
+          '<div class="vm-title">' + row[0] + "</div>" +
+          pctBar("CPU", c, row[3], true) +
+          pctBar("Mem", m, row[4], true) +
+        "</div>"
+      );
+    }).join("");
+
+    var gsCpu = num("sensor.infra_garden_speaker_cpu_usage");
+    var gsMem = num("sensor.infra_garden_speaker_memory_usage");
+    var gsState = st("sensor.garden_speaker_glances_state");
+    var gsStateTxt = gsState && !bad(gsState.state) ? gsState.state : "—";
+
+    var jCpu = num("sensor.infra_jetson_cpu_usage");
+    var jMem = num("sensor.infra_jetson_memory_usage");
+    var jDisk = num("sensor.infra_jetson_disk_usage");
+    var jGpu = num("sensor.infra_jetson_gpu_usage");
+    var jMemMiB = num("sensor.infra_jetson_memory_use");
+    var jUp = st("sensor.infra_jetson_uptime");
+    var jUpTxt = "—";
+    if (jUp && !bad(jUp.state)) {
+      var uu = jUp.attributes && jUp.attributes.unit_of_measurement;
+      jUpTxt = uu ? jUp.state + " " + uu : String(jUp.state);
+    }
+
     $("card-servers").innerHTML =
-      hostCard({
-        badge: "HA",
-        title: "Home Assistant host",
-        sub: "Glances · homeassistant",
-        bars: [
-          { label: "CPU", pct: cpu, fill: "fill-ha-cpu", val: cpu == null ? "—" : fmt(cpu, 1) + "%" },
-          { label: "Memory", pct: mem, fill: "fill-ha-mem", val: mem == null ? "—" : fmt(mem, 1) + "%" },
-          { label: "Disk", pct: disk, fill: "fill-disk", val: disk == null ? "—" : fmt(disk, 1) + "%" }
-        ],
-        footer:
-          (memMiB != null ? '<div class="card-sub" style="margin-top:-2px">' + fmt(memMiB, 0) + " MiB in use</div>" : "") +
-          '<div class="host-net"><div class="card-sub" style="margin-bottom:6px;font-weight:600;opacity:0.85">Network (enp1s0)</div>' +
-          '<div class="host-net-row"><span style="color:#4fc3f7">Download</span><span>' + rateText("sensor.homeassistant_enp1s0_rx") + "</span></div>" +
-          '<div class="host-net-row"><span style="color:#81c784">Upload</span><span>' + rateText("sensor.homeassistant_enp1s0_tx") + "</span></div></div>"
-      }) +
-      hostCard({
-        badge: "VM",
-        title: "nginx-prod",
-        sub: "QEMU · CPU",
-        bars: [{ label: "CPU", pct: num("sensor.qemu_nginx_prod_100_cpu_used"), fill: "fill-cpu", val: (function () {
-          var n = num("sensor.qemu_nginx_prod_100_cpu_used");
-          return n == null ? "—" : Math.round(n) + "%";
-        })() }]
-      }) +
-      hostCard({
-        badge: "GS",
-        title: "Garden speaker",
-        sub: "Infra host",
-        bars: [{ label: "CPU", pct: num("sensor.infra_garden_speaker_cpu_usage"), fill: "fill-cpu", val: (function () {
-          var n = num("sensor.infra_garden_speaker_cpu_usage");
-          return n == null ? "—" : Math.round(n) + "%";
-        })() }]
-      }) +
-      hostCard({
-        badge: "J",
-        title: "Jetson",
-        sub: "Edge compute",
-        bars: [{ label: "CPU", pct: num("sensor.infra_jetson_cpu_usage"), fill: "fill-cpu", val: (function () {
-          var n = num("sensor.infra_jetson_cpu_usage");
-          return n == null ? "—" : Math.round(n) + "%";
-        })() }]
-      });
+      '<div class="card">' +
+        '<div class="host-head">' +
+          '<div class="host-badge">HA</div>' +
+          '<div class="host-card-body">' +
+            '<div class="card-title">Home Assistant host</div>' +
+            '<div class="card-sub">Glances · homeassistant</div>' +
+            pctBar("CPU", cpu, "linear-gradient(90deg,#42a5f5,#1e88e5)") +
+            pctBar("Memory", mem, "linear-gradient(90deg,#26c6da,#00838f)") +
+            (memMiB != null ? '<div class="host-extra">' + fmt(memMiB, 1) + " MiB in use</div>" : "") +
+            pctBar("Disk (/data)", disk, "linear-gradient(90deg,#7e57c2,#5e35b1)") +
+            '<div class="host-net"><div class="card-sub" style="margin-bottom:6px;font-weight:600;opacity:0.85">Network (enp1s0)</div>' +
+            '<div class="host-net-row"><span style="color:#4fc3f7">Download</span><span>' + rateText("sensor.homeassistant_enp1s0_rx") + "</span></div>" +
+            '<div class="host-net-row"><span style="color:#81c784">Upload</span><span>' + rateText("sensor.homeassistant_enp1s0_tx") + "</span></div></div>" +
+          "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="card">' +
+        '<div class="host-head">' +
+          '<div class="host-badge" style="background:rgba(229,112,0,0.18);color:#E57000">PX</div>' +
+          '<div class="host-card-body">' +
+            '<div class="card-title">Proxmox QEMU (CPU &amp; memory)</div>' +
+            vmHtml +
+          "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="card">' +
+        '<div class="host-head">' +
+          '<div class="host-badge" style="background:rgba(102,187,106,0.18);color:#66bb6a">GS</div>' +
+          '<div class="host-card-body">' +
+            '<div class="card-title">Garden speaker</div>' +
+            '<div class="card-sub">Glances · garden-speaker (host)</div>' +
+            pctBar("CPU", gsCpu, "linear-gradient(90deg,#66bb6a,#43a047)") +
+            pctBar("Memory", gsMem, "linear-gradient(90deg,#26a69a,#00695c)") +
+            '<div class="host-net-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);font-size:0.72rem">' +
+              '<span style="color:#b0bec5">State</span><span>' + escHtml(gsStateTxt) + "</span></div>" +
+          "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="card">' +
+        '<div class="host-head">' +
+          '<div class="host-badge" style="background:rgba(118,185,0,0.18);color:#76B900">JO</div>' +
+          '<div class="host-card-body">' +
+            '<div class="card-title">Jetson Orin</div>' +
+            '<div class="card-sub">Glances · omega-jetson-orin</div>' +
+            pctBar("CPU", jCpu, "linear-gradient(90deg,#8bc34a,#558b2f)") +
+            pctBar("Memory", jMem, "linear-gradient(90deg,#26c6da,#00838f)") +
+            (jMemMiB != null ? '<div class="host-extra">' + fmt(jMemMiB, 1) + " MiB in use</div>" : "") +
+            pctBar("Disk (/)", jDisk, "linear-gradient(90deg,#7e57c2,#5e35b1)") +
+            pctBar("GPU (Orin)", jGpu, "linear-gradient(90deg,#aed581,#33691e)") +
+            '<div class="host-net"><div class="card-sub" style="margin-bottom:6px;font-weight:600;opacity:0.85">Network</div>' +
+            '<div class="host-net-row"><span style="color:#4fc3f7">Download</span><span>' + rateText("sensor.infra_jetson_nic_rx") + "</span></div>" +
+            '<div class="host-net-row"><span style="color:#81c784">Upload</span><span>' + rateText("sensor.infra_jetson_nic_tx") + "</span></div>" +
+            '<div class="host-net-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06)"><span style="color:#b0bec5">Uptime</span><span>' +
+              escHtml(jUpTxt) + "</span></div></div>" +
+          "</div>" +
+        "</div>" +
+      "</div>";
 
     var nvrCpu = num("sensor.nvr_mostardesigns_com_cpu_usage");
+    var nvrMem = num("sensor.nvr_mostardesigns_com_memory_usage");
+    var nvrDisk = num("sensor.nvr_mostardesigns_com_etc_hostname_disk_usage");
+    var procs = parseProcList();
+    var procHtml = "";
+    if (procs.length) {
+      procHtml =
+        '<div class="proc-head"><span>Process</span><span>CPU</span><span>Mem</span></div>' +
+        procs.map(function (p) {
+          var pc = Math.min(100, Math.max(0, Number(p.cpu_percent != null ? p.cpu_percent : p.cpu) || 0));
+          var pm = Math.min(100, Math.max(0, Number(p.memory_percent != null ? p.memory_percent : p.memory) || 0));
+          var nm = escHtml(String(p.name || "?").slice(0, 36));
+          return (
+            '<div class="proc-row">' +
+              '<span class="proc-name">' + nm + "</span>" +
+              '<span class="proc-cpu">' + fmt(pc, 2) + "%</span>" +
+              '<span class="proc-mem">' + fmt(pm, 2) + "%</span>" +
+            "</div>"
+          );
+        }).join("");
+    } else {
+      procHtml = '<div class="card-sub" style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08)">No process rows</div>';
+    }
+
+    $("card-nvr").innerHTML =
+      '<div class="card">' +
+        pctBar("NVR CPU", nvrCpu, "linear-gradient(90deg,#ff8a80,#ff4757)") +
+        pctBar("NVR RAM", nvrMem, "linear-gradient(90deg,#64b5f6,#378ADD)") +
+        pctBar("Host disk (/)", nvrDisk, "linear-gradient(90deg,#aed581,#7cb342)") +
+        procHtml +
+      "</div>";
+
+    renderNvrNics();
+    if (H.getToken()) loadNicHistory(false);
+
     var gpu = num("sensor.nvr_mostardesigns_com_nvidia_rtx_4000_sff_ada_generation_gpu_nvidia0_processor_usage");
     var vram = num("sensor.nvr_mostardesigns_com_nvidia_rtx_4000_sff_ada_generation_gpu_nvidia0_memory_usage");
-    var ai = st("binary_sensor.codeproject_ai_server_status");
-    var aiOk = ai && ai.state === "on";
-    var aiBad = !ai || bad(ai.state);
-    $("card-nvr").innerHTML =
-      hostCard({
-        badge: "NV",
-        title: "NVR",
-        sub: "mostardesigns.com",
-        bars: [
-          { label: "CPU", pct: nvrCpu, fill: "fill-ha-cpu", val: nvrCpu == null ? "—" : fmt(nvrCpu, 1) + "%" },
-          { label: "GPU", pct: gpu, fill: "fill-cpu", val: gpu == null ? "—" : fmt(gpu, 1) + "%" },
-          { label: "VRAM", pct: vram, fill: "fill-mem", val: vram == null ? "—" : fmt(vram, 1) + "%" }
-        ],
-        footer:
-          '<div class="host-net"><div class="host-net-row"><span>CodeProject AI</span><span class="' +
-            (aiBad ? "dot-unk" : (aiOk ? "on" : "off")) + '">' +
-            (aiBad ? "—" : (aiOk ? "Online" : "Offline")) +
-          "</span></div>" +
-          '<div class="host-net-row"><span style="color:#4fc3f7">enp3s0 RX</span><span>' + rateText("sensor.nvr_mostardesigns_com_enp3s0_rx") + "</span></div>" +
-          '<div class="host-net-row"><span style="color:#81c784">enp3s0 TX</span><span>' + rateText("sensor.nvr_mostardesigns_com_enp3s0_tx") + "</span></div></div>"
-      });
+    var aiBin = st("binary_sensor.codeproject_ai_server_status");
+    var aiRun = st("sensor.codeproject_ai_server_state");
+    var aiActive = (aiBin && aiBin.state === "on") || (aiRun && aiRun.state === "running");
+    var aiOffline = !aiActive;
+
+    $("card-gpu").innerHTML =
+      '<div class="gpu-gauges">' +
+        ring(gpu, "Compute", ringColor(clampPct(gpu))) +
+        '<div class="card gauge-card"><div class="ring" style="--pct:' + clampPct(vram) + ";--ring:" +
+          (clampPct(vram) >= 67 ? "#ff9800" : (clampPct(vram) >= 34 ? "#e65100" : "#bf360c")) +
+          '"><div class="ring-val">' + (vram == null ? "—" : fmt(vram, 1) + "%") +
+          '</div></div><div class="gauge-label">Memory</div></div>' +
+      "</div>" +
+      '<div class="card ai-pill ' + (aiOffline ? "off" : "on") + '">' +
+        '<span class="ai-dot"></span>' +
+        (aiOffline ? "AI Server Offline" : "AI Server Active") +
+      "</div>";
   }
 
   function renderCameras() {
@@ -568,6 +820,10 @@ function renderGateway() {
     renderCameras();
     renderStorage();
   }
+
+  setInterval(function () {
+    if (H.getToken()) loadNicHistory(true);
+  }, 180000);
 
   H.start({
     page: "infrastructure",
