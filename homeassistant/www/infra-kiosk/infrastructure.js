@@ -208,7 +208,7 @@ var ENTITIES = [
 function setHtml(id, html) {
     var el = $(id);
     if (!el) return;
-    /* Skip no-op rewrites — recreating <img> every paint blinks on iPad Safari. */
+    /* Skip no-op rewrites — full innerHTML thrash blinks on iPad Safari. */
     if (el.getAttribute("data-html") === html) return;
     el.setAttribute("data-html", html);
     el.innerHTML = html;
@@ -218,15 +218,7 @@ function setHtml(id, html) {
     var onlineSt = st("binary_sensor.mikrotik_home_ether1_connection");
     var online = onlineSt && onlineSt.state === "on";
     var unknown = !onlineSt || bad(onlineSt.state);
-    var hero = $("card-gateway-hero");
-    /* Build the router image once; only refresh the WAN IP text on later paints. */
-    if (hero && !hero.querySelector("img")) {
-      hero.innerHTML =
-        '<div class="card-title">MikroTik Basement</div>' +
-        '<div class="card-sub">Main gateway</div>' +
-        '<div class="mono" id="gateway-wan-ip"></div>' +
-        '<img src="/local/mikrotik-hap-router.png" alt="MikroTik hAP" decoding="async" />';
-    }
+    /* Hero markup (incl. router art) is static in index.html — only touch the WAN IP text. */
     var wanEl = $("gateway-wan-ip");
     if (wanEl) {
       wanEl.textContent = "WAN IP · " + wanIp("binary_sensor.mikrotik_home_ether1_connection");

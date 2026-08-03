@@ -43,16 +43,22 @@ views:
                         - box-sizing: border-box
                         - height: 140px
                         - box-shadow: none
+                        # Router art as CSS background — <img> in custom_fields blinks on iPad
+                        # every time this entity's attributes refresh (~1s MikroTik poll).
+                        - background-image: url('/local/mikrotik-hap-router.png')
+                        - background-repeat: no-repeat
+                        - background-position: center 78px
+                        - background-size: 110px auto
                       grid:
                         - grid-template-areas: '"r"'
                         - grid-template-columns: 1fr
                       custom_fields:
                         r:
                           - width: 100%
+                          - height: 100%
                     custom_fields:
                       r: |
                         [[[
-                          const routerImg = '/local/mikrotik-hap-router.png';
                           const fmtWan = (raw) => {
                             if (!raw || ['unknown', 'unavailable', 'none', ''].includes(String(raw).toLowerCase())) return '—';
                             const s = String(raw);
@@ -64,9 +70,6 @@ views:
                               <div style="font-weight:700;font-size:0.9rem;line-height:1.15;">MikroTik Basement</div>
                               <div style="font-size:0.68rem;opacity:0.75;margin-top:2px;">Main gateway</div>
                               <div style="font-size:0.64rem;opacity:0.88;margin-top:4px;font-family:ui-monospace,monospace;letter-spacing:0.02em;">WAN IP · ${wanIp}</div>
-                            </div>
-                            <div style="width:100%;display:flex;justify-content:center;align-items:flex-end;flex:1;">
-                              <img src="${routerImg}" alt="MikroTik hAP" style="width:118px;height:auto;object-fit:contain;" loading="lazy" />
                             </div>
                           </div>`;
                         ]]]

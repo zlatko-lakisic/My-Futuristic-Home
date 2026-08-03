@@ -267,12 +267,27 @@ h1 {
   text-align: center;
   justify-content: space-between;
   min-height: 140px;
+  /* Own compositor layer — sibling innerHTML thrash must not flash this card on iPad */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  contain: layout paint;
+}
+.gateway-hero img,
+.gateway-hero-art {
+  width: 110px;
+  height: 72px;
+  margin-top: 8px;
+  flex-shrink: 0;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 .gateway-hero img {
-  width: 110px;
   height: auto;
-  margin-top: 8px;
   object-fit: contain;
+}
+.gateway-hero-art {
+  background: url("/local/mikrotik-hap-router.png") center / contain no-repeat;
+  pointer-events: none;
 }
 
 .pills {
