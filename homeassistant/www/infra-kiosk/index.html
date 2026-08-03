@@ -8,7 +8,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#111111" />
   <title>Infrastructure · Kiosk</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260803b" />
   <script src="config.js"></script>
 </head>
 <body class="has-sidebar">
@@ -44,7 +44,13 @@
       <section class="band">
         <h2 class="band-title">CORE NETWORK STATUS</h2>
         <div class="row row-gateway">
-          <div class="card gateway-hero" id="card-gateway-hero"></div>
+          <div class="card gateway-hero" id="card-gateway-hero">
+            <div class="card-title">MikroTik Basement</div>
+            <div class="card-sub">Main gateway</div>
+            <div class="mono" id="gateway-wan-ip">WAN IP · —</div>
+            <!-- CSS background art — never recreate <img> (iPad Safari flashes on DOM rewrite) -->
+            <div class="gateway-hero-art" role="img" aria-label="MikroTik hAP"></div>
+          </div>
           <div class="card gateway-status" id="card-gateway-status"></div>
           <div class="device-grid" id="card-network-devices"></div>
         </div>
@@ -102,7 +108,7 @@
     </div>
   </div>
 
-  <script src="ha.js"></script>
-  <script src="infrastructure.js"></script>
+  <script src="ha.js?v=20260803b"></script>
+  <script src="infrastructure.js?v=20260803b"></script>
 </body>
 </html>
