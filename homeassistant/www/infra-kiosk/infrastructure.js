@@ -205,26 +205,45 @@ var ENTITIES = [
     return "#0d47a1";
   }
 
-function renderGateway() {
+function setHtml(id, html) {
+    var el = $(id);
+    if (!el) return;
+    /* Skip no-op rewrites — recreating <img> every paint blinks on iPad Safari. */
+    if (el.getAttribute("data-html") === html) return;
+    el.setAttribute("data-html", html);
+    el.innerHTML = html;
+  }
+
+  function renderGateway() {
     var onlineSt = st("binary_sensor.mikrotik_home_ether1_connection");
     var online = onlineSt && onlineSt.state === "on";
     var unknown = !onlineSt || bad(onlineSt.state);
-    $("card-gateway-hero").innerHTML =
-      '<div class="card-title">MikroTik Basement</div>' +
-      '<div class="card-sub">Main gateway</div>' +
-      '<div class="mono">WAN IP · ' + wanIp("binary_sensor.mikrotik_home_ether1_connection") + "</div>" +
-      '<img src="/local/mikrotik-hap-router.png" alt="MikroTik hAP" loading="lazy" />';
+    var hero = $("card-gateway-hero");
+    /* Build the router image once; only refresh the WAN IP text on later paints. */
+    if (hero && !hero.querySelector("img")) {
+      hero.innerHTML =
+        '<div class="card-title">MikroTik Basement</div>' +
+        '<div class="card-sub">Main gateway</div>' +
+        '<div class="mono" id="gateway-wan-ip"></div>' +
+        '<img src="/local/mikrotik-hap-router.png" alt="MikroTik hAP" decoding="async" />';
+    }
+    var wanEl = $("gateway-wan-ip");
+    if (wanEl) {
+      wanEl.textContent = "WAN IP · " + wanIp("binary_sensor.mikrotik_home_ether1_connection");
+    }
 
     var upd = st("update.mikrotik_home_hap_ac_routeros_update");
     var fw = (upd && (upd.attributes && upd.attributes.installed_version)) || (upd && upd.state) || "—";
     var pillClass = unknown ? "pill-muted" : (online ? "pill-ok" : "pill-bad");
     var pillText = unknown ? "Gateway —" : (online ? "Gateway Online" : "Gateway Offline");
-    $("card-gateway-status").innerHTML =
+    setHtml(
+      "card-gateway-status",
       '<div class="pills">' +
         '<span class="pill ' + pillClass + '">' + pillText + "</span>" +
         '<span class="pill">F/W: ' + fw + "</span>" +
         '<span class="pill">Uptime: ' + uptime("sensor.mikrotik_home_hap_ac_uptime") + "</span>" +
-      "</div>";
+      "</div>"
+    );
   }
 
   function deviceCard(opts) {
