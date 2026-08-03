@@ -287,11 +287,51 @@
     target:
       entity_id: light.flood_lights
     action: light.turn_on
-  - alias: Wait until driveway zone is clear
+  - alias: Wait until driveway and front yard are clear
     wait_template: "{{ is_state('binary_sensor.driveway_zone_person_occupancy', 'off') and
+      is_state('binary_sensor.driveway_zone_car_occupancy', 'off') and
+      is_state('binary_sensor.near_front_door_person_occupancy', 'off') }}"
+  - alias: Wait the number of seconds that has been set
+    delay: 120
+  - alias: Turn off only if still clear
+    condition: template
+    value_template: "{{ is_state('binary_sensor.driveway_zone_person_occupancy', 'off') and
+      is_state('binary_sensor.driveway_zone_car_occupancy', 'off') and
+      is_state('binary_sensor.near_front_door_person_occupancy', 'off') }}"
+  - alias: Turn off the light
+    target:
+      entity_id: light.flood_lights
+    action: light.turn_off
+  mode: restart
+  max_exceeded: silent
+- id: '1785754560001'
+  alias: Front Yard Motion Activated Flood Lights
+  description: Frigate near_front_door person occupancy → flood lights when outdoor dark
+  triggers:
+  - entity_id: binary_sensor.near_front_door_person_occupancy
+    from: 'off'
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.driveway_daynight_1
+    state: 'off'
+  actions:
+  - alias: Turn on the light
+    target:
+      entity_id: light.flood_lights
+    action: light.turn_on
+  - alias: Wait until front yard and driveway are clear
+    wait_template: "{{ is_state('binary_sensor.near_front_door_person_occupancy', 'off') and
+      is_state('binary_sensor.driveway_zone_person_occupancy', 'off') and
       is_state('binary_sensor.driveway_zone_car_occupancy', 'off') }}"
   - alias: Wait the number of seconds that has been set
     delay: 120
+  - alias: Turn off only if still clear
+    condition: template
+    value_template: "{{ is_state('binary_sensor.near_front_door_person_occupancy', 'off') and
+      is_state('binary_sensor.driveway_zone_person_occupancy', 'off') and
+      is_state('binary_sensor.driveway_zone_car_occupancy', 'off') }}"
   - alias: Turn off the light
     target:
       entity_id: light.flood_lights
