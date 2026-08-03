@@ -338,6 +338,37 @@
     action: light.turn_off
   mode: restart
   max_exceeded: silent
+- id: '1785754560002'
+  alias: West Gate Flood Lights
+  description: When west gate opens at night, turn on back-yard flood lights until closed + 2 min
+  triggers:
+  - entity_id: binary_sensor.west_side_gate_door
+    from: 'off'
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.west_side_daynight_1
+    state: 'off'
+  actions:
+  - alias: Turn on back yard flood lights
+    target:
+      entity_id: switch.flood_lights_2
+    action: switch.turn_on
+  - alias: Wait until west gate closes
+    wait_template: "{{ is_state('binary_sensor.west_side_gate_door', 'off') }}"
+  - alias: Stay on briefly after close
+    delay: 120
+  - alias: Turn off only if gate still closed
+    condition: state
+    entity_id: binary_sensor.west_side_gate_door
+    state: 'off'
+  - alias: Turn off back yard flood lights
+    target:
+      entity_id: switch.flood_lights_2
+    action: switch.turn_off
+  mode: restart
+  max_exceeded: silent
 - id: '1766862194194'
   alias: Boiler bucket full notificatiin
   description: ''
