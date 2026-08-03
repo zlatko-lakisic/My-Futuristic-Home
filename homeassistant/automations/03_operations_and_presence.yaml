@@ -270,11 +270,11 @@
   mode: single
 - id: '1765224686845'
   alias: Driveway Motion Activated Lights
-  description: Frigate person/car occupancy (CodeProject AI) → driveway flood lights when camera reports dark
+  description: Frigate driveway_zone person/car occupancy → flood lights when camera reports dark
   triggers:
   - entity_id:
-    - binary_sensor.driveway_person_occupancy
-    - binary_sensor.driveway_car_occupancy
+    - binary_sensor.driveway_zone_person_occupancy
+    - binary_sensor.driveway_zone_car_occupancy
     from: 'off'
     to: 'on'
     trigger: state
@@ -287,9 +287,9 @@
     target:
       entity_id: light.flood_lights
     action: light.turn_on
-  - alias: Wait until no person or car in driveway
-    wait_template: "{{ is_state('binary_sensor.driveway_person_occupancy', 'off') and
-      is_state('binary_sensor.driveway_car_occupancy', 'off') }}"
+  - alias: Wait until driveway zone is clear
+    wait_template: "{{ is_state('binary_sensor.driveway_zone_person_occupancy', 'off') and
+      is_state('binary_sensor.driveway_zone_car_occupancy', 'off') }}"
   - alias: Wait the number of seconds that has been set
     delay: 120
   - alias: Turn off the light
@@ -298,31 +298,6 @@
     action: light.turn_off
   mode: restart
   max_exceeded: silent
-- id: '1785337000001'
-  alias: Driveway Dusk Flood Lights
-  description: When driveway camera reports dark, briefly turn on flood lights then shut off
-  triggers:
-  - entity_id: binary_sensor.driveway_daynight_1
-    from: 'on'
-    to: 'off'
-    trigger: state
-  conditions: []
-  actions:
-  - alias: Turn on the light
-    target:
-      entity_id: light.flood_lights
-    action: light.turn_on
-  - alias: Leave on briefly at dusk
-    delay: 300
-  - alias: Only turn off if driveway is clear
-    condition: template
-    value_template: "{{ is_state('binary_sensor.driveway_person_occupancy', 'off') and
-      is_state('binary_sensor.driveway_car_occupancy', 'off') }}"
-  - alias: Turn off the light
-    target:
-      entity_id: light.flood_lights
-    action: light.turn_off
-  mode: single
 - id: '1766862194194'
   alias: Boiler bucket full notificatiin
   description: ''
