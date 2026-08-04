@@ -23,6 +23,9 @@
 		},
 		{
 			"path": "../hacs-nest-protect"
+		},
+		{
+			"path": "../hacs-qbittorrent"
 		}
 	],
 	"settings": {}
