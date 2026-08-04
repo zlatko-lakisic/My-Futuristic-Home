@@ -1,21 +1,24 @@
 # QBITTORRENT DOWNLOAD STATION — Lovelace (YAML mode)
 #
-# View type: panel (single full-width column). Sections view centers content with a max width.
+# Sections view (same padding/margins as home_control.yaml).
 #
 # Requires the same custom cards / resources as infrastructure.yaml:
 #   layout-card, button-card, statistics-graph-chart-card, modern-circular-gauge
 #
-# Stock qBittorrent integration: aggregate sensors only (no per-torrent entities).
+# qBittorrent Plus (HACS): instance sensors + hybrid active-torrent entities.
 # Speed gauges & transfer chart use template sensors (KiB/s): see packages/qbittorrent_speed_k.yaml.
-# To embed the Web UI, iframe uses secret qbittorrent_webui_url.
+# Active transfers: auto-entities over hybrid switch.*_running rows.
 
 views:
   - title: Torrents
     path: torrents
-    type: panel
     icon: mdi:download-network
-    cards:
-      - type: vertical-stack
+    type: sections
+    max_columns: 3
+    dense_section_placement: false
+    sections:
+      - type: grid
+        column_span: 3
         cards:
           - type: heading
             heading_style: title
@@ -44,7 +47,7 @@ views:
             cards:
               - type: custom:modern-circular-gauge
                 entity: sensor.qbittorrent_download_speed_kib
-                name: CPU
+                name: Download
                 gauge_type: standard
                 needle: false
                 smooth_segments: true
@@ -198,7 +201,7 @@ views:
                 chart_mode: timeline
                 group_by: interval
                 entities:
-                  - entity: sensor.qbittorrent_active_torrents
+                  - entity: sensor.qbittorrent_plus_active_torrents
                     name: Active
                     color: '#42a5f5'
                     graph_type: line
@@ -207,7 +210,7 @@ views:
                     smooth: true
                     decimals: 0
                     aggregate_func: max
-                  - entity: sensor.qbittorrent_paused_torrents
+                  - entity: sensor.qbittorrent_plus_paused_torrents
                     name: Paused
                     color: '#ff9800'
                     graph_type: line
@@ -216,7 +219,7 @@ views:
                     smooth: true
                     decimals: 0
                     aggregate_func: max
-                  - entity: sensor.qbittorrent_errored_torrents
+                  - entity: sensor.qbittorrent_plus_errored_torrents
                     name: Errored
                     color: '#ab47bc'
                     graph_type: line
@@ -225,87 +228,245 @@ views:
                     smooth: true
                     decimals: 0
                     aggregate_func: max
-          - type: heading
-            heading_style: subtitle
-            icon: mdi:counter
-            heading: Torrent counts
 
           - type: custom:layout-card
             layout_type: custom:grid-layout
             layout:
-              grid-template-columns: repeat(3, minmax(0, 1fr))
+              grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr)
               grid-gap: 12px
               place-items: stretch
+              align-items: start
               mediaquery:
-                '(max-width: 768px)':
-                  grid-template-columns: 1fr
+                '(max-width: 900px)':
+                  grid-template-columns: 100%
             grid_options:
               columns: full
             cards:
-              - type: tile
-                entity: sensor.qbittorrent_active_torrents
-                name: Active
-                icon: mdi:progress-download
-                color: green
-                tap_action:
-                  action: more-info
-              - type: tile
-                entity: sensor.qbittorrent_inactive_torrents
-                name: Inactive
-                icon: mdi:sleep
-                color: cyan
-                tap_action:
-                  action: more-info
-              - type: tile
-                entity: sensor.qbittorrent_paused_torrents
-                name: Paused
-                icon: mdi:pause
-                color: orange
-                tap_action:
-                  action: more-info
-              - type: tile
-                entity: sensor.qbittorrent_errored_torrents
-                name: Errored
-                icon: mdi:alert-circle
-                color: red
-                tap_action:
-                  action: more-info
-              - type: tile
-                entity: sensor.qbittorrent_all_torrents
-                name: Total
-                icon: mdi:format-list-bulleted
-                color: primary
-                tap_action:
-                  action: more-info
-              - type: tile
-                entity: sensor.qbittorrent_status
-                name: Mode
-                icon: mdi:state-machine
-                color: amber
-                tap_action:
-                  action: more-info
-
-          - type: entities
-            title: Controls & totals
-            show_header_toggle: false
-            state_color: true
-            entities:
-              - entity: switch.qbittorrent_alternative_speed
-                name: Alternative speed
-              - entity: sensor.qbittorrent_connection_status
-                name: Connection
-              - entity: sensor.qbittorrent_global_ratio
-                name: Global ratio
-              - entity: sensor.qbittorrent_all_time_download
-                name: All-time download
-              - entity: sensor.qbittorrent_all_time_upload
-                name: All-time upload
+              - type: entities
+                title: Controls & totals
+                show_header_toggle: false
+                state_color: true
+                entities:
+                  - entity: switch.qbittorrent_plus_alternative_speed
+                    name: Alternative speed
+                  - entity: button.qbittorrent_plus_pause_all
+                    name: Pause all
+                  - entity: button.qbittorrent_plus_resume_all
+                    name: Resume all
+                  - entity: sensor.qbittorrent_plus_connection_status
+                    name: Connection
+                  - entity: sensor.qbittorrent_plus_session_download
+                    name: Session download
+                  - entity: sensor.qbittorrent_plus_session_upload
+                    name: Session upload
+                  - entity: sensor.qbittorrent_plus_all_time_download
+                    name: All-time download
+                  - entity: sensor.qbittorrent_plus_all_time_upload
+                    name: All-time upload
+                  - entity: sensor.qbittorrent_plus_free_space_on_disk
+                    name: Free space
+              - type: vertical-stack
+                cards:
+                  - type: heading
+                    heading_style: subtitle
+                    icon: mdi:counter
+                    heading: Torrent counts
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(3, minmax(0, 1fr))
+                      grid-gap: 12px
+                      place-items: stretch
+                      mediaquery:
+                        '(max-width: 560px)':
+                          grid-template-columns: 1fr
+                    cards:
+                      - type: tile
+                        entity: sensor.qbittorrent_plus_active_torrents
+                        name: Active
+                        icon: mdi:progress-download
+                        color: green
+                        tap_action:
+                          action: more-info
+                      - type: tile
+                        entity: sensor.qbittorrent_plus_inactive_torrents
+                        name: Inactive
+                        icon: mdi:sleep
+                        color: cyan
+                        tap_action:
+                          action: more-info
+                      - type: tile
+                        entity: sensor.qbittorrent_plus_paused_torrents
+                        name: Paused
+                        icon: mdi:pause
+                        color: orange
+                        tap_action:
+                          action: more-info
+                      - type: tile
+                        entity: sensor.qbittorrent_plus_errored_torrents
+                        name: Errored
+                        icon: mdi:alert-circle
+                        color: red
+                        tap_action:
+                          action: more-info
+                      - type: tile
+                        entity: sensor.qbittorrent_plus_all_torrents
+                        name: Total
+                        icon: mdi:format-list-bulleted
+                        color: primary
+                        tap_action:
+                          action: more-info
+                      - type: tile
+                        entity: sensor.qbittorrent_plus_status
+                        name: Mode
+                        icon: mdi:state-machine
+                        color: amber
+                        tap_action:
+                          action: more-info
 
           - type: heading
             heading_style: subtitle
-            icon: mdi:format-list-bulleted-type
-            heading: Active transfers (Web UI)
+            icon: mdi:file-download-outline
+            heading: Active transfers
 
-          - type: iframe
-            url: !secret qbittorrent_webui_url
-            aspect_ratio: 150%
+          - type: markdown
+            grid_options:
+              columns: full
+            content: |
+              {% set rows = namespace(items=[]) %}
+              {% for s in states.switch
+                   if s.entity_id.endswith('_running')
+                   and s.entity_id != 'switch.qbittorrent_plus_alternative_speed' %}
+                {% set slug = s.entity_id[7:-8] %}
+                {% set st = states('sensor.' ~ slug ~ '_state') %}
+                {% if st not in ['unknown', 'unavailable', 'none', ''] %}
+                  {% set dl_e = 'sensor.' ~ slug ~ '_download_speed' %}
+                  {% set ul_e = 'sensor.' ~ slug ~ '_upload_speed' %}
+                  {% set prog_e = 'sensor.' ~ slug ~ '_progress' %}
+                  {% set ratio_e = 'sensor.' ~ slug ~ '_ratio' %}
+                  {% set eta_e = 'sensor.' ~ slug ~ '_eta' %}
+                  {% set size_e = 'sensor.' ~ slug ~ '_size' %}
+                  {% set seeds_e = 'sensor.' ~ slug ~ '_seeds' %}
+                  {% set peers_e = 'sensor.' ~ slug ~ '_peers' %}
+                  {% set dl = states(dl_e) | float(0) %}
+                  {% set ul = states(ul_e) | float(0) %}
+                  {% set name = state_attr('sensor.' ~ slug ~ '_state', 'friendly_name')
+                       | default(slug, true)
+                       | regex_replace(' State$', '')
+                       | replace('&', '&amp;')
+                       | replace('<', '&lt;')
+                       | replace('>', '&gt;')
+                       | replace('"', '&quot;') %}
+                  {% set prog_s = states(prog_e) %}
+                  {% set prog_n = prog_s | float(0) if prog_s not in ['unknown', 'unavailable', 'none', ''] else 0 %}
+                  {% set prog_txt = '—' if prog_s in ['unknown', 'unavailable', 'none', '']
+                       else (prog_n | round(1) ~ '%') %}
+                  {% set dl_s = states(dl_e) %}
+                  {% set ul_s = states(ul_e) %}
+                  {% set dl_txt = '—' if dl_s in ['unknown', 'unavailable']
+                       else ((dl_s | float(0) | round(1)) ~ '&nbsp;' ~ (state_attr(dl_e, 'unit_of_measurement') or '')) %}
+                  {% set ul_txt = '—' if ul_s in ['unknown', 'unavailable']
+                       else ((ul_s | float(0) | round(1)) ~ '&nbsp;' ~ (state_attr(ul_e, 'unit_of_measurement') or '')) %}
+                  {% set ratio_s = states(ratio_e) %}
+                  {% set ratio_txt = '—' if ratio_s in ['unknown', 'unavailable']
+                       else (ratio_s | float(0) | round(2)) %}
+                  {% set eta_s = states(eta_e) %}
+                  {% set eta_n = eta_s | int(0) %}
+                  {% set eta = namespace(txt='—') %}
+                  {% if eta_s in ['unknown', 'unavailable', 'none', ''] %}
+                    {% set eta.txt = '—' %}
+                  {% elif eta_n <= 0 or eta_n >= 8640000 %}
+                    {% set eta.txt = '∞' %}
+                  {% elif eta_n >= 86400 %}
+                    {% set eta.txt = (eta_n // 86400) ~ 'd ' ~ ((eta_n % 86400) // 3600) ~ 'h' %}
+                  {% elif eta_n >= 3600 %}
+                    {% set eta.txt = (eta_n // 3600) ~ 'h ' ~ ((eta_n % 3600) // 60) ~ 'm' %}
+                  {% elif eta_n >= 60 %}
+                    {% set eta.txt = (eta_n // 60) ~ 'm' %}
+                  {% else %}
+                    {% set eta.txt = eta_n ~ 's' %}
+                  {% endif %}
+                  {% set size_s = states(size_e) %}
+                  {% set size_txt = '—' if size_s in ['unknown', 'unavailable']
+                       else ((size_s | float(0) | round(2)) ~ '&nbsp;' ~ (state_attr(size_e, 'unit_of_measurement') or '')) %}
+                  {% set state_l = st | lower %}
+                  {% set sc = namespace(color='#90a4ae') %}
+                  {% if 'download' in state_l or 'forceddl' in state_l or 'metadl' in state_l or 'queueddl' in state_l %}
+                    {% set sc.color = '#42a5f5' %}
+                  {% elif 'upload' in state_l or 'forcedup' in state_l or 'queuedup' in state_l or state_l == 'up' %}
+                    {% set sc.color = '#66bb6a' %}
+                  {% elif 'stall' in state_l %}
+                    {% set sc.color = '#ffa726' %}
+                  {% elif 'pause' in state_l or 'stop' in state_l %}
+                    {% set sc.color = '#78909c' %}
+                  {% elif 'error' in state_l or 'missing' in state_l %}
+                    {% set sc.color = '#ef5350' %}
+                  {% endif %}
+                  {% set bar_color = '#66bb6a' if prog_n >= 100 else sc.color %}
+                  {% set rows.items = rows.items + [{
+                    'name': name,
+                    'run': s.state,
+                    'state': st,
+                    'state_color': sc.color,
+                    'progress': prog_txt,
+                    'prog_n': [prog_n, 100] | min,
+                    'bar_color': bar_color,
+                    'dl': dl_txt,
+                    'ul': ul_txt,
+                    'ratio': ratio_txt,
+                    'eta': eta.txt,
+                    'size': size_txt,
+                    'seeds': states(seeds_e),
+                    'peers': states(peers_e),
+                    'speed': dl + ul
+                  }] %}
+                {% endif %}
+              {% endfor %}
+              {% set sorted = rows.items | sort(attribute='speed') | reverse | list %}
+              {% if sorted | length == 0 %}
+              <div style="opacity:0.7;padding:12px 4px;">No active torrents exposed.</div>
+              {% else %}
+              <div style="width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px 4px;">
+              <table style="width:100%;min-width:920px;border-collapse:separate;border-spacing:0;font-size:0.82rem;line-height:1.35;">
+              <thead>
+              <tr>
+              <th style="text-align:left;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Name</th>
+              <th style="text-align:center;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Run</th>
+              <th style="text-align:left;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">State</th>
+              <th style="text-align:left;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;min-width:110px;">Progress</th>
+              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">↓</th>
+              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">↑</th>
+              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Ratio</th>
+              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">ETA</th>
+              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Size</th>
+              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Seeds</th>
+              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Peers</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for r in sorted -%}
+              <tr style="background:{% if loop.index is odd %}rgba(255,255,255,0.03){% else %}transparent{% endif %};">
+              <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;" title="{{ r.name }}">{{ r.name }}</td>
+              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;white-space:nowrap;">
+              <span style="display:inline-block;min-width:2.4em;padding:2px 8px;border-radius:999px;font-size:0.72rem;font-weight:700;{% if r.run == 'on' %}background:rgba(102,187,106,0.2);color:#81c784;{% else %}background:rgba(120,144,156,0.25);color:#b0bec5;{% endif %}">{{ r.run }}</span>
+              </td>
+              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);white-space:nowrap;color:{{ r.state_color }};font-weight:600;">{{ r.state }}</td>
+              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);white-space:nowrap;min-width:110px;">
+              <div style="font-size:0.72rem;opacity:0.9;margin-bottom:3px;">{{ r.progress }}</div>
+              <div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden;">
+              <div style="height:100%;width:{{ r.prog_n }}%;background:{{ r.bar_color }};border-radius:3px;"></div>
+              </div>
+              </td>
+              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.dl }}</td>
+              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.ul }}</td>
+              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.ratio }}</td>
+              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.eta }}</td>
+              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.size }}</td>
+              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.seeds }}</td>
+              <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.peers }}</td>
+              </tr>
+              {% endfor %}
+              </tbody>
+              </table>
+              </div>
+              {% endif %}

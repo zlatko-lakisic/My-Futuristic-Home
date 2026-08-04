@@ -51,6 +51,13 @@ lovelace:
       show_in_sidebar: true
       require_admin: false
       filename: dashboards/garage.yaml
+    map-yaml:
+      mode: yaml
+      title: Map
+      icon: mdi:map-marker-radius
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/map.yaml
 
 homeassistant:
   country: US
