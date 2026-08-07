@@ -22,7 +22,7 @@ Entries marked **ignored** or **not_loaded** are discovery leftovers or intentio
 
 | Integration | Title / instance | State | What it is used for |
 | :--- | :--- | :--- | :--- |
-| `zwave_js` | Z-Wave JS | loaded | Wall switches, dimmers, fans, door contacts, Aeotec environmental sensor. See [Z-Wave Network](zwave_network.md). |
+| `zwave_js` | Z-Wave JS | loaded | Wall switches, dimmers, fans, Aeotec environmental sensor. Legacy HomeSeer door contacts disabled. See [Z-Wave Network](zwave_network.md). |
 | `zha` | SONOFF Zigbee 3.0 USB Dongle Plus V2 | loaded | IKEA TRADFRI lighting, RODRET remotes, Aqara FP1E presence. See [Zigbee Lighting and Sensors](zigbee_lighting_sensors.md). |
 | `yolink` | YoLink | loaded | Outdoor gate contact sensors (LoRa-family). See [LoRa Perimeter](lorawan_perimeter.md). |
 | `ibeacon` | iBeacon Tracker | loaded | BLE beacon / phone presence tracking. |

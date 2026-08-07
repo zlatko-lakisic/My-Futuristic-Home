@@ -63,6 +63,12 @@ homeassistant:
   country: US
   external_url: "https://ha.mostardesigns.com"
   internal_url: "http://192.168.89.25:8123"
+  # Home zone (also reflected in .storage/core.config). Radius >=150m absorbs GPS
+  # drift so presence-based arming does not phantom-depart while someone is home.
+  latitude: 41.01356366145155
+  longitude: -73.80845367908479
+  elevation: 0
+  radius: 150
   #customize: !include customize.yaml
   media_dirs:
     share_media: /media/public_share_4_ha_media
@@ -82,6 +88,7 @@ homeassistant:
     perimeter_switch_aggregate: !include packages/perimeter_switch_aggregate.yaml
     www_tmp_cleanup_shell: !include packages/www_tmp_cleanup_shell.yaml
     gate_clip_media: !include packages/gate_clip_media.yaml
+    security_supervision: !include packages/security_supervision.yaml
 
 influxdb:
   api_version: "1"
@@ -205,9 +212,11 @@ climate:
         data:
           preset_mode: "{{ preset_mode }}"
 
-# Mobile push: use notify.notify (routes to Fold 5) or notify.send_message targeting
-# notify.zlatko_fold_5. YAML notify groups that call notify.zlatko_fold_5 return HTTP 400
-# on this HA version, so ALL_DEVICES was removed — callers use notify.notify instead.
+# Mobile push: use notify.notify for routine fan-out, or target companion notify entities
+# directly (notify.zlatko_galaxy, notify.ada_samsung, notify.ibrica_samsung). See
+# docs_ha/security_system.md for alarm-tier targets. YAML notify groups that call a single
+# companion entity have returned HTTP 400 on this HA version — prefer notify.notify or
+# notify.send_message with an explicit target.
 
 sensor:
   - platform: openweathermap_all
@@ -305,7 +314,7 @@ google_assistant:
     binary_sensor.front_door_door:
       name: 'Front Door'
       expose: true
-    binary_sensor.back_door_window_door_is_open:
+    binary_sensor.back_door_door:
       name: 'Back Door'
       expose: true
     switch.living_room_tv:

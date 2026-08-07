@@ -71,19 +71,21 @@ Live snapshot from the Home Assistant device registry (Jul 2026): **32** Z-Wave 
 
 | Area | Name | Manufacturer | Model | SW | Role |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| Kitchen | Back Door | HomeSeer Technologies | HS-DS100+ | 2.3.0 | Door/contact |
-| Office | Office Door | HomeSeer Technologies | HS-DS100+ | 2.3.0 | Door/contact |
-| Hallway | Front Door | (generic / incomplete registry) | | | Door-related node |
 | Basement | Environmental Sensor | Aeotec Ltd. | ZWA019 | 2.3.1 | Environment |
 | Basement | Node 35 | | | | Incomplete node |
 | Garage | Node 34 | | | | Incomplete node |
+
+**Retired (disabled in device registry):** HomeSeer HS-DS100+ door contacts for Front Door,
+Back Door, and Office Door. Perimeter open/closed now comes from Yale/August
+`binary_sensor.*_door` entities — see [Security System](security_system.md) and
+[Alarmo Reference](alarmo_reference.md). Do not re-enable those Z-Wave nodes for intrusion.
 
 ## Mesh topology notes
 
 - **Controller** in the basement is the sole Z-Wave JS primary.
 - **Repeaters:** wall switches/dimmers plus two Aeotec `ZW189-C15` extenders (Kitchen, Bottom Hallway) for inter-floor RF.
-- **Battery count:** four devices currently expose Z-Wave battery entities (two HomeSeer doors, environmental sensor, Front Door node). Incomplete `Node 34` / `Node 35` entries should be healed or excluded if they never finish interview.
-- Primary manufacturers: GE/Enbrighten, Aeotec, HomeSeer, Eaton, Minoston.
+- **Battery count:** mainly the Aeotec environmental sensor after door contacts were retired. Incomplete `Node 34` / `Node 35` entries should be healed or excluded if they never finish interview.
+- Primary manufacturers: GE/Enbrighten, Aeotec, Eaton, Minoston (HomeSeer door sensors retired).
 
 ## Automations
 
@@ -105,7 +107,7 @@ Use Z-Wave JS UI (or HA Z-Wave JS panels) for include/exclude. Prefer mains devi
 | Symptom | Direction |
 | :--- | :--- |
 | Dead wall switch | Confirm breaker, then Z-Wave JS node status and last heard |
-| Battery door sensor stale | Check extender placement and heal routes toward Kitchen / Bottom Hallway |
+| Battery node stale (e.g. Aeotec env) | Check extender placement and heal routes toward Kitchen / Bottom Hallway |
 | `Node 34` / `Node 35` with empty model | Re-interview or exclude if unused |
 | Inventory drift | Refresh from HA device registry. Older `zwave_inventory.md` is a compact table mirror |
 

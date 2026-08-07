@@ -108,12 +108,12 @@ Vision analysis uses the **LLM Vision** integration provider configured in the b
 | Gate stuck closed/open in HA | Check YoLink app/cloud, battery %, and HA YoLink integration |
 | AI automation runs but no phone alert | Classification may be `NOPEOPLE`, or notify service / person devices misconfigured |
 | Vision fails / junk tool-call text | Blueprint falls back to Frigate person sensor when configured |
-| Legacy notification automations fire twice | Keep superseded `East/West Gate Open Notification` automations **off** |
+| Duplicate gate notifications | Legacy `East/West Gate Open Notification` automations were removed; only blueprint AI analysis instances should remain |
 | MQTT / Frigate occupancy unavailable | Camera stills can still work over HTTP. Occupancy fallback needs Frigate MQTT healthy |
 
 ## Related
 
 - [Frigate Setup](frigate_setup.md)
-- [Z-Wave Network](zwave_network.md) (interior door contacts are Z-Wave, not YoLink)
+- [Z-Wave Network](zwave_network.md) (Z-Wave is lighting/mesh; primary doors are Yale/August)
 - Automations file: `homeassistant/automations/02_ai_and_notifications.yaml`
 - Wiki: [Services Frigate](https://github.com/zlatko-lakisic/My-Futuristic-Home/wiki/Services-Frigate)

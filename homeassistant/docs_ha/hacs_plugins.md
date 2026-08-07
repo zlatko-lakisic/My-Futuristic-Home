@@ -42,6 +42,7 @@ Owner-maintained forks used in production:
 | `valentinfrlch/ha-llmvision` | v1.7.0 | Gate/camera vision analysis actions | Vision / notify |
 | `blakeblackshear/frigate-hass-integration` | v5.15.4 | Frigate cameras and MQTT entities in HA | NVR |
 | `AlexxIT/WebRTC` | v3.6.1 | Low-latency camera streams in Lovelace | NVR UI |
+| `nielsfaber/alarmo` | v1.10.18 | Self-monitored alarm panel (arm modes, sensor tiers) | Security |
 
 ### Climate and home comfort
 
