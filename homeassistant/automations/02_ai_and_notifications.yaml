@@ -100,6 +100,9 @@
       person_sensor: binary_sensor.driveway_zone_person_occupancy
       car_sensor: binary_sensor.driveway_zone_car_occupancy
       people_only: false
+      known_vehicle_hint: >-
+        Family Car plates: KXS-9837, KXS 9837. If the plate clearly matches, call it
+        Family Car. Do not invent other household names.
       camera: camera.driveway
       llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
       llmvision_model: gpt-4o-mini
@@ -155,57 +158,6 @@
       notify_people:
       - person.zlatko_lakisic
       notify_service: notify.notify
-- id: '1757732558171'
-  alias: East Gate Open Notification
-  description: ''
-  triggers:
-  - type: opened
-    device_id: e88a17f24dde3dee2b920427434ab2e7
-    entity_id: b45e9e153db0d69b27ce925264d33a7b
-    domain: binary_sensor
-    trigger: device
-    enabled: false
-  conditions:
-  - condition: device
-    device_id: 3cab96ade88a859c680543da3cbc807e
-    domain: device_tracker
-    entity_id: 1c267935a8db63cdffb71d8fa6e2c40c
-    type: is_not_home
-    enabled: false
-  actions:
-  - action: script.process_ai_analysis_and_notification
-    metadata: {}
-    data:
-      write_persistent_notification: true
-      camera_id: camera.east_side
-      notification_title: East Gate Open Notification
-      notification_click_url: /back-yard/east-gate
-      ai_prompt: 'Summarize the events based on a series of images captured at short intervals. Focus only on moving subjects such as people, vehicles, and other active elements. Ignore static objects and scenery. Provide a clear and concise account of movements and interactions. Do not mention or imply the existence of imagesâ€”present the information as if directly observing the events. If no movement is detected, respond with: ''No activity observed.'''
-  mode: single
-- id: '1757732652729'
-  alias: West Gate Open Notification
-  description: ''
-  triggers:
-  - trigger: state
-    entity_id:
-      - binary_sensor.west_side_gate_door
-    to: 'on'
-  conditions:
-  - condition: device
-    device_id: 3cab96ade88a859c680543da3cbc807e
-    domain: device_tracker
-    entity_id: 1c267935a8db63cdffb71d8fa6e2c40c
-    type: is_not_home
-    enabled: false
-  actions:
-  - action: script.process_ai_analysis_and_notification
-    metadata: {}
-    data:
-      write_persistent_notification: true
-      camera_id: camera.west_side_2
-      notification_title: West Gate Open Notification
-      notification_click_url: /back-yard/west-gate
-  mode: single
 - id: '1773361989097'
   alias: East Side Motion
   description: ''

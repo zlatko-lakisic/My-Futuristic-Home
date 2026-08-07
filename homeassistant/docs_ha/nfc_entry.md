@@ -61,7 +61,7 @@ Battery attributes are exposed on the lock entities for maintenance. Codes, slot
 
 ### Related (not NFC)
 
-- Z-Wave HomeSeer door contacts on Back Door and Office Door report open/closed independently of the locks. See [Z-Wave Network](zwave_network.md).
+- Door open/closed for Front / Back / Office / Door-to-Garage comes from Yale/August `binary_sensor.*_door` on the same lock devices (not Z-Wave). Legacy HomeSeer HS-DS100+ contacts are disabled.
 - A HomeKit Controller entry for `LF009W4 (Door Lock)` exists in HA but is **not_loaded**. Primary path remains August/Yale.
 
 ## NFC tags (conceptual)

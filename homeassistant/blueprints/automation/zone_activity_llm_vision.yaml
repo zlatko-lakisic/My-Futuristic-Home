@@ -6,12 +6,17 @@ blueprint:
     resolve any Frigate-recognized faces for the visit, ask LLM Vision what is there,
     and notify only when confirmed.
 
-    - Driveway mode: notify for PERSON / CAR.
+    - Driveway mode: notify for PERSON / CAR. When a vehicle is visible, the LLM should
+      include color + make/model when identifiable, and a license plate only if clearly
+      readable (never invent plates). Known-vehicle hints can be supplied as context.
     - People-only mode (front steps): notify for PERSON only.
+    - Prompt is low-temperature and factual (light wit OK; no invented pets/plots/dialogue).
     - Recognized faces (sub_labels) are pulled from Frigate events and added to the
       notification title/body when available.
-    - If the LLM fails/junk but Frigate still shows a matching occupancy, notify with a
-      simple fallback summary (failover is for the message text only).
+    - Push title ≤ 50 chars, push body ≤ 100 chars; HA persistent home-log ≤ 160 chars.
+    - If the LLM fails/junk but Frigate reported matching occupancy during the visit,
+      notify with a simple fallback summary (uses latched occupancy, not live state at
+      decision time — capture + LLM often outlast the brief Frigate pulse).
     - Holds the event open until trigger sensors stay clear for a configurable gap so one
       prolonged visit does not spam notifications.
   domain: automation
@@ -54,6 +59,15 @@ blueprint:
       default: false
       selector:
         boolean:
+    known_vehicle_hint:
+      name: Known vehicles hint
+      description: >
+        Optional context for the LLM (driveway). Example: "Family Car plates: KXS-9837.
+        If matched, call it Family Car." Leave empty for people-only zones.
+      default: ""
+      selector:
+        text:
+          multiline: true
     camera:
       name: Camera
       selector:
@@ -211,6 +225,7 @@ variables:
   person_sensor: !input person_sensor
   car_sensor: !input car_sensor
   people_only: !input people_only
+  known_vehicle_hint: !input known_vehicle_hint
   event_clear_seconds: !input event_clear_seconds
   capture_settle_seconds: !input capture_settle_seconds
   prefer_person_wait_seconds: !input prefer_person_wait_seconds
@@ -239,6 +254,28 @@ triggers:
     from: 'off'
     to: 'on'
 actions:
+  - alias: Latch which Frigate sensors started / are active for this visit
+    variables:
+      saw_person: >-
+        {% set person_eid = person_sensor | default('', true) | string | trim %}
+        {% set trig = trigger.entity_id | default('', true) | string %}
+        {% if person_eid in ['', 'None', 'none', 'unknown', 'unavailable'] %}
+          no
+        {% elif trig == person_eid or is_state(person_eid, 'on') %}
+          yes
+        {% else %}
+          no
+        {% endif %}
+      saw_car: >-
+        {% set car_eid = car_sensor | default('', true) | string | trim %}
+        {% set trig = trigger.entity_id | default('', true) | string %}
+        {% if car_eid in ['', 'None', 'none', 'unknown', 'unavailable'] %}
+          no
+        {% elif trig == car_eid or is_state(car_eid, 'on') %}
+          yes
+        {% else %}
+          no
+        {% endif %}
   - alias: Settle so subject is more likely in frame
     delay:
       seconds: '{{ capture_settle_seconds | int }}'
@@ -258,6 +295,26 @@ actions:
       timeout:
         seconds: '{{ prefer_person_wait_seconds | int }}'
       continue_on_timeout: true
+  - alias: Refresh occupancy latch after settle / person wait
+    variables:
+      saw_person: >-
+        {% set person_eid = person_sensor | default('', true) | string | trim %}
+        {% if (saw_person | default('no') | string | trim) == 'yes' %}
+          yes
+        {% elif person_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(person_eid, 'on') %}
+          yes
+        {% else %}
+          no
+        {% endif %}
+      saw_car: >-
+        {% set car_eid = car_sensor | default('', true) | string | trim %}
+        {% if (saw_car | default('no') | string | trim) == 'yes' %}
+          yes
+        {% elif car_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(car_eid, 'on') %}
+          yes
+        {% else %}
+          no
+        {% endif %}
   - repeat:
       count: '{{ snapshot_frame_count | int }}'
       sequence:
@@ -272,6 +329,26 @@ actions:
           entity_id: !input camera
         data:
           filename: '/config/www/tmp/{{ zone_slug }}_{{ snapshot_timestamp }}_{{ repeat.index }}.jpg'
+      - alias: Keep latching occupancy seen during the burst
+        variables:
+          saw_person: >-
+            {% set person_eid = person_sensor | default('', true) | string | trim %}
+            {% if (saw_person | default('no') | string | trim) == 'yes' %}
+              yes
+            {% elif person_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(person_eid, 'on') %}
+              yes
+            {% else %}
+              no
+            {% endif %}
+          saw_car: >-
+            {% set car_eid = car_sensor | default('', true) | string | trim %}
+            {% if (saw_car | default('no') | string | trim) == 'yes' %}
+              yes
+            {% elif car_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(car_eid, 'on') %}
+              yes
+            {% else %}
+              no
+            {% endif %}
   - action: shell_command.gate_frames_to_gif
     continue_on_error: true
     data:
@@ -302,6 +379,21 @@ actions:
       notify_media_image: '{{ public_gif_url }}'
       dashboard_media_rel: '{{ clip_gif_rel }}'
       people_only_mode: "{{ people_only is true or (people_only | string | lower) in ['true', 'on', 'yes'] }}"
+      # Subsample frames for LLM (GIF still uses full burst) — too many stills encourages invented narratives.
+      llm_image_files: >-
+        {% set ns = namespace(p=[]) %}
+        {% set n = snapshot_frame_count | int %}
+        {% set step = 2 if n > 8 else 1 %}
+        {% for i in range(1, n + 1, step) %}
+          {% set ns.p = ns.p + ['/config/www/tmp/' ~ zone_slug ~ '_' ~ snapshot_timestamp ~ '_' ~ i ~ '.jpg'] %}
+        {% endfor %}
+        {% if n > 1 and (n % step) != 1 %}
+          {% set last = '/config/www/tmp/' ~ zone_slug ~ '_' ~ snapshot_timestamp ~ '_' ~ n ~ '.jpg' %}
+          {% if last not in ns.p %}
+            {% set ns.p = ns.p + [last] %}
+          {% endif %}
+        {% endif %}
+        {{ ns.p | join('\n') }}
       recognized_people_csv: >-
         {% set ns = namespace(names=[]) %}
         {% if frigate_people_cmd is defined and frigate_people_cmd is mapping %}
@@ -318,7 +410,8 @@ actions:
         {% set face_eid = recognized_face_sensor | default('', true) | string | trim %}
         {% if face_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] %}
           {% set face = states(face_eid) | string | trim %}
-          {% if face not in ['', 'None', 'none', 'unknown', 'unavailable']
+          {% if face | length > 0
+             and face | lower not in ['none', 'unknown', 'null', 'unavailable', '']
              and face | lower not in (ns.names | map('lower') | list) %}
             {% set ns.names = ns.names + [face] %}
           {% endif %}
@@ -335,51 +428,47 @@ actions:
     data:
       provider: !input llmvision_provider
       model: !input llmvision_model
-      image_file: '{{ clip_image_files }}'
+      image_file: '{{ llm_image_files }}'
       include_filename: false
       store_in_timeline: false
       use_memory: false
-      temperature: 0.55
-      max_tokens: 900
+      temperature: 0.1
+      max_tokens: 400
       generate_title: false
       expose_images: false
       target_width: !input target_width
       message: >-
-        You are viewing multiple still frames from the {{ zone_name }} security camera,
-        captured in order over about {{ capture_span_seconds }} seconds of one visit.
-        Treat them as one short video clip of the SAME scene, not as separate events.
+        Security camera stills from {{ zone_name }}, in time order (~{{ capture_span_seconds }}s).
+        Same visit — describe only what is visibly present. Do not invent people, pets,
+        objects, plates, dialogue, or actions.
 
         {% if people_only_mode == 'True' or people_only_mode == true %}
-        Focus on people on the steps / entry area. Ignore vehicles, dogs, pets, shadows,
-        flags, reflections, and static scenery.
+        Subject: people on the steps/entry. Ignore vehicles and pets unless a person is also clear.
         {% else %}
-        Focus on people and vehicles in the monitored zone. Dogs/pets are secondary.
-        Ignore static scenery, shadows, flags, reflections, and false shapes.
+        Subject: people and vehicles. Mention a dog/cat only if clearly visible (never invent pets).
+        For any vehicle: color + make/model if identifiable; license plate ONLY if characters
+        are clearly readable — never guess plates.
+        {% set kv = known_vehicle_hint | default('', true) | string | trim %}
+        {% if kv | length > 0 %}
+        Known vehicles (name only on clear plate/vehicle match): {{ kv }}
+        {% endif %}
         {% endif %}
 
         {% if (has_recognized_people | string | trim) == 'yes' %}
-        Frigate face recognition for this visit identified: {{ recognized_people_label }}.
-        If that matches what you see, use those exact names in lines 2-3. Do not invent
-        other names. If the frames clearly show someone else, describe what you see.
+        Frigate faces this visit: {{ recognized_people_label }}. Use those names only if they
+        match what you see; do not invent other names.
         {% endif %}
 
-        TONE for lines 2-3: cheeky, spicy, and a little roast-y — like a sarcastic house
-        that still takes security seriously. Dry wit, playful shade, mild innuendo OK.
-        Stay PG-13: no slurs, no explicit sexual content, no cruelty. Still be accurate
-        about who/what is there; never invent people, plates, or actions.
+        Counting: unique people only. Same person across frames = one person. If unsure, prefer
+        the lower count.
 
-        CRITICAL OUTPUT RULES:
-        - Do NOT call tools, functions, or MCP servers.
-        - Do NOT output JSON, code fences, file paths, or tool-call blocks.
-        - Your entire reply must be exactly 3 lines of plain text and nothing else.
+        Tone: brief, dry, slightly witty — but ZERO fiction. No quotes, no invented plot.
 
-        Line 1 — classification only: exactly PERSON, CAR, DOG, OTHER, or CLEAR
-        (PERSON if any human; CAR if vehicle and no person; DOG if dog/pet and no person/car;
-        OTHER for other clear activity; CLEAR only if nothing meaningful is visible).
-        Line 2 — home log ONLY: spicy one-liner about who/what/where/what they do.
-        Max 180 characters. One paragraph. Do not mention images/frames/camera.
-        Line 3 — phone alert ONLY: shorter cheeky punchline of the same facts.
-        Max 100 characters. No meta text.
+        Output exactly 3 plain-text lines (no JSON, no tools, no lists of labels):
+        Line 1: one word only — PERSON or CAR or DOG or OTHER or CLEAR
+        (PERSON if any human; CAR if vehicle and no person; DOG if pet only; CLEAR if nothing.)
+        Line 2: factual home log ≤160 chars (who/what/where). Include car color/make/plate when known.
+        Line 3: factual phone line ≤100 chars. Same facts, shorter.
     response_variable: ai_response
   - alias: Refresh Frigate-recognized people before notify
     if:
@@ -413,7 +502,8 @@ actions:
         {% set face_eid = recognized_face_sensor | default('', true) | string | trim %}
         {% if face_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] %}
           {% set face = states(face_eid) | string | trim %}
-          {% if face not in ['', 'None', 'none', 'unknown', 'unavailable']
+          {% if face | length > 0
+             and face | lower not in ['none', 'unknown', 'null', 'unavailable', '']
              and face | lower not in (ns.names | map('lower') | list) %}
             {% set ns.names = ns.names + [face] %}
           {% endif %}
@@ -463,23 +553,39 @@ actions:
         {% set raw = reply_raw | string %}
         {% set cleaned = reply | string | trim %}
         {% set label = llm_label | string | trim | upper %}
+        {% set lines = cleaned.split('\n') | map('trim') | reject('eq', '') | list %}
         {% if ai_response is not defined or ai_response is none %}
           yes
         {% elif raw | regex_findall('(?i)"name"\\s*:\\s*"(describe_image|python_m_mcp|media_understand)') | length > 0 %}
           yes
         {% elif cleaned in ['', '}', '{', "Couldn't generate content. Check logs for details.", 'None', 'none'] %}
           yes
-        {% elif cleaned | regex_findall('(?i)(Describe local image files|For each frame analyzed|List the person/pet)') | length > 0 %}
+        {% elif cleaned | regex_findall('(?i)(Describe local image files|For each frame analyzed|List the person/pet|PERSON,\\s*CAR,\\s*DOG)') | length > 0 %}
+          yes
+        {% elif cleaned | regex_findall('(?i)(PERSON|CAR|DOG|OTHER|CLEAR).{0,20}(PERSON|CAR|DOG|OTHER|CLEAR).{0,20}(PERSON|CAR|DOG|OTHER|CLEAR)') | length > 0 %}
+          yes
+        {% elif cleaned | regex_findall('(?i)(sneak(ing)? a dog|doggy got|without their owner|security alert:)') | length > 0 %}
+          yes
+        {% elif cleaned | regex_findall('[\"“].{8,}[\"”]') | length > 0 %}
           yes
         {% elif label not in ['PERSON', 'CAR', 'DOG', 'OTHER', 'CLEAR'] %}
+          yes
+        {% elif lines | length < 2 %}
           yes
         {% else %}
           no
         {% endif %}
-      frigate_person: "{{ 'yes' if is_state(person_sensor, 'on') else 'no' }}"
+      frigate_person: >-
+        {% if (saw_person | default('no') | string | trim) == 'yes' %}
+          yes
+        {% else %}
+          {{ 'yes' if is_state(person_sensor, 'on') else 'no' }}
+        {% endif %}
       frigate_car: >-
         {% set eid = car_sensor | default('', true) | string | trim %}
-        {% if eid in ['', 'None', 'none', 'unknown', 'unavailable'] %}
+        {% if (saw_car | default('no') | string | trim) == 'yes' %}
+          yes
+        {% elif eid in ['', 'None', 'none', 'unknown', 'unavailable'] %}
           no
         {% else %}
           {{ 'yes' if is_state(eid, 'on') else 'no' }}
@@ -514,13 +620,13 @@ actions:
         {% set people = recognized_people_label | string | trim %}
         {% if unusable %}
           {% if people | length > 0 %}
-            {{ people }} at {{ zone_name }}
+            {{ (people ~ ' at ' ~ zone_name) | truncate(160, true, '…') }}
           {% elif (frigate_person | string | trim) == 'yes' %}
-            Person at {{ zone_name }}
+            {{ ('Person at ' ~ zone_name) | truncate(160, true, '…') }}
           {% elif (frigate_car | string | trim) == 'yes' %}
-            Vehicle at {{ zone_name }}
+            {{ ('Vehicle at ' ~ zone_name) | truncate(160, true, '…') }}
           {% else %}
-            {{ zone_name }} activity
+            {{ (zone_name ~ ' activity') | truncate(160, true, '…') }}
           {% endif %}
         {% else %}
           {% set text = reply | string %}
@@ -543,53 +649,92 @@ actions:
             {% endif %}
           {% endfor %}
           {% if ns.cand | length > 0 %}
-            {{ ns.cand | truncate(140, true, '…') }}
+            {{ ns.cand | truncate(160, true, '…') }}
           {% elif people | length > 0 %}
-            {{ people }} at {{ zone_name }}
+            {{ (people ~ ' at ' ~ zone_name) | truncate(160, true, '…') }}
           {% elif label == 'PERSON' %}
-            Person at {{ zone_name }}
+            {{ ('Person at ' ~ zone_name) | truncate(160, true, '…') }}
           {% elif label == 'CAR' %}
-            Vehicle at {{ zone_name }}
+            {{ ('Vehicle at ' ~ zone_name) | truncate(160, true, '…') }}
           {% else %}
-            {{ zone_name }} activity
+            {{ (zone_name ~ ' activity') | truncate(160, true, '…') }}
           {% endif %}
         {% endif %}
+      phone_line: >-
+        {% set unusable = (llm_unusable | string | trim) == 'yes' %}
+        {% if unusable %}
+          {{ log_description }}
+        {% else %}
+          {% set sl = (reply | string).split('\n') %}
+          {% set t = (sl[2] | default('', true) | trim) if sl | length > 2 else '' %}
+          {% set t = t
+            | regex_replace('(?i)^(PERSON|CAR|DOG|OTHER|CLEAR)\\s*[.!:\\-]*\\s*', '')
+            | regex_replace('(?i)^(Alert|Phone alert|Home log|Line\\s*[123])\\s*:\\s*', '')
+            | regex_replace('\\s+', ' ')
+            | trim %}
+          {{ t if t | length > 8 else log_description }}
+        {% endif %}
+      car_plate_hint: >-
+        {% set text = (reply | default('', true) | string) ~ ' ' ~ (log_description | default('', true) | string) %}
+        {% set hits = text | regex_findall('(?i)\\b([A-Z]{1,3}[ -]?\\d{2,4}[A-Z]?|\\d{2,4}[ -]?[A-Z]{1,3})\\b') %}
+        {% set ns = namespace(p='') %}
+        {% for h in hits %}
+          {% if ns.p | length < 1 %}
+            {% set cleaned = h | regex_replace('[^A-Za-z0-9]', '') | upper %}
+            {% if cleaned | length >= 5 and cleaned | length <= 8 %}
+              {% set ns.p = h | upper | regex_replace('\\s+', '-') %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.p }}
       notify_title: >-
         {% set unusable = (llm_unusable | string | trim) == 'yes' %}
         {% set label = llm_label | string | trim | upper %}
         {% set people = recognized_people_label | string | trim %}
+        {% set plate = car_plate_hint | string | trim %}
         {% if people | length > 0 %}
-          {{ zone_name }} · {{ people }}
+          {{ (zone_name ~ ' · ' ~ people) | truncate(50, true, '…') }}
         {% elif unusable %}
           {% if (frigate_person | string | trim) == 'yes' %}
-            {{ zone_name }} · Person
+            {{ (zone_name ~ ' · Person') | truncate(50, true, '…') }}
+          {% elif plate | length > 0 %}
+            {{ (zone_name ~ ' · ' ~ plate) | truncate(50, true, '…') }}
           {% else %}
-            {{ zone_name }} · Vehicle
+            {{ (zone_name ~ ' · Vehicle') | truncate(50, true, '…') }}
           {% endif %}
         {% elif label == 'PERSON' %}
-          {{ zone_name }} · Person
+          {{ (zone_name ~ ' · Person') | truncate(50, true, '…') }}
         {% elif label == 'CAR' %}
-          {{ zone_name }} · Vehicle
+          {% if plate | length > 0 %}
+            {{ (zone_name ~ ' · ' ~ plate) | truncate(50, true, '…') }}
+          {% else %}
+            {{ (zone_name ~ ' · Vehicle') | truncate(50, true, '…') }}
+          {% endif %}
         {% else %}
-          {{ zone_name }}
+          {{ zone_name | truncate(50, true, '…') }}
         {% endif %}
       mobile_short: >-
         {% set people = recognized_people_label | string | trim %}
-        {% if people | length > 0 and (people | lower) not in (log_description | string | lower) %}
-          {{ (people ~ ' — ' ~ (log_description | string)) | truncate(120, true, '…') }}
+        {% set phone = phone_line | string | trim %}
+        {% set body = phone if phone | length > 8 else (log_description | string) %}
+        {% if people | length > 0 and (people | lower) not in (body | lower) %}
+          {{ (people ~ ' — ' ~ body) | truncate(100, true, '…') }}
         {% else %}
-          {{ log_description | truncate(120, true, '…') }}
+          {{ body | truncate(100, true, '…') }}
         {% endif %}
       stored_classification: >-
         {% set unusable = (llm_unusable | string | trim) == 'yes' %}
         {% set label = llm_label | string | trim | upper %}
         {% set people = recognized_people_label | string | trim %}
+        {% set plate = car_plate_hint | string | trim %}
         {% if unusable %}
           {{ 'FALLBACK' ~ ((':' ~ people) if people | length > 0 else '') }}
         {% elif people | length > 0 and label == 'PERSON' %}
-          PERSON:{{ people }}
+          {{ ('PERSON:' ~ people) | truncate(32, true, '') }}
+        {% elif label == 'CAR' and plate | length > 0 %}
+          {{ ('CAR:' ~ plate) | truncate(32, true, '') }}
         {% else %}
-          {{ label }}
+          {{ label | truncate(32, true, '') }}
         {% endif %}
   - action: input_text.set_value
     data:
@@ -620,9 +765,12 @@ actions:
         notification_id: '{{ zone_slug }}_ai_{{ snapshot_timestamp }}'
         title: '{{ notify_title }}'
         message: |
-          {{ log_description }}
+          {{ log_description | truncate(160, true, '…') }}
           {% if (has_recognized_people | string | trim) == 'yes' %}
           Recognized: {{ recognized_people_label }}
+          {% endif %}
+          {% if (car_plate_hint | string | trim | length) > 0 %}
+          Plate: {{ car_plate_hint }}
           {% endif %}
 
           ![{{ zone_name }}](/local/{{ dashboard_media_rel }})
@@ -641,7 +789,13 @@ actions:
           channel: '{{ notify_channel }}'
           tag: '{{ zone_slug }}-{{ snapshot_timestamp }}'
           subject: >-
-            {{ recognized_people_label if (has_recognized_people | string | trim) == 'yes' else zone_name }}
+            {% if (has_recognized_people | string | trim) == 'yes' %}
+              {{ recognized_people_label | truncate(40, true, '…') }}
+            {% elif (car_plate_hint | string | trim | length) > 0 %}
+              {{ car_plate_hint | truncate(40, true, '…') }}
+            {% else %}
+              {{ zone_name | truncate(40, true, '…') }}
+            {% endif %}
           push:
             sound:
               name: default

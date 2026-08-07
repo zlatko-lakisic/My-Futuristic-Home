@@ -1,0 +1,219 @@
+# Security supervision — read-only health sensors for the intrusion panel.
+# Computes whether the alarm system is healthy enough to trust; no actions.
+#
+# Primary doors use Yale/August door sensors (binary_sensor.*_door).
+# YoLink contacts cover yard gates. Legacy Z-Wave HS-DS100+ door sensors are disabled.
+
+template:
+  - binary_sensor:
+      - name: Security Perimeter Open
+        unique_id: security_perimeter_open
+        device_class: opening
+        state: >
+          {% set doors = [
+            'binary_sensor.front_door_door',
+            'binary_sensor.back_door_door',
+            'binary_sensor.office_door_door',
+            'binary_sensor.door_to_garage_door',
+            'binary_sensor.east_side_door_door',
+            'binary_sensor.fence_gate_door',
+            'binary_sensor.west_side_gate_door',
+          ] %}
+          {{ doors | select('is_state', 'on') | list | count > 0 }}
+        attributes:
+          open_list: >
+            {% set doors = [
+              'binary_sensor.front_door_door',
+              'binary_sensor.back_door_door',
+              'binary_sensor.office_door_door',
+              'binary_sensor.door_to_garage_door',
+              'binary_sensor.east_side_door_door',
+              'binary_sensor.fence_gate_door',
+              'binary_sensor.west_side_gate_door',
+            ] %}
+            {% set ns = namespace(names=[]) %}
+            {% for e in doors if is_state(e, 'on') %}
+              {% set ns.names = ns.names + [state_attr(e, 'friendly_name') or e] %}
+            {% endfor %}
+            {{ ns.names }}
+
+      # Yale/August locks do not expose tamper entities. Kept as an always-off
+      # placeholder so ready_to_arm / Alarmo arm-block wiring stays stable.
+      - name: Security Tamper Detected
+        unique_id: security_tamper_detected
+        device_class: tamper
+        state: "{{ false }}"
+        attributes:
+          tampered: "{{ [] }}"
+
+      - name: Security Low Battery
+        unique_id: security_low_battery
+        device_class: battery
+        state: >
+          {% set numerics = [
+            'sensor.front_door_battery',
+            'sensor.back_door_battery',
+            'sensor.office_door_battery',
+            'sensor.door_to_garage_battery',
+            'sensor.east_side_door_battery',
+            'sensor.fence_gate_battery',
+            'sensor.west_side_gate_battery',
+          ] %}
+          {% set threshold = 20 %}
+          {% set ns = namespace(low=false) %}
+          {% for e in numerics %}
+            {% set s = states(e) %}
+            {% if s | is_number and (s | float(100) < threshold) %}
+              {% set ns.low = true %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.low }}
+        attributes:
+          low_list: >
+            {% set numerics = [
+              'sensor.front_door_battery',
+              'sensor.back_door_battery',
+              'sensor.office_door_battery',
+              'sensor.door_to_garage_battery',
+              'sensor.east_side_door_battery',
+              'sensor.fence_gate_battery',
+              'sensor.west_side_gate_battery',
+            ] %}
+            {% set threshold = 20 %}
+            {% set ns = namespace(items=[]) %}
+            {% for e in numerics %}
+              {% set s = states(e) %}
+              {% if s | is_number and (s | float(100) < threshold) %}
+                {% set ns.items = ns.items + [e ~ ' (' ~ (s | float | round(0)) ~ '%)'] %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.items }}
+
+      - name: Security Sensor Unavailable
+        unique_id: security_sensor_unavailable
+        device_class: problem
+        state: >
+          {% set watched = [
+            'binary_sensor.front_door_door',
+            'binary_sensor.back_door_door',
+            'binary_sensor.office_door_door',
+            'binary_sensor.door_to_garage_door',
+            'binary_sensor.east_side_door_door',
+            'binary_sensor.fence_gate_door',
+            'binary_sensor.west_side_gate_door',
+            'binary_sensor.master_bedroom_closet_presence_sensor_occupancy',
+            'binary_sensor.driveway_person_occupancy',
+            'binary_sensor.front_door_person_occupancy',
+            'binary_sensor.back_yard_person_occupancy',
+            'binary_sensor.east_side_person_occupancy',
+            'binary_sensor.west_side_person_occupancy',
+            'binary_sensor.garden_north_person_occupancy',
+            'binary_sensor.garden_south_person_occupancy',
+          ] %}
+          {{ watched | select('is_state', 'unavailable') | list | count
+             + watched | select('is_state', 'unknown') | list | count > 0 }}
+        attributes:
+          unavailable_list: >
+            {% set watched = [
+              'binary_sensor.front_door_door',
+              'binary_sensor.back_door_door',
+              'binary_sensor.office_door_door',
+              'binary_sensor.door_to_garage_door',
+              'binary_sensor.east_side_door_door',
+              'binary_sensor.fence_gate_door',
+              'binary_sensor.west_side_gate_door',
+              'binary_sensor.master_bedroom_closet_presence_sensor_occupancy',
+              'binary_sensor.driveway_person_occupancy',
+              'binary_sensor.front_door_person_occupancy',
+              'binary_sensor.back_yard_person_occupancy',
+              'binary_sensor.east_side_person_occupancy',
+              'binary_sensor.west_side_person_occupancy',
+              'binary_sensor.garden_north_person_occupancy',
+              'binary_sensor.garden_south_person_occupancy',
+            ] %}
+            {% set ns = namespace(names=[]) %}
+            {% for e in watched if states(e) in ['unavailable', 'unknown'] %}
+              {% set ns.names = ns.names + [state_attr(e, 'friendly_name') or e] %}
+            {% endfor %}
+            {{ ns.names }}
+
+      - name: Security Sensor Stale
+        unique_id: security_sensor_stale
+        device_class: problem
+        state: >
+          {% set doors = [
+            'binary_sensor.front_door_door',
+            'binary_sensor.back_door_door',
+            'binary_sensor.office_door_door',
+            'binary_sensor.door_to_garage_door',
+            'binary_sensor.east_side_door_door',
+            'binary_sensor.fence_gate_door',
+            'binary_sensor.west_side_gate_door',
+          ] %}
+          {% set threshold_h = 48 %}
+          {% set ns = namespace(stale=false) %}
+          {% for e in doors %}
+            {% if states(e) not in ['unavailable', 'unknown'] %}
+              {% set lc = states[e].last_changed if states[e] is defined else none %}
+              {% if lc is not none and (as_timestamp(now()) - as_timestamp(lc)) > (threshold_h * 3600) %}
+                {% set ns.stale = true %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.stale }}
+        attributes:
+          stale_list: >
+            {% set doors = [
+              'binary_sensor.front_door_door',
+              'binary_sensor.back_door_door',
+              'binary_sensor.office_door_door',
+              'binary_sensor.door_to_garage_door',
+              'binary_sensor.east_side_door_door',
+              'binary_sensor.fence_gate_door',
+              'binary_sensor.west_side_gate_door',
+            ] %}
+            {% set threshold_h = 48 %}
+            {% set ns = namespace(names=[]) %}
+            {% for e in doors %}
+              {% if states(e) not in ['unavailable', 'unknown'] %}
+                {% set lc = states[e].last_changed if states[e] is defined else none %}
+                {% if lc is not none and (as_timestamp(now()) - as_timestamp(lc)) > (threshold_h * 3600) %}
+                  {% set ns.names = ns.names + [state_attr(e, 'friendly_name') or e] %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.names }}
+
+      - name: Security Ready To Arm
+        unique_id: security_ready_to_arm
+        icon: mdi:shield-check
+        state: >
+          {{ is_state('binary_sensor.security_tamper_detected', 'off')
+             and is_state('binary_sensor.security_low_battery', 'off')
+             and is_state('binary_sensor.security_sensor_unavailable', 'off')
+             and is_state('binary_sensor.security_sensor_stale', 'off') }}
+        attributes:
+          faults: >
+            {% set ns = namespace(items=[]) %}
+            {% if is_state('binary_sensor.security_tamper_detected', 'on') %}
+              {% set ns.items = ns.items + ['tamper'] %}
+            {% endif %}
+            {% if is_state('binary_sensor.security_low_battery', 'on') %}
+              {% set ns.items = ns.items + ['low_battery'] %}
+            {% endif %}
+            {% if is_state('binary_sensor.security_sensor_unavailable', 'on') %}
+              {% set ns.items = ns.items + ['unavailable'] %}
+            {% endif %}
+            {% if is_state('binary_sensor.security_sensor_stale', 'on') %}
+              {% set ns.items = ns.items + ['stale'] %}
+            {% endif %}
+            {{ ns.items }}
+
+      # Inverted ready flag for Alarmo arming block (Alarmo treats on=open/blocking).
+      - name: Security Arm Blocked
+        unique_id: security_arm_blocked
+        device_class: problem
+        icon: mdi:shield-off
+        state: "{{ is_state('binary_sensor.security_ready_to_arm', 'off') }}"
+        attributes:
+          faults: "{{ state_attr('binary_sensor.security_ready_to_arm', 'faults') }}"
