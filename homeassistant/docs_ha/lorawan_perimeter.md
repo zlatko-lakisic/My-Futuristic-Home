@@ -23,7 +23,7 @@ These sensors are **YoLink DoorSensor** devices on the HA **YoLink** integration
    - Parse a three-line reply: classification (`PEOPLE` / `NOPEOPLE`), home log line, short phone line.
    - If vision output is unusable, optionally fall back to a Frigate person occupancy entity.
    - On `PEOPLE`, notify mobile app devices and write helpers under `input_text.gate_ai_*` / `input_datetime.gate_ai_last_analysis_time`.
-4. Older standalone "Gate Open Notification" automations that call `script.process_ai_analysis_and_notification` exist but are largely **off** or superseded by the blueprint instances.
+4. Older standalone "Gate Open Notification" automations that called `script.process_ai_analysis_and_notification` were **removed** (broken device conditions; superseded by blueprint instances). On LLM failure the gate blueprint still notifies with a short FALLBACK “{gate} opened” message plus GIF.
 
 ## Gateway path into HA
 
@@ -87,9 +87,9 @@ Notification tap opens backyard dashboard path for that camera
 
 ### Live automation instances
 
-| Automation | Gate sensor | Camera | Status (Jul 2026) |
+| Automation | Gate sensor | Camera | Status (Aug 2026) |
 | :--- | :--- | :--- | :--- |
-| `automation.east_gate_open_ai_analysis_2` | `binary_sensor.east_side_door_door` | `camera.east_side` | **on** |
+| `automation.east_gate_open_ai_analysis` | `binary_sensor.east_side_door_door` | `camera.east_side` | **on** |
 | `automation.west_gate_open_ai_analysis` | `binary_sensor.west_side_gate_door` | `camera.west_side_2` | **on** |
 | `automation.back_yard_gate_open_ai_analysis` | `binary_sensor.fence_gate_door` | `camera.back_yard_2` | **on** |
 
@@ -114,6 +114,7 @@ Vision analysis uses the **LLM Vision** integration provider configured in the b
 ## Related
 
 - [Frigate Setup](frigate_setup.md)
+- [Zone Activity AI](zone_activity_ai.md) (driveway / front-steps zone alerts)
 - [Z-Wave Network](zwave_network.md) (Z-Wave is lighting/mesh; primary doors are Yale/August)
 - Automations file: `homeassistant/automations/02_ai_and_notifications.yaml`
 - Wiki: [Services Frigate](https://github.com/zlatko-lakisic/My-Futuristic-Home/wiki/Services-Frigate)

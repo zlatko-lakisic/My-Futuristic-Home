@@ -31,3 +31,14 @@ We utilize the **Advanced Camera Card** for a high-performance frontend experien
 * **Frigate-First UI:** Native support for Frigate event galleries and clip playback.
 * **Low Latency:** Uses WebRTC and MSE via `go2rtc` for sub-second lag.
 * **Conditional Layers:** Icons can appear on the video feed when specific objects are detected.
+
+## **Zones used by HA automations (Aug 2026)**
+
+| Camera | Zone | Used for |
+| :--- | :--- | :--- |
+| `driveway` | `driveway_zone` | Zone AI notify (person/car); driveway flood lights when dark |
+| `front_door` | `near_front_door` | Zone AI notify (people only); front-yard flood lights when dark |
+
+Face recognition and LPR are enabled in Frigate. Driveway zone AI can include color/make/model and a plate when the LLM can read one (never invents plates). See [Zone Activity AI](zone_activity_ai.md).
+
+Inventory note: area **Front Yard** maps to Frigate camera id `front_door` (`camera.front_door`).

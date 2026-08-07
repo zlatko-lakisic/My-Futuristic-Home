@@ -134,13 +134,13 @@ export const systems: System[] = [
     whatItDoes: [
       'Cameras that understand what they see. The house gets notifications for people, vehicles, and other events that matter, not for every leaf that moves.',
       'Eight cameras cover driveway, garden, and approaches. Detection runs on hardware in the rack; continuous footage never leaves the house for a vendor model.',
-      'When something important happens, Frigate publishes an event. Automations decide whether to notify, open a dashboard card, or stay quiet.',
+      'Named Frigate zones keep alerts honest: near-driveway occupancy for people and cars, near-front-door occupancy for people on the steps. Home Assistant turns those pulses into a short GIF, a factual AI summary, and a phone push — including vehicle color, make, and a plate when the plate is actually readable.',
       'The same cameras also serve the perimeter workflow: when a gate opens, Home Assistant pulls a short burst of stills for a people summary. That path lives with The Senses.',
     ],
     howItWorks: [
       'Frigate is the primary detection pipeline, accelerated with TensorRT on an NVIDIA RTX A4000. A dedicated NVR host (i7-8700T) runs the stack in Docker on Ubuntu.',
       'CodeProject.AI sits alongside as a dedicated inference server for object, face, and license plate recognition. Recordings land on high-speed network storage over a direct storage link so 24/7 video does not fight the rest of the network.',
-      'Events publish onto the message bus for Home Assistant and other consumers. Detection is a message, not a closed appliance UI. Gate-triggered snapshot bursts are a separate consumer of the same camera feeds; see The Senses for that workflow.',
+      'Events publish onto the message bus for Home Assistant and other consumers. Zone occupancy entities drive flood lights at night and zone AI notifies by day or night. Gate-triggered snapshot bursts are a separate consumer of the same camera feeds; see The Senses for that workflow.',
     ],
     diagram: [
       { label: 'IP cameras', detail: 'Streams' },
@@ -156,6 +156,10 @@ export const systems: System[] = [
       { label: 'Storage', value: 'Network recordings on NAS2 enterprise SSDs' },
     ],
     decisions: [
+      {
+        title: 'Zones beat whole-camera spam.',
+        body: 'Driveway and front-step alerts fire on Frigate zone occupancy, then coalesce one visit into one notify. Flood lights share the same occupancy truth after dark.',
+      },
       {
         title: 'Inference happens at home.',
         body: 'Footage never leaves the house for a vendor model. Privacy is a placement decision, not a settings toggle.',
@@ -177,6 +181,10 @@ export const systems: System[] = [
       {
         label: 'services/frigate.md',
         href: 'https://github.com/zlatko-lakisic/My-Futuristic-Home/blob/main/services/frigate.md',
+      },
+      {
+        label: 'Zone Activity AI',
+        href: 'https://github.com/zlatko-lakisic/My-Futuristic-Home/blob/main/homeassistant/docs_ha/zone_activity_ai.md',
       },
       {
         label: 'infrastructure/cameras.md',
@@ -378,12 +386,13 @@ export const systems: System[] = [
     whatItDoes: [
       'The house does not speak one wireless language. Light switches and door contacts talk Z-Wave. Closet lights and presence sensors talk Zigbee. The gates at the edge of the yard talk long range LoRa. And the front door opens with an NFC tap from a phone.',
       'Home Assistant listens to all of it and treats every radio the same way: as one more sense.',
-      'When a gate opens, the perimeter announces, the nearest camera confirms with a burst of stills, and an AI summarizes who is approaching. If it looks like a person, a short alert reaches a phone before they reach the door.',
+      'When a gate opens, the perimeter announces, the nearest camera confirms with a burst of stills, and an AI summarizes who is approaching. If it looks like a person — or vision fails and Frigate still sees someone — a short alert reaches a phone before they reach the door.',
     ],
     howItWorks: [
       'Z-Wave is the wired-feeling mesh. Z-Wave JS runs a Silicon Labs 800 series controller with dozens of in-wall GE and Enbrighten switches and dimmers as mains powered repeaters, Aeotec range extenders between floors, and a few battery door contacts. Every mains switch you add makes the mesh stronger.',
       'Zigbee covers dense lighting and presence. ZHA on a SONOFF Zigbee 3.0 dongle runs IKEA TRADFRI drivers as routers with RODRET remotes bound to them, plus Aqara mmWave presence sensors for closet and basement lights that stay on while you stand still, unlike simple PIR motion.',
-      'The LoRa perimeter uses YoLink gate contacts on a proprietary LoRa-family radio through a hub, not a DIY network server. Three gates report open and closed plus battery and signal. On open, Home Assistant grabs a short burst of stills from the paired camera, a cloud vision model classifies PEOPLE or NOPEOPLE, and a one line summary can notify a phone. Frigate person occupancy is the local fallback if vision text is unusable. The cloud call is a pragmatic choice: a handful of stills, not a continuous stream leaving the house.',
+      'The LoRa perimeter uses YoLink gate contacts on a proprietary LoRa-family radio through a hub, not a DIY network server. Three gates report open and closed plus battery and signal. On open, Home Assistant grabs a short burst of stills from the paired camera, a cloud vision model classifies PEOPLE or NOPEOPLE, and a one line summary can notify a phone. Frigate person occupancy is the local fallback if vision text is unusable; FALLBACK still notifies that the gate opened with the GIF. The cloud call is a pragmatic choice: a handful of stills, not a continuous stream leaving the house.',
+      'After dark, Frigate zone occupancy and gate contacts also drive exterior floods: driveway and front-yard people share one flood load with a coordinated clear; the west gate has its own backyard floods until closed.',
       'NFC entry is architecture only. A registered phone tag fires a Home Assistant tag scan, authorization happens in HA, and a lock command goes to Yale locks through the August integration. Operational entry details, tag identities, and unlock conditions are intentionally not published.',
     ],
     diagram: [
@@ -430,6 +439,10 @@ export const systems: System[] = [
       {
         label: 'lorawan_perimeter.md',
         href: 'https://github.com/zlatko-lakisic/My-Futuristic-Home/blob/main/homeassistant/docs_ha/lorawan_perimeter.md',
+      },
+      {
+        label: 'zone_activity_ai.md',
+        href: 'https://github.com/zlatko-lakisic/My-Futuristic-Home/blob/main/homeassistant/docs_ha/zone_activity_ai.md',
       },
       {
         label: 'nfc_entry.md',

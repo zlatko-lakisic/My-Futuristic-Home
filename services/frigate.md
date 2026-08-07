@@ -3,6 +3,8 @@
 ## **Overview**
 This is the complete configuration for the Frigate NVR service. It is designed to work with **CodeProject.AI** for object, face, and plate detection and utilizes an NVIDIA RTX A4000; this is documented in the [NVR Infrastructure File](../infrastructure/nvr.md).
 
+**HA consumers (Aug 2026):** zone AI notifications and flood lights use Frigate zones `driveway_zone` (driveway) and `near_front_door` (front_door / Front Yard). See [Zone Activity AI](../homeassistant/docs_ha/zone_activity_ai.md). The excerpt below mirrors live zone names; full live config lives in the docker-infrastructure NVR tree.
+
 ## **Full Configuration (`config.yml`)**
 *Note: This file uses environment variables (e.g., `{MQTT_USER}`) which are defined in the [frigate.env](./frigate.env) file.*
 
@@ -86,11 +88,17 @@ cameras:
     objects:
       track: [person, deer, dog, car]
     zones:
-      near_driveway:
+      driveway_zone:
         coordinates: 712,1080,282,1080,193,468,170,292,503,411,982,197,1581,188,1920,147,1920,1080
+        objects: [person, dog, car]
+        friendly_name: Near Driveway
     review:
       alerts:
-        required_zones: near_driveway
+        required_zones:
+          - driveway_zone
+      detections:
+        required_zones:
+          - driveway_zone
     birdseye:
       order: 2
 
@@ -100,9 +108,12 @@ cameras:
         - path: rtsp://127.0.0.1:8554/front_door
           input_args: preset-rtsp-restream
           roles: [audio, detect, record]
+    objects:
+      track: [person, dog, cat]
     zones:
       near_front_door:
         coordinates: 361,451,557,473,661,403,1024,366,1024,576,0,576,0,294
+        objects: [person, dog, cat]
     birdseye:
       order: 3
 
@@ -158,4 +169,4 @@ cameras:
     birdseye:
       order: 8
 
-version: 0.16-0
+version: 0.17-0

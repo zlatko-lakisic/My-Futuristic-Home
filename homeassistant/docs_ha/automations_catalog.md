@@ -1,6 +1,6 @@
 # Automations Catalog
 
-Catalog of Home Assistant automations on the live system (Jul 2026), grouped by architecture role. Aliases only for entry-related automations. Operational unlock logic is not documented.
+Catalog of Home Assistant automations on the live system (Aug 2026), grouped by architecture role. Aliases only for entry-related automations. Operational unlock logic is not documented.
 
 Wiki mirror: [Home Assistant Automations](https://github.com/zlatko-lakisic/My-Futuristic-Home/wiki/Home-Assistant-Automations).
 
@@ -59,18 +59,18 @@ Docs: [Garden Agentic Watering](garden_agentic_watering.md).
 
 | Entity | State | Role |
 | :--- | :--- | :--- |
-| `automation.east_gate_open_ai_analysis_2` | on | YoLink east gate → snapshot + LLM Vision people alert |
+| `automation.east_gate_open_ai_analysis` | on | YoLink east gate → snapshot + LLM Vision people alert |
 | `automation.west_gate_open_ai_analysis` | on | West gate → same blueprint |
 | `automation.back_yard_gate_open_ai_analysis` | on | Fence / back yard gate → same blueprint |
-| `automation.east_gate_open_ai_analysis` | unavailable | Superseded duplicate |
-| `automation.east_gate_open_notification` | off | Older path via `script.process_ai_analysis_and_notification` |
-| `automation.west_side_gate_notification` | off | Older west gate notify path |
-| `automation.driveway_car_notification` | off | Driveway car occupancy → AI notify script |
+| `automation.near_driveway_zone_ai_analysis` | on | Frigate `driveway_zone` person/car → GIF + LLM zone alert |
+| `automation.near_front_door_zone_ai_analysis` | on | Frigate `near_front_door` person → GIF + LLM (people only) |
 | `automation.east_side_motion` | off | Frigate/event summary blueprint when east motion |
 | `automation.llm_testing` | off | Manual LLM Vision test harness |
 | `automation.test` | off | Scratch event_summary blueprint test |
 
-Docs: [LoRa Perimeter](lorawan_perimeter.md), blueprint `gate_open_llm_vision_people.yaml`.
+Removed / superseded: legacy East/West Gate Open Notification YAML; `driveway_car_notification`.
+
+Docs: [LoRa Perimeter](lorawan_perimeter.md), [Zone Activity AI](zone_activity_ai.md), blueprints `gate_open_llm_vision_people.yaml` / `zone_activity_llm_vision.yaml`.
 
 ## Unified climate
 
@@ -97,11 +97,13 @@ Docs: [Unified Climate Control](unified_climate_control.md).
 | `automation.closet_lught_switch_on` / `closet_light_ofg` | on | Guest closet remote (alias typos preserved) |
 | `automation.dim_bedroom_hallway_light` | on | Hallway dimming behavior |
 | `automation.back_yard_motion` | off | Frigate motion → yard lights |
-| `automation.driveway_motion_activated_lights` | off | Driveway motion lights |
-| `automation.front_door_motion` | off | Front door motion lights |
+| `automation.driveway_motion_activated_lights` | on | Frigate `driveway_zone` person/car + dark → `light.flood_lights` |
+| `automation.front_yard_motion_activated_flood_lights` | on | Frigate `near_front_door` person + dark → shared floods |
+| `automation.west_gate_flood_lights` | on | West gate open + dark → `switch.flood_lights_2` |
+| `automation.front_door_motion` | off | Legacy front door motion lights |
 | `automation.ping_z_wave_devices_4` | on | Periodic Z-Wave ping / keep-alive |
 
-Docs: [Zigbee Lighting and Sensors](zigbee_lighting_sensors.md), [Z-Wave Network](zwave_network.md).
+Docs: [Zigbee Lighting and Sensors](zigbee_lighting_sensors.md), [Z-Wave Network](zwave_network.md), [Zone Activity AI](zone_activity_ai.md).
 
 ## NFC entry (aliases only)
 
