@@ -58,24 +58,14 @@ views:
                         name: md-admin
                       - entity: device_tracker.zlatko_galaxy
                         name: Zlatko Galaxy
-                      - entity: device_tracker.zlatko_fold
-                        name: Zlatko Fold 5
                       - entity: device_tracker.adna_s24_ultra
                         name: Adna S24 Ultra
                       - entity: device_tracker.adna_samsung
                         name: Adna Samsung
                       - entity: device_tracker.ibrica_samsung
                         name: Ibrica Samsung
-                      - entity: device_tracker.adna_s_ipad
-                        name: Adna's iPad
-                      - entity: device_tracker.adna_ipad
-                        name: Adna iPad
                       - entity: device_tracker.kiosk_ipad
                         name: Kiosk iPad
-                      - entity: device_tracker.vz_darkside
-                        name: VZ Darkside
-                      - entity: device_tracker.vz_darkside_2
-                        name: VZ-Darkside
 
               - type: vertical-stack
                 view_layout:
@@ -139,12 +129,6 @@ views:
                 vertical: true
                 color: green
               - type: tile
-                entity: device_tracker.zlatko_fold
-                name: Zlatko Fold 5
-                icon: mdi:cellphone
-                vertical: true
-                color: green
-              - type: tile
                 entity: device_tracker.adna_s24_ultra
                 name: Adna S24 Ultra
                 icon: mdi:cellphone
@@ -163,33 +147,9 @@ views:
                 vertical: true
                 color: green
               - type: tile
-                entity: device_tracker.adna_s_ipad
-                name: Adna's iPad
-                icon: mdi:tablet
-                vertical: true
-                color: blue
-              - type: tile
-                entity: device_tracker.adna_ipad
-                name: Adna iPad
-                icon: mdi:tablet
-                vertical: true
-                color: blue
-              - type: tile
                 entity: device_tracker.kiosk_ipad
                 name: Kiosk iPad
                 icon: mdi:tablet-dashboard
-                vertical: true
-                color: blue
-              - type: tile
-                entity: device_tracker.vz_darkside
-                name: VZ Darkside
-                icon: mdi:tablet-cellphone
-                vertical: true
-                color: blue
-              - type: tile
-                entity: device_tracker.vz_darkside_2
-                name: VZ-Darkside
-                icon: mdi:tablet-cellphone
                 vertical: true
                 color: blue
 
@@ -213,7 +173,7 @@ views:
               width: 100%
               max_width: 100%
               padding: 0 16px 8px
-              grid-template-columns: repeat(5, minmax(0, 1fr))
+              grid-template-columns: repeat(4, minmax(0, 1fr))
               grid-gap: 8px
               place-items: stretch
               mediaquery:
@@ -228,11 +188,6 @@ views:
                 icon: mdi:battery
                 vertical: true
               - type: tile
-                entity: sensor.zlatko_fold_5_battery_level
-                name: Zlatko Fold 5
-                icon: mdi:battery
-                vertical: true
-              - type: tile
                 entity: sensor.adna_s24_ultra_battery_level
                 name: Adna S24 Ultra
                 icon: mdi:battery
@@ -243,28 +198,8 @@ views:
                 icon: mdi:battery
                 vertical: true
               - type: tile
-                entity: sensor.adna_s_ipad_battery_level
-                name: Adna's iPad
-                icon: mdi:battery
-                vertical: true
-              - type: tile
-                entity: sensor.adna_ipad_battery_level
-                name: Adna iPad
-                icon: mdi:battery
-                vertical: true
-              - type: tile
                 entity: sensor.kiosk_ipad_battery_level
                 name: Kiosk iPad
-                icon: mdi:battery
-                vertical: true
-              - type: tile
-                entity: sensor.vz_darkside_battery_level
-                name: VZ Darkside
-                icon: mdi:battery
-                vertical: true
-              - type: tile
-                entity: sensor.vz_darkside_battery_level_2
-                name: VZ-Darkside
                 icon: mdi:battery
                 vertical: true
 
@@ -295,9 +230,6 @@ views:
                   - entity: sensor.zlatko_galaxy_geocoded_location
                     name: Zlatko Galaxy
                     secondary_info: last-changed
-                  - entity: sensor.zlatko_fold_5_geocoded_location
-                    name: Zlatko Fold 5
-                    secondary_info: last-changed
                   - entity: sensor.ibrica_samsung_geocoded_location
                     name: Ibrica Samsung
                     secondary_info: last-changed
@@ -309,15 +241,8 @@ views:
                 title: Tablets
                 show_header_toggle: false
                 entities:
-                  - entity: sensor.adna_s_ipad_geocoded_location
-                    name: Adna's iPad
+                  - entity: sensor.kiosk_ipad_geocoded_location
+                    name: Kiosk iPad
                     secondary_info: last-changed
-                  - entity: sensor.vz_darkside_geocoded_location
-                    name: VZ Darkside
-                    secondary_info: last-changed
-                  - entity: sensor.adna_s_ipad_activity
-                    name: Adna's iPad activity
-                  - entity: sensor.vz_darkside_activity
-                    name: VZ Darkside activity
-                  - entity: sensor.vz_darkside_last_update_trigger
-                    name: VZ Darkside last update
+                  - entity: sensor.kiosk_ipad_last_update_trigger
+                    name: Kiosk iPad last update
