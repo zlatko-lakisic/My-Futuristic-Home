@@ -281,13 +281,17 @@ function setHtml(id, html) {
     if (portsTotal == null) portsTotal = 26;
     var linksOk = portsUp != null && Number(portsUp) > 0;
     var swBad = swCpu == null && portsUp == null;
+    // Fanless CSS326 board temp (°F): ~131–176 normal, ~185+ concern. Scale 110→194°F to bar %.
+    var swTempPct = swCpu == null ? 0 : ((swCpu - 110) / (194 - 110)) * 100;
+    var swTempFill = swCpu == null ? "fill-cpu"
+      : (swCpu >= 185 ? "fill-temp-hot" : (swCpu >= 176 ? "fill-temp-warm" : "fill-temp-ok"));
     var perimeter =
       deviceCard({
         title: "CSS326 · perimeter",
         sub: "SwitchOS · " + (swBad ? "—" : (linksOk ? (portsUp + "/" + portsTotal + " up") : "No links")),
         dot: swBad ? "dot-unk" : (linksOk ? "dot-ok" : "dot-bad"),
         body:
-          metric("CPU", swCpu, "fill-cpu", swCpu == null ? "—" : Math.round(swCpu) + "°") +
+          metric("Temp", swTempPct, swTempFill, swCpu == null ? "—" : Math.round(swCpu) + "°") +
           '<div class="card-sub" style="margin-top:4px">Throughput (all ports)</div>' +
           metric("RX", (swRx / capMbps) * 100, "fill-rx", fmt(swRx, 1) + " Mb/s") +
           metric("TX", (swTx / capMbps) * 100, "fill-tx", fmt(swTx, 1) + " Mb/s")
