@@ -20,7 +20,7 @@ const STOPS: Stop[] = [
   {
     time: '08:15',
     title: 'Morning',
-    body: 'Cameras watch the driveway. The AI on the local GPU knows the difference between a delivery truck and a passing car, so only the truck gets a notification.',
+    body: 'Cameras watch the driveway and front steps as Frigate zones, not whole frames. A short GIF and a factual AI line hit the phone for a person or car — color, make, and plate when the plate is actually readable — without inventing pets or plots.',
     sky: '#5a7a9a',
   },
   {

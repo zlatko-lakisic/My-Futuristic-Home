@@ -96,7 +96,7 @@ Z-Wave devices are mostly actuation targets rather than exclusive triggers:
 | `automation.sunset_turn_on_lights` / `automation.sunrise_turn_off_lights` | Exterior and common-area lighting schedule |
 | `automation.basement_light_motion_sensor` | Basement light from presence (ZHA sensor) onto Z-Wave basement light |
 | `automation.dim_bedroom_hallway_light` | Hallway light behavior |
-| Driveway / front door / back yard motion light automations | Often Frigate motion into Z-Wave flood/porch lights (several currently **off**) |
+| Driveway / front yard / west gate flood automations | Frigate zone occupancy or YoLink gate → Z-Wave `light.flood_lights` / `switch.flood_lights_2` when outdoor dark (see [Zone Activity AI](zone_activity_ai.md)) |
 
 ## Inclusion / exclusion
 
