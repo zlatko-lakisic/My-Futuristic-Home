@@ -1,11 +1,15 @@
 blueprint:
   name: Zone activity — LLM Vision alert
   description: |
-    When Frigate reports activity in a zone, capture still frames, stitch a GIF,
-    ask LLM Vision what is there, and notify only when confirmed.
+    When Frigate reports activity in a zone, settle briefly, capture a longer still
+    burst (optionally waiting for a person if a car triggered first), stitch a GIF,
+    resolve any Frigate-recognized faces for the visit, ask LLM Vision what is there,
+    and notify only when confirmed.
 
     - Driveway mode: notify for PERSON / CAR.
     - People-only mode (front steps): notify for PERSON only.
+    - Recognized faces (sub_labels) are pulled from Frigate events and added to the
+      notification title/body when available.
     - If the LLM fails/junk but Frigate still shows a matching occupancy, notify with a
       simple fallback summary (failover is for the message text only).
     - Holds the event open until trigger sensors stay clear for a configurable gap so one
@@ -74,9 +78,34 @@ blueprint:
           max: 1920
           step: 64
           mode: slider
+    capture_settle_seconds:
+      name: Seconds to wait before first snapshot
+      description: >
+        Short settle after occupancy so the subject is more likely in-frame before
+        the burst starts (important when one visit is coalesced into a single notify).
+      default: 3
+      selector:
+        number:
+          min: 0
+          max: 30
+          step: 1
+          mode: slider
+    prefer_person_wait_seconds:
+      name: Extra wait for person (driveway)
+      description: >
+        When a car/vehicle can trigger first, wait this long for zone person occupancy
+        before capturing so the preview GIF includes the person when they arrive shortly
+        after. Times out and captures anyway (car-only visits still notify). Use 0 to disable.
+      default: 12
+      selector:
+        number:
+          min: 0
+          max: 60
+          step: 1
+          mode: slider
     frame_interval_seconds:
       name: Seconds between snapshots
-      default: 1
+      default: 2
       selector:
         number:
           min: 0
@@ -85,12 +114,24 @@ blueprint:
           mode: slider
     stream_max_frames:
       name: Number of still frames
-      default: 8
+      default: 15
       selector:
         number:
           min: 1
-          max: 20
+          max: 24
           step: 1
+          mode: slider
+    gif_frame_duration_ms:
+      name: GIF frame duration (ms)
+      description: >
+        Playback time per still in the notification/dashboard preview GIF. Keep near
+        1000 so the longer sample is watchable (not a 3-second blur).
+      default: 1000
+      selector:
+        number:
+          min: 200
+          max: 2000
+          step: 50
           mode: slider
     event_clear_seconds:
       name: Seconds zone must stay clear to end event
@@ -135,6 +176,31 @@ blueprint:
         entity:
           domain: person
           multiple: true
+    frigate_camera:
+      name: Frigate camera name
+      description: Exact Frigate camera id used in the API (e.g. driveway, front_door).
+      default: ""
+      selector:
+        text:
+    frigate_zone:
+      name: Frigate zone name (optional)
+      description: >
+        If set, only person events that entered this Frigate zone are used for name lookup
+        (e.g. driveway_zone, near_front_door). Leave empty to use the whole camera.
+      default: ""
+      selector:
+        text:
+    recognized_face_sensor:
+      name: Last recognized face sensor (fallback)
+      description: Camera sensor like sensor.driveway_last_recognized_face used if API lookup is empty.
+      default: ""
+      selector:
+        text:
+    frigate_base_url:
+      name: Frigate API base URL
+      default: "http://192.168.89.37:5000"
+      selector:
+        text:
 
 mode: single
 max_exceeded: silent
@@ -146,9 +212,17 @@ variables:
   car_sensor: !input car_sensor
   people_only: !input people_only
   event_clear_seconds: !input event_clear_seconds
+  capture_settle_seconds: !input capture_settle_seconds
+  prefer_person_wait_seconds: !input prefer_person_wait_seconds
+  gif_frame_duration_ms: !input gif_frame_duration_ms
+  frigate_camera: !input frigate_camera
+  frigate_zone: !input frigate_zone
+  recognized_face_sensor: !input recognized_face_sensor
+  frigate_base_url: !input frigate_base_url
   notify_group: !input notify_group
   notify_channel: !input notify_channel
   snapshot_timestamp: '{{ now().strftime("%Y%m%d-%H%M%S") }}'
+  event_start_epoch: '{{ as_timestamp(now()) | int }}'
   snapshot_frame_count: !input stream_max_frames
   frame_interval_seconds: !input frame_interval_seconds
   snapshot_rel: 'tmp/{{ zone_slug }}_{{ snapshot_timestamp }}_1.jpg'
@@ -156,12 +230,34 @@ variables:
   clip_latest_gif_rel: 'tmp/{{ zone_slug }}_latest.gif'
   public_base_url: !input public_base_url
   public_gif_url: '{{ public_base_url }}{{ clip_gif_rel }}'
+  capture_span_seconds: >-
+    {{ (capture_settle_seconds | int)
+       + ([0, (snapshot_frame_count | int) - 1] | max) * (frame_interval_seconds | int) }}
 triggers:
   - trigger: state
     entity_id: !input trigger_sensors
     from: 'off'
     to: 'on'
 actions:
+  - alias: Settle so subject is more likely in frame
+    delay:
+      seconds: '{{ capture_settle_seconds | int }}'
+  - alias: If vehicle arrived first, wait briefly for a person
+    if:
+    - condition: template
+      value_template: >-
+        {% set only_people = people_only is true or (people_only | string | lower) in ['true', 'on', 'yes'] %}
+        {% set wait_s = prefer_person_wait_seconds | int %}
+        {% set person_eid = person_sensor | default('', true) | string | trim %}
+        {{ (not only_people)
+           and wait_s > 0
+           and person_eid not in ['', 'None', 'none', 'unknown', 'unavailable']
+           and not is_state(person_eid, 'on') }}
+    then:
+    - wait_template: "{{ is_state(person_sensor, 'on') }}"
+      timeout:
+        seconds: '{{ prefer_person_wait_seconds | int }}'
+      continue_on_timeout: true
   - repeat:
       count: '{{ snapshot_frame_count | int }}'
       sequence:
@@ -182,11 +278,58 @@ actions:
       slug: '{{ zone_slug }}'
       stamp: '{{ snapshot_timestamp }}'
       count: '{{ snapshot_frame_count | int }}'
+      duration_ms: '{{ gif_frame_duration_ms | int }}'
+  - alias: Give Frigate a moment to attach face names
+    delay:
+      seconds: 2
+  - alias: Resolve Frigate-recognized people for this visit
+    if:
+    - condition: template
+      value_template: >-
+        {% set cam = frigate_camera | default('', true) | string | trim %}
+        {{ cam not in ['', 'None', 'none'] }}
+    then:
+    - action: shell_command.frigate_zone_people
+      continue_on_error: true
+      response_variable: frigate_people_cmd
+      data:
+        camera: '{{ frigate_camera }}'
+        since_epoch: '{{ event_start_epoch }}'
+        zone: '{{ frigate_zone | default('', true) }}'
+        base_url: '{{ frigate_base_url }}'
   - variables:
       clip_image_files: "{% set ns = namespace(p=[]) %}{% for i in range(1, snapshot_frame_count | int + 1) %}{% set ns.p = ns.p + ['/config/www/tmp/' ~ zone_slug ~ '_' ~ snapshot_timestamp ~ '_' ~ i ~ '.jpg'] %}{% endfor %}{{ ns.p | join('\n') }}"
       notify_media_image: '{{ public_gif_url }}'
       dashboard_media_rel: '{{ clip_gif_rel }}'
       people_only_mode: "{{ people_only is true or (people_only | string | lower) in ['true', 'on', 'yes'] }}"
+      recognized_people_csv: >-
+        {% set ns = namespace(names=[]) %}
+        {% if frigate_people_cmd is defined and frigate_people_cmd is mapping %}
+          {% set raw = frigate_people_cmd.get('stdout', '') | string | trim %}
+          {% if raw not in ['', 'None', 'none'] %}
+            {% for part in raw.split(',') %}
+              {% set n = part | trim %}
+              {% if n | length > 0 and n | lower not in ['none', 'unknown', 'null'] %}
+                {% set ns.names = ns.names + [n] %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endif %}
+        {% set face_eid = recognized_face_sensor | default('', true) | string | trim %}
+        {% if face_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] %}
+          {% set face = states(face_eid) | string | trim %}
+          {% if face not in ['', 'None', 'none', 'unknown', 'unavailable']
+             and face | lower not in (ns.names | map('lower') | list) %}
+            {% set ns.names = ns.names + [face] %}
+          {% endif %}
+        {% endif %}
+        {{ ns.names | join(',') }}
+      recognized_people_label: >-
+        {% set parts = (recognized_people_csv | string).split(',')
+           | map('trim') | reject('eq', '') | list %}
+        {{ parts | join(', ') }}
+      has_recognized_people: >-
+        {{ 'yes' if (recognized_people_label | string | trim | length) > 0 else 'no' }}
   - action: llmvision.image_analyzer
     continue_on_error: true
     data:
@@ -196,15 +339,15 @@ actions:
       include_filename: false
       store_in_timeline: false
       use_memory: false
-      temperature: 0.1
+      temperature: 0.55
       max_tokens: 900
       generate_title: false
       expose_images: false
       target_width: !input target_width
       message: >-
         You are viewing multiple still frames from the {{ zone_name }} security camera,
-        captured in order over a few seconds. Treat them as one short video clip of the
-        SAME scene, not as separate events.
+        captured in order over about {{ capture_span_seconds }} seconds of one visit.
+        Treat them as one short video clip of the SAME scene, not as separate events.
 
         {% if people_only_mode == 'True' or people_only_mode == true %}
         Focus on people on the steps / entry area. Ignore vehicles, dogs, pets, shadows,
@@ -214,6 +357,17 @@ actions:
         Ignore static scenery, shadows, flags, reflections, and false shapes.
         {% endif %}
 
+        {% if (has_recognized_people | string | trim) == 'yes' %}
+        Frigate face recognition for this visit identified: {{ recognized_people_label }}.
+        If that matches what you see, use those exact names in lines 2-3. Do not invent
+        other names. If the frames clearly show someone else, describe what you see.
+        {% endif %}
+
+        TONE for lines 2-3: cheeky, spicy, and a little roast-y — like a sarcastic house
+        that still takes security seriously. Dry wit, playful shade, mild innuendo OK.
+        Stay PG-13: no slurs, no explicit sexual content, no cruelty. Still be accurate
+        about who/what is there; never invent people, plates, or actions.
+
         CRITICAL OUTPUT RULES:
         - Do NOT call tools, functions, or MCP servers.
         - Do NOT output JSON, code fences, file paths, or tool-call blocks.
@@ -222,11 +376,55 @@ actions:
         Line 1 — classification only: exactly PERSON, CAR, DOG, OTHER, or CLEAR
         (PERSON if any human; CAR if vehicle and no person; DOG if dog/pet and no person/car;
         OTHER for other clear activity; CLEAR only if nothing meaningful is visible).
-        Line 2 — home log ONLY: concrete observation (who/what/where/what they do).
+        Line 2 — home log ONLY: spicy one-liner about who/what/where/what they do.
         Max 180 characters. One paragraph. Do not mention images/frames/camera.
-        Line 3 — phone alert ONLY: shorter factual summary. Max 100 characters. No meta text.
+        Line 3 — phone alert ONLY: shorter cheeky punchline of the same facts.
+        Max 100 characters. No meta text.
     response_variable: ai_response
+  - alias: Refresh Frigate-recognized people before notify
+    if:
+    - condition: template
+      value_template: >-
+        {% set cam = frigate_camera | default('', true) | string | trim %}
+        {{ cam not in ['', 'None', 'none'] }}
+    then:
+    - action: shell_command.frigate_zone_people
+      continue_on_error: true
+      response_variable: frigate_people_cmd
+      data:
+        camera: '{{ frigate_camera }}'
+        since_epoch: '{{ event_start_epoch }}'
+        zone: '{{ frigate_zone | default('', true) }}'
+        base_url: '{{ frigate_base_url }}'
   - variables:
+      recognized_people_csv: >-
+        {% set ns = namespace(names=[]) %}
+        {% if frigate_people_cmd is defined and frigate_people_cmd is mapping %}
+          {% set raw = frigate_people_cmd.get('stdout', '') | string | trim %}
+          {% if raw not in ['', 'None', 'none'] %}
+            {% for part in raw.split(',') %}
+              {% set n = part | trim %}
+              {% if n | length > 0 and n | lower not in ['none', 'unknown', 'null'] %}
+                {% set ns.names = ns.names + [n] %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endif %}
+        {% set face_eid = recognized_face_sensor | default('', true) | string | trim %}
+        {% if face_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] %}
+          {% set face = states(face_eid) | string | trim %}
+          {% if face not in ['', 'None', 'none', 'unknown', 'unavailable']
+             and face | lower not in (ns.names | map('lower') | list) %}
+            {% set ns.names = ns.names + [face] %}
+          {% endif %}
+        {% endif %}
+        {{ ns.names | join(',') }}
+      recognized_people_label: >-
+        {% set parts = (recognized_people_csv | string).split(',')
+           | map('trim') | reject('eq', '') | list %}
+        {{ parts | join(', ') }}
+      has_recognized_people: >-
+        {{ 'yes' if (recognized_people_label | string | trim | length) > 0 else 'no' }}
       reply_raw: >-
         {% if ai_response is not defined or ai_response is none %}
         {% elif ai_response is mapping %}
@@ -313,8 +511,11 @@ actions:
       log_description: >-
         {% set unusable = (llm_unusable | string | trim) == 'yes' %}
         {% set label = llm_label | string | trim | upper %}
+        {% set people = recognized_people_label | string | trim %}
         {% if unusable %}
-          {% if (frigate_person | string | trim) == 'yes' %}
+          {% if people | length > 0 %}
+            {{ people }} at {{ zone_name }}
+          {% elif (frigate_person | string | trim) == 'yes' %}
             Person at {{ zone_name }}
           {% elif (frigate_car | string | trim) == 'yes' %}
             Vehicle at {{ zone_name }}
@@ -343,6 +544,8 @@ actions:
           {% endfor %}
           {% if ns.cand | length > 0 %}
             {{ ns.cand | truncate(140, true, '…') }}
+          {% elif people | length > 0 %}
+            {{ people }} at {{ zone_name }}
           {% elif label == 'PERSON' %}
             Person at {{ zone_name }}
           {% elif label == 'CAR' %}
@@ -354,7 +557,10 @@ actions:
       notify_title: >-
         {% set unusable = (llm_unusable | string | trim) == 'yes' %}
         {% set label = llm_label | string | trim | upper %}
-        {% if unusable %}
+        {% set people = recognized_people_label | string | trim %}
+        {% if people | length > 0 %}
+          {{ zone_name }} · {{ people }}
+        {% elif unusable %}
           {% if (frigate_person | string | trim) == 'yes' %}
             {{ zone_name }} · Person
           {% else %}
@@ -368,12 +574,20 @@ actions:
           {{ zone_name }}
         {% endif %}
       mobile_short: >-
-        {{ log_description | truncate(120, true, '…') }}
+        {% set people = recognized_people_label | string | trim %}
+        {% if people | length > 0 and (people | lower) not in (log_description | string | lower) %}
+          {{ (people ~ ' — ' ~ (log_description | string)) | truncate(120, true, '…') }}
+        {% else %}
+          {{ log_description | truncate(120, true, '…') }}
+        {% endif %}
       stored_classification: >-
         {% set unusable = (llm_unusable | string | trim) == 'yes' %}
         {% set label = llm_label | string | trim | upper %}
+        {% set people = recognized_people_label | string | trim %}
         {% if unusable %}
-          FALLBACK
+          {{ 'FALLBACK' ~ ((':' ~ people) if people | length > 0 else '') }}
+        {% elif people | length > 0 and label == 'PERSON' %}
+          PERSON:{{ people }}
         {% else %}
           {{ label }}
         {% endif %}
@@ -407,6 +621,9 @@ actions:
         title: '{{ notify_title }}'
         message: |
           {{ log_description }}
+          {% if (has_recognized_people | string | trim) == 'yes' %}
+          Recognized: {{ recognized_people_label }}
+          {% endif %}
 
           ![{{ zone_name }}](/local/{{ dashboard_media_rel }})
     - action: !input notify_service
@@ -422,6 +639,9 @@ actions:
           importance: high
           group: '{{ notify_group }}'
           channel: '{{ notify_channel }}'
+          tag: '{{ zone_slug }}-{{ snapshot_timestamp }}'
+          subject: >-
+            {{ recognized_people_label if (has_recognized_people | string | trim) == 'yes' else zone_name }}
           push:
             sound:
               name: default
