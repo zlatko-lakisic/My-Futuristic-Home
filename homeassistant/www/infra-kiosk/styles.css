@@ -352,6 +352,9 @@ h1 {
   flex-shrink: 0;
 }
 .fill-cpu { background: linear-gradient(90deg, #ffb74d, #ff9800); }
+.fill-temp-ok { background: linear-gradient(90deg, #81c784, #66bb6a); }
+.fill-temp-warm { background: linear-gradient(90deg, #ffb74d, #ff9800); }
+.fill-temp-hot { background: linear-gradient(90deg, #ef5350, #c62828); }
 .fill-mem { background: linear-gradient(90deg, #4fc3f7, #29b6f6); }
 .fill-disk { background: linear-gradient(90deg, #7e57c2, #5e35b1); }
 .fill-rx { background: linear-gradient(90deg, #66bb6a, #26c6da); }
