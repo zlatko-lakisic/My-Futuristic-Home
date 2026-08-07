@@ -153,6 +153,7 @@ views:
                         show_label: false
                         triggers_update:
                           - binary_sensor.mikrotik_mostar_ether1_connection
+                          - sensor.mikrotik_mostar_environment_publicip
                           - sensor.mikrotik_mostar_rb951g_2hnd_memory_usage
                           - sensor.mikrotik_mostar_ether1_rx
                           - sensor.mikrotik_mostar_ether1_tx
@@ -189,11 +190,18 @@ views:
                               if (isNaN(mem)) mem = 0;
                               cpu = Math.min(100, Math.max(0, cpu));
                               mem = Math.min(100, Math.max(0, mem));
-                              var wanRaw = wan && wan.attributes ? wan.attributes.client_ip_address : '';
+                              // ether1 client_ip is always unknown (static CPE LAN); PublicIP env var is authoritative
+                              var pubSt = hass.states['sensor.mikrotik_mostar_environment_publicip'];
+                              var wanRaw = (pubSt && pubSt.state) ? String(pubSt.state).trim() : '';
                               var wanIpFmt = '—';
-                              if (wanRaw && ['unknown', 'unavailable', 'none', ''].indexOf(String(wanRaw).toLowerCase()) < 0) {
-                                var ws = String(wanRaw);
-                                wanIpFmt = ws.indexOf('/') >= 0 ? ws.split('/')[0] : ws;
+                              if (wanRaw && ['unknown', 'unavailable', 'none', ''].indexOf(wanRaw.toLowerCase()) < 0) {
+                                wanIpFmt = wanRaw.indexOf('/') >= 0 ? wanRaw.split('/')[0] : wanRaw;
+                              } else {
+                                var dhcpRaw = wan && wan.attributes ? wan.attributes.client_ip_address : '';
+                                if (dhcpRaw && ['unknown', 'unavailable', 'none', ''].indexOf(String(dhcpRaw).toLowerCase()) < 0) {
+                                  var ws = String(dhcpRaw);
+                                  wanIpFmt = ws.indexOf('/') >= 0 ? ws.split('/')[0] : ws;
+                                }
                               }
                               var rxSt = hass.states['sensor.mikrotik_mostar_ether1_rx'];
                               var txSt = hass.states['sensor.mikrotik_mostar_ether1_tx'];

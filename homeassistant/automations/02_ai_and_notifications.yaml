@@ -86,6 +86,57 @@
       notify_people:
       - person.zlatko_lakisic
       notify_service: notify.notify
+- id: zone_activity_llm_near_driveway
+  alias: Near Driveway Zone AI Analysis
+  description: Blueprint zone_activity_llm_vision — driveway_zone person/car only; one notify per visit.
+  use_blueprint:
+    path: zone_activity_llm_vision.yaml
+    input:
+      zone_name: Near driveway
+      zone_slug: near_driveway
+      trigger_sensors:
+      - binary_sensor.driveway_zone_person_occupancy
+      - binary_sensor.driveway_zone_car_occupancy
+      person_sensor: binary_sensor.driveway_zone_person_occupancy
+      car_sensor: binary_sensor.driveway_zone_car_occupancy
+      people_only: false
+      camera: camera.driveway
+      llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
+      llmvision_model: gpt-4o-mini
+      target_width: 1280
+      event_clear_seconds: 180
+      public_base_url: 'https://ha.mostardesigns.com/local/'
+      notification_click_path: /dashboard-garage/driveway
+      notify_group: ha-driveway
+      notify_channel: HA Driveway
+      notify_people:
+      - person.zlatko_lakisic
+      notify_service: notify.notify
+- id: zone_activity_llm_near_front_door
+  alias: Near Front Door Zone AI Analysis
+  description: Blueprint zone_activity_llm_vision — near_front_door people only; one notify per visit.
+  use_blueprint:
+    path: zone_activity_llm_vision.yaml
+    input:
+      zone_name: Near front door
+      zone_slug: near_front_door
+      trigger_sensors:
+      - binary_sensor.near_front_door_person_occupancy
+      person_sensor: binary_sensor.near_front_door_person_occupancy
+      car_sensor: ''
+      people_only: true
+      camera: camera.front_door
+      llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
+      llmvision_model: gpt-4o-mini
+      target_width: 1280
+      event_clear_seconds: 180
+      public_base_url: 'https://ha.mostardesigns.com/local/'
+      notification_click_path: /infrastructure-yaml
+      notify_group: ha-front-door
+      notify_channel: HA Front Door
+      notify_people:
+      - person.zlatko_lakisic
+      notify_service: notify.notify
 - id: '1757732558171'
   alias: East Gate Open Notification
   description: ''
@@ -136,30 +187,6 @@
       camera_id: camera.west_side_2
       notification_title: West Gate Open Notification
       notification_click_url: /back-yard/west-gate
-  mode: single
-- id: '1757732880570'
-  alias: Driveway Car Notification
-  description: ''
-  triggers:
-  - trigger: state
-    entity_id:
-    - binary_sensor.near_driveway_car_occupancy
-  conditions:
-  - condition: device
-    device_id: 3cab96ade88a859c680543da3cbc807e
-    domain: device_tracker
-    entity_id: 1c267935a8db63cdffb71d8fa6e2c40c
-    type: is_not_home
-    enabled: false
-  actions:
-  - action: script.process_ai_analysis_and_notification
-    metadata: {}
-    data:
-      write_persistent_notification: true
-      camera_id: camera.driveway_2
-      ai_prompt: 'Summarize the events based on a series of images captured at short intervals. If a vehicle is present describe it, including the make, model, color style, and provide the license plate. If there are any people, describe them and what they are doing. Otherwise respond with: ''No activity observed.'''
-      notification_title: Driveway Car Notification
-      notification_click_url: /dashboard-garage/driveway
   mode: single
 - id: '1773361989097'
   alias: East Side Motion

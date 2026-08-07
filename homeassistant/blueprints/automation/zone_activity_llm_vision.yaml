@@ -1,0 +1,458 @@
+blueprint:
+  name: Zone activity — LLM Vision alert
+  description: |
+    When Frigate reports activity in a zone, capture still frames, stitch a GIF,
+    ask LLM Vision what is there, and notify only when confirmed.
+
+    - Driveway mode: notify for PERSON / CAR.
+    - People-only mode (front steps): notify for PERSON only.
+    - If the LLM fails/junk but Frigate still shows a matching occupancy, notify with a
+      simple fallback summary (failover is for the message text only).
+    - Holds the event open until trigger sensors stay clear for a configurable gap so one
+      prolonged visit does not spam notifications.
+  domain: automation
+  homeassistant:
+    min_version: '2024.6.0'
+  input:
+    zone_name:
+      name: Zone name
+      description: Shown in notifications and the LLM prompt (e.g. Near driveway).
+      selector:
+        text:
+    zone_slug:
+      name: Snapshot file slug
+      description: Safe prefix for /config/www/tmp/<slug>_timestamp_<n>.jpg.
+      default: zone
+      selector:
+        text:
+    trigger_sensors:
+      name: Trigger occupancy sensors
+      description: Frigate zone sensors that start an event (person and/or car).
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+    person_sensor:
+      name: Zone person occupancy
+      description: Used for Frigate person fallback when LLM fails.
+      selector:
+        entity:
+          domain: binary_sensor
+    car_sensor:
+      name: Zone car occupancy (optional)
+      description: Leave empty for people-only zones (front steps). Used for Frigate car fallback.
+      default: ""
+      selector:
+        text:
+    people_only:
+      name: People only
+      description: If on, only notify for people (ignore cars / CAR classifications).
+      default: false
+      selector:
+        boolean:
+    camera:
+      name: Camera
+      selector:
+        entity:
+          domain: camera
+    llmvision_provider:
+      name: LLM Vision provider
+      selector:
+        config_entry:
+          integration: llmvision
+    llmvision_model:
+      name: Vision model
+      default: gpt-4o-mini
+      selector:
+        text:
+    target_width:
+      name: Target image width (px)
+      default: 1280
+      selector:
+        number:
+          min: 512
+          max: 1920
+          step: 64
+          mode: slider
+    frame_interval_seconds:
+      name: Seconds between snapshots
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 1
+          mode: slider
+    stream_max_frames:
+      name: Number of still frames
+      default: 8
+      selector:
+        number:
+          min: 1
+          max: 20
+          step: 1
+          mode: slider
+    event_clear_seconds:
+      name: Seconds zone must stay clear to end event
+      description: >
+        After analysis, wait until trigger sensors are gone, then require this many seconds
+        of continuous clear before allowing another notification.
+      default: 180
+      selector:
+        number:
+          min: 30
+          max: 900
+          step: 30
+          mode: slider
+    public_base_url:
+      name: Public image URL base
+      default: "https://ha.mostardesigns.com/local/"
+      selector:
+        text:
+    notification_click_path:
+      name: Dashboard path (tap / click action)
+      default: /dashboard-garage/driveway
+      selector:
+        text:
+    notify_group:
+      name: Mobile notification group
+      default: ha-zones
+      selector:
+        text:
+    notify_channel:
+      name: Mobile notification channel
+      default: HA Zones
+      selector:
+        text:
+    notify_service:
+      name: Notify service
+      default: notify.notify
+      selector:
+        text:
+    notify_people:
+      name: Notify people
+      selector:
+        entity:
+          domain: person
+          multiple: true
+
+mode: single
+max_exceeded: silent
+variables:
+  zone_name: !input zone_name
+  zone_slug: !input zone_slug
+  trigger_sensors: !input trigger_sensors
+  person_sensor: !input person_sensor
+  car_sensor: !input car_sensor
+  people_only: !input people_only
+  event_clear_seconds: !input event_clear_seconds
+  notify_group: !input notify_group
+  notify_channel: !input notify_channel
+  snapshot_timestamp: '{{ now().strftime("%Y%m%d-%H%M%S") }}'
+  snapshot_frame_count: !input stream_max_frames
+  frame_interval_seconds: !input frame_interval_seconds
+  snapshot_rel: 'tmp/{{ zone_slug }}_{{ snapshot_timestamp }}_1.jpg'
+  clip_gif_rel: 'tmp/{{ zone_slug }}_{{ snapshot_timestamp }}.gif'
+  clip_latest_gif_rel: 'tmp/{{ zone_slug }}_latest.gif'
+  public_base_url: !input public_base_url
+  public_gif_url: '{{ public_base_url }}{{ clip_gif_rel }}'
+triggers:
+  - trigger: state
+    entity_id: !input trigger_sensors
+    from: 'off'
+    to: 'on'
+actions:
+  - repeat:
+      count: '{{ snapshot_frame_count | int }}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ repeat.index > 1 }}'
+        then:
+        - delay:
+            seconds: '{{ frame_interval_seconds }}'
+      - action: camera.snapshot
+        target:
+          entity_id: !input camera
+        data:
+          filename: '/config/www/tmp/{{ zone_slug }}_{{ snapshot_timestamp }}_{{ repeat.index }}.jpg'
+  - action: shell_command.gate_frames_to_gif
+    continue_on_error: true
+    data:
+      slug: '{{ zone_slug }}'
+      stamp: '{{ snapshot_timestamp }}'
+      count: '{{ snapshot_frame_count | int }}'
+  - variables:
+      clip_image_files: "{% set ns = namespace(p=[]) %}{% for i in range(1, snapshot_frame_count | int + 1) %}{% set ns.p = ns.p + ['/config/www/tmp/' ~ zone_slug ~ '_' ~ snapshot_timestamp ~ '_' ~ i ~ '.jpg'] %}{% endfor %}{{ ns.p | join('\n') }}"
+      notify_media_image: '{{ public_gif_url }}'
+      dashboard_media_rel: '{{ clip_gif_rel }}'
+      people_only_mode: "{{ people_only is true or (people_only | string | lower) in ['true', 'on', 'yes'] }}"
+  - action: llmvision.image_analyzer
+    continue_on_error: true
+    data:
+      provider: !input llmvision_provider
+      model: !input llmvision_model
+      image_file: '{{ clip_image_files }}'
+      include_filename: false
+      store_in_timeline: false
+      use_memory: false
+      temperature: 0.1
+      max_tokens: 900
+      generate_title: false
+      expose_images: false
+      target_width: !input target_width
+      message: >-
+        You are viewing multiple still frames from the {{ zone_name }} security camera,
+        captured in order over a few seconds. Treat them as one short video clip of the
+        SAME scene, not as separate events.
+
+        {% if people_only_mode == 'True' or people_only_mode == true %}
+        Focus on people on the steps / entry area. Ignore vehicles, dogs, pets, shadows,
+        flags, reflections, and static scenery.
+        {% else %}
+        Focus on people and vehicles in the monitored zone. Dogs/pets are secondary.
+        Ignore static scenery, shadows, flags, reflections, and false shapes.
+        {% endif %}
+
+        CRITICAL OUTPUT RULES:
+        - Do NOT call tools, functions, or MCP servers.
+        - Do NOT output JSON, code fences, file paths, or tool-call blocks.
+        - Your entire reply must be exactly 3 lines of plain text and nothing else.
+
+        Line 1 — classification only: exactly PERSON, CAR, DOG, OTHER, or CLEAR
+        (PERSON if any human; CAR if vehicle and no person; DOG if dog/pet and no person/car;
+        OTHER for other clear activity; CLEAR only if nothing meaningful is visible).
+        Line 2 — home log ONLY: concrete observation (who/what/where/what they do).
+        Max 180 characters. One paragraph. Do not mention images/frames/camera.
+        Line 3 — phone alert ONLY: shorter factual summary. Max 100 characters. No meta text.
+    response_variable: ai_response
+  - variables:
+      reply_raw: >-
+        {% if ai_response is not defined or ai_response is none %}
+        {% elif ai_response is mapping %}
+          {% set r = ai_response.get('response_text', ai_response.get('text', '')) %}
+          {% if r is mapping or (r is iterable and r is not string) %}{{ r | to_json }}{% else %}{{ r }}{% endif %}
+        {% else %}
+          {% set r = ai_response.response_text | default(ai_response.text, true) | default('', true) %}
+          {% if r is mapping or (r is iterable and r is not string) %}{{ r | to_json }}{% else %}{{ r }}{% endif %}
+        {% endif %}
+      reply: >-
+        {% set raw = reply_raw | string %}
+        {% set cleaned = raw
+          | regex_replace('(?is)```.*?```', ' ')
+          | regex_replace('(?is)\\{\\s*"name"\\s*:.*?\\}\\s*', ' ')
+          | regex_replace("(?is)\\{\\s*'name'\\s*:.*?\\}\\s*", ' ')
+          | regex_replace('(?im)^\\s*For each image file:.*$', ' ')
+          | regex_replace('(?im)^\\s*-\\s*Analyze it with.*$', ' ')
+          | trim %}
+        {% set ans = cleaned | regex_findall('(?is)Answer:\\s*(.*)$') %}
+        {% if ans | length > 0 %}
+          {{ ans[0] | trim }}
+        {% else %}
+          {{ cleaned }}
+        {% endif %}
+      llm_label: >-
+        {% set text = reply | string %}
+        {% set first = (text.split('\n') | first) | default('', true) | trim %}
+        {% set first_only = first | regex_findall('(?i)^(PERSON|CAR|DOG|OTHER|CLEAR)\\s*[.!]?\s*$') %}
+        {% if first_only | length > 0 %}
+          {{ first_only[0] | upper }}
+        {% else %}
+          {% set first_prefix = first | regex_findall('(?i)^(PERSON|CAR|DOG|OTHER|CLEAR)\\b') %}
+          {{ (first_prefix[0] | upper) if first_prefix | length > 0 else '' }}
+        {% endif %}
+      llm_unusable: >-
+        {% set raw = reply_raw | string %}
+        {% set cleaned = reply | string | trim %}
+        {% set label = llm_label | string | trim | upper %}
+        {% if ai_response is not defined or ai_response is none %}
+          yes
+        {% elif raw | regex_findall('(?i)"name"\\s*:\\s*"(describe_image|python_m_mcp|media_understand)') | length > 0 %}
+          yes
+        {% elif cleaned in ['', '}', '{', "Couldn't generate content. Check logs for details.", 'None', 'none'] %}
+          yes
+        {% elif cleaned | regex_findall('(?i)(Describe local image files|For each frame analyzed|List the person/pet)') | length > 0 %}
+          yes
+        {% elif label not in ['PERSON', 'CAR', 'DOG', 'OTHER', 'CLEAR'] %}
+          yes
+        {% else %}
+          no
+        {% endif %}
+      frigate_person: "{{ 'yes' if is_state(person_sensor, 'on') else 'no' }}"
+      frigate_car: >-
+        {% set eid = car_sensor | default('', true) | string | trim %}
+        {% if eid in ['', 'None', 'none', 'unknown', 'unavailable'] %}
+          no
+        {% else %}
+          {{ 'yes' if is_state(eid, 'on') else 'no' }}
+        {% endif %}
+      should_notify: >-
+        {% set label = llm_label | string | trim | upper %}
+        {% set unusable = (llm_unusable | string | trim) == 'yes' %}
+        {% set only_people = people_only is true or (people_only | string | lower) in ['true', 'on', 'yes'] %}
+        {% set frigate_person_hit = (frigate_person | string | trim) == 'yes' %}
+        {% set frigate_car_hit = (frigate_car | string | trim) == 'yes' %}
+        {% if only_people %}
+          {% if unusable %}
+            {{ 'yes' if frigate_person_hit else 'no' }}
+          {% elif label == 'PERSON' %}
+            yes
+          {% else %}
+            no
+          {% endif %}
+        {% else %}
+          {% set frigate_hit = frigate_person_hit or frigate_car_hit %}
+          {% if unusable %}
+            {{ 'yes' if frigate_hit else 'no' }}
+          {% elif label in ['PERSON', 'CAR'] %}
+            yes
+          {% else %}
+            no
+          {% endif %}
+        {% endif %}
+      log_description: >-
+        {% set unusable = (llm_unusable | string | trim) == 'yes' %}
+        {% set label = llm_label | string | trim | upper %}
+        {% if unusable %}
+          {% if (frigate_person | string | trim) == 'yes' %}
+            Person at {{ zone_name }}
+          {% elif (frigate_car | string | trim) == 'yes' %}
+            Vehicle at {{ zone_name }}
+          {% else %}
+            {{ zone_name }} activity
+          {% endif %}
+        {% else %}
+          {% set text = reply | string %}
+          {% set sl = text.split('\n') %}
+          {% set ns = namespace(cand='') %}
+          {% for line in sl %}
+            {% if ns.cand | length < 1 %}
+              {% set t = line | trim %}
+              {% set t = t
+                | regex_replace('(?i)^(PERSON|CAR|DOG|OTHER|CLEAR)\\s*[.!:\\-]*\\s*', '')
+                | regex_replace('(?i)^(Alert|Phone alert|Home log|Line\\s*[123])\\s*:\\s*', '')
+                | regex_replace('(?i)\\b(PERSON|CAR|DOG|OTHER|CLEAR)\\b[.!:\\-]*\\s*', '')
+                | regex_replace('\\s+', ' ')
+                | trim %}
+              {% if t | length > 8
+                 and (t | regex_findall('(?i)(List the person|For each frame|Describe local|tool-call)') | length) == 0 %}
+                {% set first = t.split('.')[0] | trim %}
+                {% set ns.cand = (first ~ '.') if first | length > 8 else t %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {% if ns.cand | length > 0 %}
+            {{ ns.cand | truncate(140, true, '…') }}
+          {% elif label == 'PERSON' %}
+            Person at {{ zone_name }}
+          {% elif label == 'CAR' %}
+            Vehicle at {{ zone_name }}
+          {% else %}
+            {{ zone_name }} activity
+          {% endif %}
+        {% endif %}
+      notify_title: >-
+        {% set unusable = (llm_unusable | string | trim) == 'yes' %}
+        {% set label = llm_label | string | trim | upper %}
+        {% if unusable %}
+          {% if (frigate_person | string | trim) == 'yes' %}
+            {{ zone_name }} · Person
+          {% else %}
+            {{ zone_name }} · Vehicle
+          {% endif %}
+        {% elif label == 'PERSON' %}
+          {{ zone_name }} · Person
+        {% elif label == 'CAR' %}
+          {{ zone_name }} · Vehicle
+        {% else %}
+          {{ zone_name }}
+        {% endif %}
+      mobile_short: >-
+        {{ log_description | truncate(120, true, '…') }}
+      stored_classification: >-
+        {% set unusable = (llm_unusable | string | trim) == 'yes' %}
+        {% set label = llm_label | string | trim | upper %}
+        {% if unusable %}
+          FALLBACK
+        {% else %}
+          {{ label }}
+        {% endif %}
+  - action: input_text.set_value
+    data:
+      entity_id: input_text.gate_ai_last_gate
+      value: '{{ zone_name }}'
+  - action: input_text.set_value
+    data:
+      entity_id: input_text.gate_ai_last_classification
+      value: '{{ stored_classification }}'
+  - action: input_text.set_value
+    data:
+      entity_id: input_text.gate_ai_last_summary
+      value: '{{ log_description | truncate(255, true, "") }}'
+  - action: input_text.set_value
+    data:
+      entity_id: input_text.gate_ai_last_media
+      value: '{{ dashboard_media_rel }}'
+  - action: input_datetime.set_datetime
+    data:
+      entity_id: input_datetime.gate_ai_last_analysis_time
+      datetime: '{{ now().strftime("%Y-%m-%d %H:%M:%S") }}'
+  - if:
+    - condition: template
+      value_template: "{{ (should_notify | string | trim) == 'yes' }}"
+    then:
+    - action: persistent_notification.create
+      data:
+        notification_id: '{{ zone_slug }}_ai_{{ snapshot_timestamp }}'
+        title: '{{ notify_title }}'
+        message: |
+          {{ log_description }}
+
+          ![{{ zone_name }}](/local/{{ dashboard_media_rel }})
+    - action: !input notify_service
+      data:
+        title: '{{ notify_title }}'
+        message: '{{ mobile_short }}'
+        data:
+          image: '{{ notify_media_image }}'
+          url: !input notification_click_path
+          clickAction: !input notification_click_path
+          ttl: 0
+          priority: high
+          importance: high
+          group: '{{ notify_group }}'
+          channel: '{{ notify_channel }}'
+          push:
+            sound:
+              name: default
+              critical: 1
+              volume: 1
+  - alias: Hold until trigger sensors stay clear
+    repeat:
+      while:
+      - condition: template
+        value_template: "{{ true }}"
+      sequence:
+      - alias: Wait until all trigger sensors are off
+        wait_template: >-
+          {% set sensors = trigger_sensors if trigger_sensors is iterable and trigger_sensors is not string else [trigger_sensors] %}
+          {% set ns = namespace(clear=true) %}
+          {% for s in sensors %}
+            {% if s is string and s | length > 0 and not is_state(s, 'off') %}
+              {% set ns.clear = false %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.clear }}
+      - alias: Require sustained clear (return resets the gap)
+        wait_for_trigger:
+        - trigger: state
+          entity_id: !input trigger_sensors
+          to: 'on'
+        timeout:
+          seconds: '{{ event_clear_seconds | int }}'
+        continue_on_timeout: true
+      - if:
+        - condition: template
+          value_template: "{{ wait.trigger is none }}"
+        then:
+        - stop: Zone event ended after clear gap

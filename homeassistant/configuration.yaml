@@ -267,14 +267,7 @@ input_datetime:
     has_date: true
     has_time: true
 
-http:
-  ip_ban_enabled: true
-  login_attempts_threshold: 5
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 10.0.10.0/24
-    - 192.168.89.0/24
-
+# http: migrated to UI (Settings → System → Network). Do not re-add YAML block.
 device_tracker:
   - platform: google_maps
     username: "adnalakisic@gmail.com"
