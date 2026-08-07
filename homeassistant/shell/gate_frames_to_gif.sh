@@ -7,9 +7,10 @@ echo "---- $(date -Iseconds) args: $* ----"
 SLUG="${1:?slug required}"
 STAMP="${2:?timestamp required}"
 COUNT="${3:-8}"
+DURATION_MS="${4:-450}"
 
 if command -v python3 >/dev/null 2>&1; then
-  if python3 /config/shell/gate_frames_to_gif.py "$SLUG" "$STAMP" "$COUNT"; then
+  if python3 /config/shell/gate_frames_to_gif.py "$SLUG" "$STAMP" "$COUNT" "$DURATION_MS"; then
     exit 0
   fi
   echo "python stitcher failed, trying ffmpeg"
@@ -46,10 +47,17 @@ if [[ "$found" -lt 1 ]]; then
   exit 1
 fi
 
+# duration_ms per still → fps for concat stills (min ~0.2fps, max 10fps)
+FPS="$(python3 - <<PY
+ms = max(100, min(int("${DURATION_MS}"), 5000))
+print(f"{1000.0 / ms:.4f}")
+PY
+)"
+
 "$FFMPEG" -hide_banner -loglevel error -y \
   -f concat -safe 0 -i "$LIST" \
-  -vf "fps=2,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" \
+  -vf "fps=${FPS},scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" \
   -loop 0 \
   "$OUT_GIF"
 cp -f "$OUT_GIF" "$OUT_LATEST_GIF"
-echo "gif=$OUT_GIF frames=$found"
+echo "gif=$OUT_GIF frames=$found duration_ms=$DURATION_MS fps=$FPS"

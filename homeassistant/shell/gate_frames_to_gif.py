@@ -15,10 +15,12 @@ except ImportError:
 
 def main() -> int:
     if len(sys.argv) < 3:
-        print("usage: gate_frames_to_gif.py <slug> <stamp> [count]", file=sys.stderr)
+        print("usage: gate_frames_to_gif.py <slug> <stamp> [count] [duration_ms]", file=sys.stderr)
         return 2
     slug, stamp = sys.argv[1], sys.argv[2]
     count = int(sys.argv[3]) if len(sys.argv) > 3 else 8
+    duration_ms = int(sys.argv[4]) if len(sys.argv) > 4 else 450
+    duration_ms = max(100, min(duration_ms, 5000))
     base = Path("/config/www/tmp")
     frames: list[Image.Image] = []
     for i in range(1, count + 1):
@@ -39,13 +41,16 @@ def main() -> int:
         out,
         save_all=True,
         append_images=frames[1:],
-        duration=450,
+        duration=duration_ms,
         loop=0,
         optimize=True,
         disposal=2,
     )
     shutil.copyfile(out, latest)
-    print(f"gif={out} frames={len(frames)} bytes={out.stat().st_size}")
+    print(
+        f"gif={out} frames={len(frames)} duration_ms={duration_ms} "
+        f"bytes={out.stat().st_size}"
+    )
     return 0
 
 

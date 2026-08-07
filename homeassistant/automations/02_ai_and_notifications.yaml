@@ -104,7 +104,16 @@
       llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
       llmvision_model: gpt-4o-mini
       target_width: 1280
+      capture_settle_seconds: 3
+      prefer_person_wait_seconds: 12
+      frame_interval_seconds: 2
+      stream_max_frames: 15
+      gif_frame_duration_ms: 1000
       event_clear_seconds: 180
+      frigate_camera: driveway
+      frigate_zone: driveway_zone
+      recognized_face_sensor: sensor.driveway_last_recognized_face
+      frigate_base_url: 'http://192.168.89.37:5000'
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /dashboard-garage/driveway
       notify_group: ha-driveway
@@ -129,7 +138,16 @@
       llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
       llmvision_model: gpt-4o-mini
       target_width: 1280
+      capture_settle_seconds: 3
+      prefer_person_wait_seconds: 0
+      frame_interval_seconds: 2
+      stream_max_frames: 15
+      gif_frame_duration_ms: 1000
       event_clear_seconds: 180
+      frigate_camera: front_door
+      frigate_zone: near_front_door
+      recognized_face_sensor: sensor.front_door_last_recognized_face
+      frigate_base_url: 'http://192.168.89.37:5000'
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /infrastructure-yaml
       notify_group: ha-front-door
