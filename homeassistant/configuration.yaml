@@ -15,6 +15,9 @@ script: !include scripts.yaml
 scene: !include scenes.yaml
 
 lovelace:
+  resources:
+    - url: /local/deepstack-inference-chart.js?v=20260808d
+      type: module
   dashboards:
     infrastructure-yaml:
       mode: yaml

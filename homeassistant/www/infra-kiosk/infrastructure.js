@@ -83,6 +83,7 @@ var ENTITIES = [
     "sensor.nvr_mostardesigns_com_nvidia_rtx_4000_sff_ada_generation_gpu_nvidia0_memory_usage",
     "binary_sensor.codeproject_ai_server_status",
     "sensor.codeproject_ai_server_state",
+    "sensor.frigate_deepstack_inference_speed",
     "sensor.nvr_mostardesigns_com_br_9229c4b7924f_rx",
     "sensor.nvr_mostardesigns_com_br_9229c4b7924f_tx",
     "sensor.nvr_mostardesigns_com_enp3s0_rx",
@@ -486,7 +487,26 @@ function setHtml(id, html) {
     return out;
   }
 
-  function historySeries(raw, entityId) {
+  /* Keep peaks when compressing history (inference spikes). */
+  function downsampleMax(vals, n) {
+    if (!vals || !vals.length) return [];
+    if (vals.length <= n) return vals.slice();
+    var out = [];
+    var bucket = vals.length / n;
+    for (var i = 0; i < n; i++) {
+      var start = Math.floor(i * bucket);
+      var end = Math.floor((i + 1) * bucket);
+      if (end <= start) end = start + 1;
+      var m = 0;
+      for (var j = start; j < end && j < vals.length; j++) {
+        if (vals[j] > m) m = vals[j];
+      }
+      out.push(m);
+    }
+    return out;
+  }
+
+  function historySeries(raw, entityId, mode) {
     var series = null;
     if (!raw || !raw.length) return [];
     for (var i = 0; i < raw.length; i++) {
@@ -503,7 +523,7 @@ function setHtml(id, html) {
       if (!isFinite(n)) return;
       pts.push(Math.max(0, n));
     });
-    return downsample(pts, 48);
+    return mode === "max" ? downsampleMax(pts, 96) : downsample(pts, 48);
   }
 
   function sparkSvg(rxVals, txVals) {
@@ -534,6 +554,90 @@ function setHtml(id, html) {
         path(txVals, null) +
       "</svg>"
     );
+  }
+
+  /* Single-series spark with fixed severity scale (ms):
+     ≤50 ok, 50–65 warn, >65 critical. Plot clipped to 100; labels keep real values. */
+  function fmtInferenceMs(v) {
+    if (v == null || !isFinite(v)) return "—";
+    if (Math.abs(v) > 999) {
+      var k = v / 1000;
+      var s = Number.isInteger(k) ? String(k) : k.toFixed(1).replace(/\.0$/, "");
+      return s + "k ms";
+    }
+    return Math.round(v) + " ms";
+  }
+
+  function sparkSvgInference(vals) {
+    var W = 280;
+    var H = 72;
+    var WARN = 50;
+    var BAD = 65;
+    var maxY = 100;
+    function yAt(v) {
+      return H - (Math.min(Math.max(v, 0), maxY) / maxY) * (H - 4) - 2;
+    }
+    var bands =
+      '<rect x="0" y="' + yAt(WARN).toFixed(1) + '" width="' + W + '" height="' +
+        (yAt(0) - yAt(WARN)).toFixed(1) + '" fill="rgba(129,199,132,0.22)"/>' +
+      '<rect x="0" y="' + yAt(BAD).toFixed(1) + '" width="' + W + '" height="' +
+        (yAt(WARN) - yAt(BAD)).toFixed(1) + '" fill="rgba(255,183,77,0.28)"/>' +
+      '<rect x="0" y="0" width="' + W + '" height="' +
+        yAt(BAD).toFixed(1) + '" fill="rgba(239,83,80,0.22)"/>' +
+      '<line x1="0" y1="' + yAt(WARN).toFixed(1) + '" x2="' + W + '" y2="' + yAt(WARN).toFixed(1) +
+        '" stroke="rgba(255,183,77,0.55)" stroke-width="1" stroke-dasharray="3 3"/>' +
+      '<line x1="0" y1="' + yAt(BAD).toFixed(1) + '" x2="' + W + '" y2="' + yAt(BAD).toFixed(1) +
+        '" stroke="rgba(239,83,80,0.65)" stroke-width="1" stroke-dasharray="3 3"/>';
+    if (!vals || !vals.length) {
+      return '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none">' + bands + "</svg>";
+    }
+    var n = vals.length;
+    var segments = "";
+    for (var i = 1; i < n; i++) {
+      var v0 = vals[i - 1];
+      var v1 = vals[i];
+      var x0 = ((i - 1) / (n - 1)) * W;
+      var x1 = (i / (n - 1)) * W;
+      var mid = Math.max(v0, v1);
+      var stroke = mid >= BAD ? "#ef5350" : (mid >= WARN ? "#ffb74d" : "#81c784");
+      segments +=
+        '<line x1="' + x0.toFixed(1) + '" y1="' + yAt(v0).toFixed(1) +
+        '" x2="' + x1.toFixed(1) + '" y2="' + yAt(v1).toFixed(1) +
+        '" stroke="' + stroke + '" stroke-width="1.8" stroke-linecap="round"/>';
+    }
+    return (
+      '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none">' +
+        bands + segments +
+      "</svg>"
+    );
+  }
+
+  function inferenceSeverity(ms) {
+    if (ms == null || !isFinite(ms)) return { key: "unk", color: "#9e9e9e", label: "—" };
+    if (ms >= 65) return { key: "bad", color: "#ef5350", label: "attention" };
+    if (ms >= 50) return { key: "warn", color: "#ffb74d", label: "warning" };
+    return { key: "ok", color: "#81c784", label: "ok" };
+  }
+
+  var inferenceHistory = [];
+  var inferenceBusy = false;
+  var inferenceLastAt = 0;
+  var INFERENCE_ENTITY = "sensor.frigate_deepstack_inference_speed";
+
+  function loadInferenceHistory(force) {
+    var now = Date.now();
+    if (inferenceBusy) return;
+    if (!force && inferenceLastAt && now - inferenceLastAt < 120000) return;
+    inferenceBusy = true;
+    H.fetchHistory([INFERENCE_ENTITY], 24).then(function (raw) {
+      // Keep real values for peak/labels; sparkline clips plot to 100.
+      inferenceHistory = historySeries(raw, INFERENCE_ENTITY, "max");
+      inferenceLastAt = Date.now();
+      inferenceBusy = false;
+      renderGpuAi();
+    }).catch(function () {
+      inferenceBusy = false;
+    });
   }
 
   function loadNicHistory(force) {
@@ -717,13 +821,24 @@ function setHtml(id, html) {
 
     renderNvrNics();
     if (H.getToken()) loadNicHistory(false);
+    renderGpuAi();
+    if (H.getToken()) loadInferenceHistory(false);
+  }
 
+  function renderGpuAi() {
     var gpu = num("sensor.nvr_mostardesigns_com_nvidia_rtx_4000_sff_ada_generation_gpu_nvidia0_processor_usage");
     var vram = num("sensor.nvr_mostardesigns_com_nvidia_rtx_4000_sff_ada_generation_gpu_nvidia0_memory_usage");
     var aiBin = st("binary_sensor.codeproject_ai_server_status");
     var aiRun = st("sensor.codeproject_ai_server_state");
     var aiActive = (aiBin && aiBin.state === "on") || (aiRun && aiRun.state === "running");
     var aiOffline = !aiActive;
+    var inf = num(INFERENCE_ENTITY);
+    var sev = inferenceSeverity(inf);
+    var infTxt = fmtInferenceMs(inf);
+    var histMax = 0;
+    inferenceHistory.forEach(function (v) { if (v > histMax) histMax = v; });
+    var peakSev = inferenceSeverity(histMax > 0 ? histMax : null);
+    var histMaxTxt = histMax > 0 ? fmtInferenceMs(histMax) + " peak" : "24h";
 
     $("card-gpu").innerHTML =
       '<div class="gpu-gauges">' +
@@ -736,6 +851,20 @@ function setHtml(id, html) {
       '<div class="card ai-pill ' + (aiOffline ? "off" : "on") + '">' +
         '<span class="ai-dot"></span>' +
         (aiOffline ? "AI Server Offline" : "AI Server Active") +
+      "</div>" +
+      '<div class="card nic-card ai-inference-card">' +
+        '<div class="card-title">Deepstack inference</div>' +
+        '<div class="nic-rates">' +
+          '<span style="color:' + sev.color + '">● Now ' + infTxt +
+            (sev.key !== "unk" ? " · " + sev.label : "") + "</span>" +
+          '<span style="color:' + peakSev.color + '">● ' + histMaxTxt + "</span>" +
+        "</div>" +
+        '<div class="ai-inf-legend">' +
+          '<span class="ok">≤50 ok</span>' +
+          '<span class="warn">50–65 warn</span>' +
+          '<span class="bad">&gt;65 attention</span>' +
+        "</div>" +
+        '<div class="nic-spark nic-spark-tall">' + sparkSvgInference(inferenceHistory) + "</div>" +
       "</div>";
   }
 
@@ -845,7 +974,10 @@ function setHtml(id, html) {
   }
 
   setInterval(function () {
-    if (H.getToken()) loadNicHistory(true);
+    if (H.getToken()) {
+      loadNicHistory(true);
+      loadInferenceHistory(true);
+    }
   }, 180000);
 
   H.start({

@@ -3,7 +3,7 @@
 ## **Overview**
 This is the complete configuration for the Frigate NVR service. It is designed to work with **CodeProject.AI** for object, face, and plate detection and utilizes an NVIDIA RTX A4000; this is documented in the [NVR Infrastructure File](../infrastructure/nvr.md).
 
-**HA consumers (Aug 2026):** zone AI notifications and flood lights use Frigate zones `driveway_zone` (driveway) and `near_front_door` (front_door / Front Yard). See [Zone Activity AI](../homeassistant/docs_ha/zone_activity_ai.md). The excerpt below mirrors live zone names; full live config lives in the docker-infrastructure NVR tree.
+**HA consumers (Aug 2026):** zone AI notifications and flood lights use Frigate zones `driveway_zone` (driveway) and `near_front_door` (front_door / Front Yard). See [Zone Activity AI](../homeassistant/docs_ha/zone_activity_ai.md). Driveway detect is **1280×720**; zone AI notify titles take plates from Frigate LPR (`sensor.driveway_last_recognized_plate`), not LLM guesses. The excerpt below mirrors live zone names/filters after the Aug 2026 FP cleanup; full live config lives in the docker-infrastructure NVR tree.
 
 ## **Full Configuration (`config.yml`)**
 *Note: This file uses environment variables (e.g., `{MQTT_USER}`) which are defined in the [frigate.env](./frigate.env) file.*
@@ -85,11 +85,22 @@ cameras:
         - path: rtsp://127.0.0.1:8554/driveway
           input_args: preset-rtsp-restream
           roles: [audio, detect, record]
+    # detect resolution live: 1280x720
     objects:
       track: [person, deer, dog, car]
+      filters:
+        person:
+          min_area: 4000
+          min_score: 0.65
+          threshold: 0.75
+        car:
+          min_area: 9800
+          min_score: 0.65
+          threshold: 0.75
     zones:
       driveway_zone:
-        coordinates: 712,1080,282,1080,193,468,170,292,503,411,982,197,1581,188,1920,147,1920,1080
+        # Normalized coords (property apron; cuts public road + left parked pad/bins)
+        coordinates: 0.36,1,0.3,0.72,0.22,0.52,0.2,0.38,0.32,0.3,0.52,0.28,0.72,0.28,0.85,0.33,0.95,0.48,0.99,0.78,1,1
         objects: [person, dog, car]
         friendly_name: Near Driveway
     review:
