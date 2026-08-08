@@ -1817,6 +1817,14 @@ views:
                                 <span style="font-weight:600;font-size:0.88rem;color:${color};letter-spacing:0.02em;">${text}</span>
                               </div>`;
                             ]]]
+                      - type: custom:deepstack-inference-chart
+                        entity: sensor.frigate_deepstack_inference_speed
+                        hours_to_show: 24
+                        max_scale: 100
+                        warn: 50
+                        bad: 65
+                        height: 128
+                        title: Deepstack inference (ms)
         column_span: 4
       - type: grid
         cards:

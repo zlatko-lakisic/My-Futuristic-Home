@@ -13,14 +13,16 @@ Document the `zone_activity_llm_vision` blueprint and live instances that replac
 1. Frigate reports person and/or car occupancy in a named zone (`driveway_zone`, `near_front_door`).
 2. Automation settles briefly, optionally waits for a person after a car trigger (driveway), then captures a still burst and stitches a GIF under `/config/www/tmp/`.
 3. Frigate face sub-labels for the visit are resolved when configured.
-4. LLM Vision (`gpt-4o-mini`, temperature `0.1`) analyzes a **subsampled** frame set (GIF keeps the full burst).
+4. LLM Vision (`gpt-4o-mini`, temperature `0.1`) analyzes the **first few** frames (GIF keeps the full burst) so empty late frames do not force `CLEAR`/junk.
 5. Reply must be three plain lines: classification (`PERSON` / `CAR` / `DOG` / `OTHER` / `CLEAR`), home log (≤160), phone line (≤100).
 6. Notify only for confirmed activity:
    - Driveway: `PERSON` or `CAR` (or Frigate latch fallback if LLM junk).
    - Front steps: `PERSON` only (`people_only: true`).
 7. Event holds until trigger sensors stay clear for `event_clear_seconds` (default 180) so one visit does not spam.
 
-Occupancy used for fallback is **latched** during the visit (trigger + capture). Checking live Frigate state after a long capture+LLM window was dropping real alerts.
+Occupancy used for fallback is **latched** during the visit (trigger + capture), including optional dog occupancy for “with dog” fallback text. Checking live Frigate state after a long capture+LLM window was dropping real alerts.
+
+Driveway capture is tuned for short walks (settle 1s, 6 frames @ 1s). Car-first triggers still wait up to 12s for a person.
 
 ## Live instances
 
@@ -35,13 +37,15 @@ Shared helpers (`input_text.gate_ai_last_*`, `input_datetime.gate_ai_last_analys
 
 ### Driveway vehicle context
 
-Optional blueprint input `known_vehicle_hint` lists household plates for the model to name only on a clear match (e.g. Family Car / `KXS-9837`). Plates are never invented; unreadable plates are omitted.
+Optional blueprint input `known_vehicle_hint` is **name-only** (e.g. Family Car) — never put plate digits in the LLM prompt (models echo them into every CAR notify).
+
+Notify titles / `Plate:` lines use Frigate LPR via `recognized_plate_sensor` (`sensor.driveway_last_recognized_plate`). Household plate **KXS-9837** is configured in Frigate `known_plates` as Family Car; when Frigate recognizes it, that sensor value is what appears in the alert. LLM text does not invent or promote plates.
 
 ### Notification length caps
 
 | Surface | Cap |
 | :--- | :--- |
-| Push title | ≤ 50 characters (plate may appear in title when parsed) |
+| Push title | ≤ 50 characters (Frigate plate/name may appear when LPR matched) |
 | Push body | ≤ 100 characters |
 | HA persistent home log | ≤ 160 characters |
 
@@ -52,7 +56,7 @@ Optional blueprint input `known_vehicle_hint` lists household plates for the mod
 | `driveway` | `driveway_zone` (friendly: Near Driveway) | `binary_sensor.driveway_zone_person_occupancy`, `…_car_occupancy` |
 | `front_door` | `near_front_door` | `binary_sensor.near_front_door_person_occupancy` |
 
-Driveway review alerts require `driveway_zone`. Older MQTT/docs that said `near_driveway` are obsolete for this install.
+Driveway review alerts require `driveway_zone`. Detect is **1280×720**. Aug 2026 cleanup tightened the zone (cut road + parked pad), added person/car `min_area` / score filters, and extended the top-road motion mask. Older MQTT/docs that said `near_driveway` are obsolete for this install.
 
 ## Anti-hallucination notes
 
@@ -83,7 +87,10 @@ Removed: dusk-only driveway flood automation that fought camera day/night and st
 | :--- | :--- |
 | Automation ran, no phone alert | LLM may have returned `CLEAR`/`OTHER`, or junk with no latched Frigate occupancy |
 | Bland “Person/Vehicle at …” text | LLM marked unusable → intentional fallback |
-| Invented pets/plots in text | Should be rejected as junk after Aug 2026 prompt harden; check helpers + reload automations |
+| “Name with dog at …” fallback | Frigate face + latched dog occupancy; LLM still failed but notify is useful |
+| Same plate on every car notify | Was LLM hint-echo of plate digits in `known_vehicle_hint`; titles now use Frigate LPR only |
+| Empty driveway notifies | Check Frigate `driveway_zone` occupancy history first (zone/filters/masks); HA only follows occupancy |
+| Good Frigate event, empty/late GIF | Driveway burst should be short (6×1s); subjects leave mid-drive quickly |
 | Wrong camera in GIF | Front steps use `camera.front_door` (Front Yard); driveway uses `camera.driveway` |
 | Duplicate notifies | Confirm event coalesce (`event_clear_seconds`) and that legacy notify automations are gone |
 
