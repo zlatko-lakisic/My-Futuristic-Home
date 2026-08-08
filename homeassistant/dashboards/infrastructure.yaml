@@ -1817,14 +1817,130 @@ views:
                                 <span style="font-weight:600;font-size:0.88rem;color:${color};letter-spacing:0.02em;">${text}</span>
                               </div>`;
                             ]]]
-                      - type: custom:deepstack-inference-chart
+                      - type: custom:button-card
                         entity: sensor.frigate_deepstack_inference_speed
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 10px 12px 6px
+                            - box-shadow: none
+                            - margin-top: 4px
+                          grid:
+                            - grid-template-areas: '"r"'
+                          custom_fields:
+                            r:
+                              - width: 100%
+                        custom_fields:
+                          r: |
+                            [[[
+                              const raw = (!entity || ['unknown','unavailable'].includes(entity.state)) ? NaN : parseFloat(entity.state);
+                              const WARN = 50, BAD = 65;
+                              const fmt = (v) => {
+                                if (!Number.isFinite(v)) return '—';
+                                if (Math.abs(v) > 999) {
+                                  const k = v / 1000;
+                                  const s = Number.isInteger(k) ? String(k) : k.toFixed(1).replace(/\.0$/, '');
+                                  return s + 'k ms';
+                                }
+                                return Math.round(v) + ' ms';
+                              };
+                              const sev = (v) => !Number.isFinite(v) ? '#9e9e9e' : (v >= BAD ? '#ef5350' : (v >= WARN ? '#ffb74d' : '#81c784'));
+                              const now = Number.isFinite(raw) ? raw : null;
+                              return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;">
+                                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px;">
+                                  <div style="font-weight:600;font-size:0.88rem;opacity:0.92;">Deepstack inference (ms)</div>
+                                  <div style="font-weight:700;font-size:0.78rem;color:${sev(now)};">${fmt(now)}</div>
+                                </div>
+                                <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.62rem;opacity:0.85;">
+                                  <span style="color:#81c784;">≤50 ok</span>
+                                  <span style="color:#ffb74d;">50–65 warn</span>
+                                  <span style="color:#ef5350;">&gt;65 attention</span>
+                                </div>
+                              </div>`;
+                            ]]]
+                      - type: custom:statistics-graph-chart-card
+                        card_header: ' '
+                        show_grid: true
+                        show_tooltip: true
+                        hide_legend: true
+                        show_legend: false
+                        show_current: false
+                        show_value: false
+                        show_values: false
+                        show_y_axis: true
+                        show_y_axis_label: false
+                        show_x_axis: true
+                        show_x_ticks: false
+                        show_y_ticks: false
+                        cache: false
+                        animate_graph: false
                         hours_to_show: 24
-                        max_scale: 100
-                        warn: 50
-                        bad: 65
-                        height: 128
-                        title: Deepstack inference (ms)
+                        points_per_hour: 4
+                        height: 112
+                        chart_mode: timeline
+                        group_by: interval
+                        lower_bound: '0'
+                        upper_bound: '100'
+                        annotations:
+                          - type: band
+                            value: 0
+                            value_end: 50
+                            label: OK
+                            color: '#81c784'
+                            opacity: 0.28
+                            show_values: false
+                          - type: band
+                            value: 50
+                            value_end: 65
+                            label: Warn
+                            color: '#ffb74d'
+                            opacity: 0.32
+                            show_values: false
+                          - type: band
+                            value: 65
+                            value_end: 100
+                            label: Attention
+                            color: '#ef5350'
+                            opacity: 0.28
+                            show_values: false
+                          - type: threshold
+                            value: 50
+                            label: '50'
+                            color: '#ffb74d'
+                            line_style: dashed
+                            line_width: 1
+                            show_values: false
+                          - type: threshold
+                            value: 65
+                            label: '65'
+                            color: '#ef5350'
+                            line_style: dashed
+                            line_width: 1
+                            show_values: false
+                        entities:
+                          - entity: sensor.frigate_deepstack_inference_speed
+                            name: Inference
+                            color: '#eceff1'
+                            graph_type: line
+                            line_width: 2
+                            show_fill: false
+                            smooth: true
+                            decimals: 0
+                            aggregate_func: max
+                            unit: ms
+                            lower_bound: '0'
+                            upper_bound: '100'
+                            show_color_dot: false
+                        tap_action:
+                          action: more-info
         column_span: 4
       - type: grid
         cards:
