@@ -47,11 +47,12 @@ input_select:
     name: AI Dusk Watering — Ollama model
     icon: mdi:server-network
     options:
+      - llama3.2:3b
       - qwen2.5:14b-instruct
       - gemma4:26b
       - llama3.2:latest
       - moondream:latest
-    initial: qwen2.5:14b-instruct
+    initial: llama3.2:3b
 
 mqtt:
   sensor:
@@ -196,7 +197,7 @@ script:
             openweathermap_api_key_helper: input_text.ai_watering_openweathermap_api_key
             ha_api_token_helper: input_text.ai_watering_ha_api_token
             llm_api_key_helper: input_text.ai_watering_llm_api_key
-            llm_api_url: https://ai-orchestrator.mostardesigns.com/v1/chat/completions
+            llm_api_url: https://jetson.ao.mostardesigns.com/v1/chat/completions
             ha_api_base_url: http://127.0.0.1:8123
             irrigation_start_service: bhyve.start_watering
             irrigation_stop_service: bhyve.stop_watering

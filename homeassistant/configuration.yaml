@@ -90,6 +90,7 @@ homeassistant:
     www_tmp_cleanup_shell: !include packages/www_tmp_cleanup_shell.yaml
     gate_clip_media: !include packages/gate_clip_media.yaml
     security_supervision: !include packages/security_supervision.yaml
+    unban_local_networks: !include packages/unban_local_networks.yaml
 
 influxdb:
   api_version: "1"

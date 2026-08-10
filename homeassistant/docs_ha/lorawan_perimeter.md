@@ -99,7 +99,11 @@ Helpers in `configuration.yaml`: `input_text.gate_ai_last_gate`, `gate_ai_last_c
 
 ### Inference path
 
-Vision analysis uses the **LLM Vision** integration provider configured in the blueprint (OpenAI-compatible / cloud vision model `gpt-4o-mini`), not the Jetson Ollama watering endpoint. Frigate supplies the camera feed and optional person occupancy fallback. Notifications go to the configured mobile notify service and person entities.
+Vision analysis uses the **LLM Vision** Custom OpenAI-compatible provider pointed at **ADA AO**:
+
+`https://ada.ao.mostardesigns.com/v1/chat/completions`
+
+(model currently `gpt-4o-mini`). Requests require `Authorization: Bearer <ao_…>` — mint an external-client token in ADA Admin → Access → API tokens ([docs](https://github.com/zlatko-lakisic/agentic-orchestration/wiki/Web-UI#api-access-tokens)). This is separate from Jetson watering (`jetson.ao.mostardesigns.com`). Frigate supplies the camera feed and optional person occupancy fallback.
 
 ## Troubleshooting
 
