@@ -1,9 +1,12 @@
 # Gate AI clip media: stitch snapshot bursts into GIF/MP4 for Companion + dashboard.
 # Also resolve Frigate-recognized people for zone notifications.
 shell_command:
+  # duration_ms = display time budget per *captured* still; interp_factor fills
+  # blended in-betweens so GIF FPS rises while total play length stays the same.
   gate_frames_to_gif: >-
     bash /config/shell/gate_frames_to_gif.sh
-    "{{ slug }}" "{{ stamp }}" "{{ count | default(8) }}" "{{ duration_ms | default(450) }}"
+    "{{ slug }}" "{{ stamp }}" "{{ count | default(8) }}"
+    "{{ duration_ms | default(450) }}" "{{ gif_interp_factor | default(4) }}"
   frigate_zone_people: >-
     python3 /config/shell/frigate_zone_people.py
     "{{ camera }}" "{{ since_epoch }}" "{{ zone | default('') }}" "{{ base_url | default('http://192.168.89.37:5000') }}"

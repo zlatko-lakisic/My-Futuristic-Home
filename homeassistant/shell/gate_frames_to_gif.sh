@@ -8,9 +8,10 @@ SLUG="${1:?slug required}"
 STAMP="${2:?timestamp required}"
 COUNT="${3:-8}"
 DURATION_MS="${4:-450}"
+INTERP_FACTOR="${5:-4}"
 
 if command -v python3 >/dev/null 2>&1; then
-  if python3 /config/shell/gate_frames_to_gif.py "$SLUG" "$STAMP" "$COUNT" "$DURATION_MS"; then
+  if python3 /config/shell/gate_frames_to_gif.py "$SLUG" "$STAMP" "$COUNT" "$DURATION_MS" "$INTERP_FACTOR"; then
     exit 0
   fi
   echo "python stitcher failed, trying ffmpeg"
@@ -38,7 +39,11 @@ found=0
 for i in $(seq 1 "$COUNT"); do
   f="${PREFIX}_${i}.jpg"
   if [[ -f "$f" ]]; then
-    printf "file '%s'\n" "${f//\'/\'\\\'\'}" >> "$LIST"
+    # Duplicate each still INTERP_FACTOR times so GIF FPS rises while total
+    # length stays ~ found * DURATION_MS.
+    for _ in $(seq 1 "$INTERP_FACTOR"); do
+      printf "file '%s'\n" "${f//\'/\'\\\'\'}" >> "$LIST"
+    done
     found=$((found + 1))
   fi
 done
@@ -47,9 +52,15 @@ if [[ "$found" -lt 1 ]]; then
   exit 1
 fi
 
-# duration_ms per still → fps for concat stills (min ~0.2fps, max 10fps)
-FPS="$(python3 - <<PY
+# Per-GIF-frame duration = source duration / interp factor
+FRAME_MS="$(python3 - <<PY
 ms = max(100, min(int("${DURATION_MS}"), 5000))
+factor = max(1, min(int("${INTERP_FACTOR}"), 8))
+print(max(20, int(round(ms / factor))))
+PY
+)"
+FPS="$(python3 - <<PY
+ms = max(20, int("${FRAME_MS}"))
 print(f"{1000.0 / ms:.4f}")
 PY
 )"
@@ -60,4 +71,4 @@ PY
   -loop 0 \
   "$OUT_GIF"
 cp -f "$OUT_GIF" "$OUT_LATEST_GIF"
-echo "gif=$OUT_GIF frames=$found duration_ms=$DURATION_MS fps=$FPS"
+echo "gif=$OUT_GIF source_frames=$found interp=$INTERP_FACTOR duration_ms=$FRAME_MS fps=$FPS"
