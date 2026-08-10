@@ -1,0 +1,9 @@
+qbittorrent_active_sort:
+  options:
+  - eta
+  - progress
+  - download
+  - upload
+  initial: eta
+  icon: mdi:sort
+  name: qBittorrent active sort
