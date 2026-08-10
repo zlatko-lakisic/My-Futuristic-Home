@@ -404,6 +404,7 @@ actions:
       stamp: '{{ snapshot_timestamp }}'
       count: '{{ snapshot_frame_count | int }}'
       duration_ms: '{{ gif_frame_duration_ms | int }}'
+      gif_interp_factor: 4
   - alias: Give Frigate a moment to attach face names
     delay:
       seconds: 2
