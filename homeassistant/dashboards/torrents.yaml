@@ -7,7 +7,196 @@
 #
 # qBittorrent Plus (HACS): instance sensors + hybrid active-torrent entities.
 # Speed gauges & transfer chart use template sensors (KiB/s): see packages/qbittorrent_speed_k.yaml.
-# Active transfers: auto-entities over hybrid switch.*_running rows.
+# Active transfers: auto-entities + button-card rows; sort via input_select.qbittorrent_active_sort.
+
+button_card_templates:
+  torrent_transfer_row:
+    show_icon: false
+    show_name: false
+    show_state: false
+    triggers_update: all
+    tap_action:
+      action: more-info
+    styles:
+      card:
+        - background: transparent
+        - border: none
+        - border-radius: 0
+        - box-shadow: none
+        - padding: 8px 14px
+        - border-bottom: 1px solid rgba(255,255,255,0.06)
+      grid:
+        - grid-template-areas: '"title cat prog dl ul eta size sp"'
+        - grid-template-columns: minmax(220px, 1.6fr) 88px 110px 96px 96px 72px 80px 64px
+        - align-items: center
+        - column-gap: 10px
+      custom_fields:
+        title:
+          - justify-self: start
+          - min-width: 0
+          - overflow: hidden
+        cat:
+          - justify-self: center
+        prog:
+          - justify-self: stretch
+        dl:
+          - justify-self: end
+          - font-family: ui-monospace, SFMono-Regular, Menlo, monospace
+          - font-size: 0.76rem
+          - font-weight: 600
+        ul:
+          - justify-self: end
+          - font-family: ui-monospace, SFMono-Regular, Menlo, monospace
+          - font-size: 0.76rem
+          - font-weight: 600
+        eta:
+          - justify-self: end
+          - font-family: ui-monospace, SFMono-Regular, Menlo, monospace
+          - font-size: 0.76rem
+          - color: "#cfd8dc"
+        size:
+          - justify-self: end
+          - font-family: ui-monospace, SFMono-Regular, Menlo, monospace
+          - font-size: 0.76rem
+          - color: "#cfd8dc"
+        sp:
+          - justify-self: end
+          - font-family: ui-monospace, SFMono-Regular, Menlo, monospace
+          - font-size: 0.76rem
+    custom_fields:
+      title: |
+        [[[
+          const slug = entity.entity_id.slice(7, -8);
+          const st = hass.states[`sensor.${slug}_state`];
+          const name = (st && (st.attributes.torrent_name || st.attributes.friendly_name)) || slug;
+          const clean = String(name).replace(/ State$/, '');
+          const hash = String((st && st.attributes.torrent_hash) || '').toUpperCase();
+          const posterEnt = hass.states['sensor.arr_download_posters'];
+          const posters = (posterEnt && posterEnt.attributes.by_hash) || {};
+          let url = posters[hash] || '';
+          if (!url && posterEnt && posterEnt.attributes.by_title) {
+            url = posterEnt.attributes.by_title[clean.toLowerCase()] || '';
+          }
+          const esc = (s) => String(s)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;');
+          const art = url
+            ? `<img src="${esc(url)}" alt="" referrerpolicy="no-referrer" style="width:40px;height:58px;object-fit:cover;border-radius:6px;flex-shrink:0;background:#333;box-shadow:0 1px 4px rgba(0,0,0,.4);" />`
+            : `<div style="width:40px;height:58px;border-radius:6px;flex-shrink:0;background:rgba(255,255,255,.08);"></div>`;
+          return `<div style="display:flex;align-items:center;gap:12px;min-width:0;width:100%;">
+            ${art}
+            <div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:0.88rem;color:#f1f3f4;" title="${esc(clean)}">${esc(clean)}</div>
+          </div>`;
+        ]]]
+      cat: |
+        [[[
+          const slug = entity.entity_id.slice(7, -8);
+          const st = hass.states[`sensor.${slug}_state`];
+          const cat = String((st && st.attributes.category) || '').toLowerCase();
+          let label = '—', color = '#9aa0a6', bg = 'rgba(154,160,166,.14)';
+          if (cat.includes('radarr')) { label = 'Movie'; color = '#42a5f5'; bg = 'rgba(66,165,245,.18)'; }
+          else if (cat.includes('sonarr')) { label = 'TV'; color = '#26a69a'; bg = 'rgba(38,166,154,.18)'; }
+          else if (cat) { label = cat.slice(0, 12); }
+          return `<span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:0.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:${color};background:${bg};">${label}</span>`;
+        ]]]
+      prog: |
+        [[[
+          const slug = entity.entity_id.slice(7, -8);
+          const pe = hass.states[`sensor.${slug}_progress`];
+          const st = hass.states[`sensor.${slug}_state`];
+          const stateL = String(st ? st.state : '').toLowerCase();
+          let n = pe && !['unknown','unavailable','none',''].includes(String(pe.state)) ? Number(pe.state) : 0;
+          if (!Number.isFinite(n)) n = 0;
+          n = Math.max(0, Math.min(100, n));
+          let bar = '#66bb6a';
+          if (n < 100) {
+            if (stateL.includes('stall')) bar = '#ffa726';
+            else if (stateL.includes('upload') || stateL === 'up') bar = '#66bb6a';
+            else bar = '#42a5f5';
+          }
+          const txt = pe && !['unknown','unavailable','none',''].includes(String(pe.state)) ? `${n.toFixed(1)}%` : '—';
+          return `<div>
+            <div style="font-size:0.78rem;font-weight:700;color:${bar};margin-bottom:5px;">${txt}</div>
+            <div style="height:7px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;">
+              <div style="height:100%;width:${n}%;background:${bar};border-radius:999px;"></div>
+            </div>
+          </div>`;
+        ]]]
+      dl: |
+        [[[
+          const slug = entity.entity_id.slice(7, -8);
+          const e = hass.states[`sensor.${slug}_download_speed`];
+          if (!e || ['unknown','unavailable'].includes(e.state)) return `<span style="color:#78909c;">—</span>`;
+          const n = Number(e.state) || 0;
+          const u = e.attributes.unit_of_measurement || '';
+          const c = n > 0 ? '#42a5f5' : '#78909c';
+          return `<span style="color:${c};">${n.toFixed(1)}&nbsp;${u}</span>`;
+        ]]]
+      ul: |
+        [[[
+          const slug = entity.entity_id.slice(7, -8);
+          const e = hass.states[`sensor.${slug}_upload_speed`];
+          if (!e || ['unknown','unavailable'].includes(e.state)) return `<span style="color:#78909c;">—</span>`;
+          const n = Number(e.state) || 0;
+          const u = e.attributes.unit_of_measurement || '';
+          const c = n > 0 ? '#66bb6a' : '#78909c';
+          return `<span style="color:${c};">${n.toFixed(1)}&nbsp;${u}</span>`;
+        ]]]
+      eta: |
+        [[[
+          const slug = entity.entity_id.slice(7, -8);
+          const e = hass.states[`sensor.${slug}_eta`];
+          if (!e || ['unknown','unavailable','none',''].includes(String(e.state))) return '—';
+          const n = parseInt(e.state, 10);
+          if (!Number.isFinite(n) || n <= 0 || n >= 8640000) return '∞';
+          if (n >= 86400) return `${Math.floor(n/86400)}d ${Math.floor((n%86400)/3600)}h`;
+          if (n >= 3600) return `${Math.floor(n/3600)}h ${Math.floor((n%3600)/60)}m`;
+          if (n >= 60) return `${Math.floor(n/60)}m`;
+          return `${n}s`;
+        ]]]
+      size: |
+        [[[
+          const slug = entity.entity_id.slice(7, -8);
+          const e = hass.states[`sensor.${slug}_size`];
+          if (!e || ['unknown','unavailable'].includes(e.state)) return '—';
+          const n = Number(e.state) || 0;
+          const u = e.attributes.unit_of_measurement || '';
+          return `${n.toFixed(2)}&nbsp;${u}`;
+        ]]]
+      sp: |
+        [[[
+          const slug = entity.entity_id.slice(7, -8);
+          const seeds = hass.states[`sensor.${slug}_seeds`];
+          const peers = hass.states[`sensor.${slug}_peers`];
+          const s = seeds ? seeds.state : '—';
+          const p = peers ? peers.state : '—';
+          return `<span style="color:#81c784;">${s}</span><span style="color:#5f6b73;">/</span><span style="color:#64b5f6;">${p}</span>`;
+        ]]]
+
+  torrent_sort_header_btn:
+    entity: input_select.qbittorrent_active_sort
+    show_icon: false
+    show_state: false
+    show_name: true
+    styles:
+      card:
+        - background: none
+        - box-shadow: none
+        - border: none
+        - border-radius: 0
+        - padding: 0
+        - margin: 0
+        - height: auto
+        - min-height: 0
+      name:
+        - font-size: 0.92rem
+        - font-weight: 700
+        - letter-spacing: 0.06em
+        - text-transform: uppercase
+        - white-space: nowrap
+        - justify-self: end
 
 views:
   - title: Torrents
@@ -29,19 +218,10 @@ views:
             icon: mdi:speedometer
             heading: Session & transfer speed
 
-          # Same grid pattern as Infrastructure → Mikrotik (2 compact gauge cols + throughput-style charts).
-          - type: custom:layout-card
-            layout_type: custom:grid-layout
-            layout:
-              grid-template-columns: minmax(132px, 0.9fr) minmax(132px, 0.9fr) minmax(0, 1fr) minmax(0, 1fr)
-              grid-gap: 10px
-              place-items: stretch
-              align-items: stretch
-              mediaquery:
-                '(max-width: 1200px)':
-                  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))
-                '(max-width: 560px)':
-                  grid-template-columns: 100%
+          # Native grid avoids layout-card overlap in sections. Gauge max: Mostar path caps when proxied.
+          - type: grid
+            square: false
+            columns: 4
             grid_options:
               columns: full
             cards:
@@ -52,7 +232,13 @@ views:
                 needle: false
                 smooth_segments: true
                 min: 0
-                max: 51200
+                max: >
+                  {% if is_state('binary_sensor.qbittorrent_proxied_via_mostar', 'on') %}
+                    200
+                  {% else %}
+                    10240
+                  {% endif %}
+                height: 200
                 show_icon: true
                 icon: mdi:download
                 header_position: top
@@ -73,27 +259,32 @@ views:
                       - 33
                       - 150
                       - 243
-                  - from: 12288
+                  - from: 50
                     color:
                       - 3
                       - 169
                       - 244
-                  - from: 25600
+                  - from: 100
                     color:
                       - 0
                       - 188
                       - 212
-                  - from: 40960
+                  - from: 150
                     color:
                       - 128
                       - 222
                       - 234
-                  - from: 51200
+                  - from: 200
                     color:
                       - 179
                       - 229
                       - 252
-                secondary: {}
+                secondary: >
+                  {% if is_state('binary_sensor.qbittorrent_proxied_via_mostar', 'on') %}
+                    Mostar↑ · 200 KiB/s
+                  {% else %}
+                    Direct · 10 MiB/s scale
+                  {% endif %}
                 tap_action:
                   action: more-info
               - type: custom:modern-circular-gauge
@@ -103,7 +294,13 @@ views:
                 needle: false
                 smooth_segments: true
                 min: 0
-                max: 51200
+                max: >
+                  {% if is_state('binary_sensor.qbittorrent_proxied_via_mostar', 'on') %}
+                    350
+                  {% else %}
+                    10240
+                  {% endif %}
+                height: 200
                 show_icon: true
                 icon: mdi:upload
                 header_position: top
@@ -124,27 +321,32 @@ views:
                       - 102
                       - 187
                       - 106
-                  - from: 12288
+                  - from: 87
                     color:
                       - 67
                       - 160
                       - 71
-                  - from: 25600
+                  - from: 175
                     color:
                       - 56
                       - 142
                       - 60
-                  - from: 40960
+                  - from: 262
                     color:
                       - 165
                       - 214
                       - 167
-                  - from: 51200
+                  - from: 350
                     color:
                       - 200
                       - 230
                       - 201
-                secondary: {}
+                secondary: >
+                  {% if is_state('binary_sensor.qbittorrent_proxied_via_mostar', 'on') %}
+                    Mostar↓ · 350 KiB/s
+                  {% else %}
+                    Direct · 10 MiB/s scale
+                  {% endif %}
                 tap_action:
                   action: more-info
               - type: custom:statistics-graph-chart-card
@@ -160,7 +362,7 @@ views:
                 animate_graph: false
                 hours_to_show: 6
                 points_per_hour: 4
-                height: 112
+                height: 152
                 chart_mode: timeline
                 group_by: interval
                 entities:
@@ -197,7 +399,7 @@ views:
                 animate_graph: false
                 hours_to_show: 6
                 points_per_hour: 4
-                height: 112
+                height: 152
                 chart_mode: timeline
                 group_by: interval
                 entities:
@@ -229,16 +431,9 @@ views:
                     decimals: 0
                     aggregate_func: max
 
-          - type: custom:layout-card
-            layout_type: custom:grid-layout
-            layout:
-              grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr)
-              grid-gap: 12px
-              place-items: stretch
-              align-items: start
-              mediaquery:
-                '(max-width: 900px)':
-                  grid-template-columns: 100%
+          - type: grid
+            square: false
+            columns: 2
             grid_options:
               columns: full
             cards:
@@ -271,15 +466,9 @@ views:
                     heading_style: subtitle
                     icon: mdi:counter
                     heading: Torrent counts
-                  - type: custom:layout-card
-                    layout_type: custom:grid-layout
-                    layout:
-                      grid-template-columns: repeat(3, minmax(0, 1fr))
-                      grid-gap: 12px
-                      place-items: stretch
-                      mediaquery:
-                        '(max-width: 560px)':
-                          grid-template-columns: 1fr
+                  - type: grid
+                    square: false
+                    columns: 3
                     cards:
                       - type: tile
                         entity: sensor.qbittorrent_plus_active_torrents
@@ -323,150 +512,308 @@ views:
                         color: amber
                         tap_action:
                           action: more-info
+                  # Proxy health: qBittorrent last_external_address_v4 vs Mikrotik-Mostar PublicIP.
+                  - type: custom:button-card
+                    entity: binary_sensor.qbittorrent_proxied_via_mostar
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    show_label: false
+                    triggers_update:
+                      - sensor.qbittorrent_plus_external_ip
+                      - sensor.mikrotik_mostar_environment_publicip
+                    tap_action:
+                      action: more-info
+                    styles:
+                      card:
+                        - background-color: rgba(28, 28, 28, 0.92)
+                        - border: 1px solid rgba(255, 255, 255, 0.08)
+                        - border-radius: 12px
+                        - padding: 12px 14px
+                        - box-shadow: none
+                      grid:
+                        - grid-template-areas: '"r"'
+                      custom_fields:
+                        r:
+                          - width: 100%
+                    custom_fields:
+                      r: |
+                        [[[
+                          const bad = (v) => !v || ['unknown','unavailable','none',''].includes(String(v).toLowerCase());
+                          const qSt = hass.states['sensor.qbittorrent_plus_external_ip'];
+                          const mSt = hass.states['sensor.mikrotik_mostar_environment_publicip'];
+                          const health = hass.states['binary_sensor.qbittorrent_proxied_via_mostar'];
+                          let qIp = qSt && qSt.state ? String(qSt.state).trim() : '';
+                          let mIp = mSt && mSt.state ? String(mSt.state).trim() : '';
+                          if (mIp.indexOf('/') >= 0) mIp = mIp.split('/')[0];
+                          const qShow = bad(qIp) ? '—' : qIp;
+                          const mShow = bad(mIp) ? '—' : mIp;
+                          let mark = '❓';
+                          let markColor = '#90a4ae';
+                          let label = 'Proxy status unknown';
+                          let border = 'rgba(144,164,174,0.35)';
+                          let bg = 'rgba(144,164,174,0.08)';
+                          if (health && health.state === 'on') {
+                            mark = '✓';
+                            markColor = '#66bb6a';
+                            label = 'Proxied via Mostar';
+                            border = 'rgba(102,187,106,0.45)';
+                            bg = 'rgba(102,187,106,0.12)';
+                          } else if (health && health.state === 'off' && !bad(qIp) && !bad(mIp)) {
+                            mark = '✗';
+                            markColor = '#ef5350';
+                            label = 'Not proxied (WAN mismatch)';
+                            border = 'rgba(239,83,80,0.45)';
+                            bg = 'rgba(239,83,80,0.12)';
+                          }
+                          return '' +
+                            '<div style="display:flex;flex-direction:column;gap:10px;font-family:var(--ha-font-family,sans-serif);color:#fff;width:100%;">' +
+                              '<div style="display:flex;align-items:center;gap:12px;min-width:0;">' +
+                                '<div style="width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.45rem;font-weight:800;color:' + markColor + ';background:' + bg + ';border:1px solid ' + border + ';flex-shrink:0;">' + mark + '</div>' +
+                                '<div style="min-width:0;">' +
+                                  '<div style="font-weight:700;font-size:0.95rem;">' + label + '</div>' +
+                                  '<div style="font-size:0.72rem;opacity:0.7;margin-top:2px;">qBittorrent WAN must match Mikrotik-Mostar PublicIP</div>' +
+                                '</div>' +
+                              '</div>' +
+                              '<div style="display:flex;gap:16px;flex-wrap:wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.78rem;">' +
+                                '<div><div style="opacity:0.55;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">qBittorrent</div><div style="font-weight:700;">' + qShow + '</div></div>' +
+                                '<div><div style="opacity:0.55;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">Mostar WAN</div><div style="font-weight:700;">' + mShow + '</div></div>' +
+                              '</div>' +
+                            '</div>';
+                        ]]]
 
           - type: heading
             heading_style: subtitle
             icon: mdi:file-download-outline
             heading: Active transfers
 
-          - type: markdown
+          - type: custom:stack-in-card
+            mode: vertical
             grid_options:
               columns: full
-            content: |
-              {% set rows = namespace(items=[]) %}
-              {% for s in states.switch
-                   if s.entity_id.endswith('_running')
-                   and s.entity_id != 'switch.qbittorrent_plus_alternative_speed' %}
-                {% set slug = s.entity_id[7:-8] %}
-                {% set st = states('sensor.' ~ slug ~ '_state') %}
-                {% if st not in ['unknown', 'unavailable', 'none', ''] %}
-                  {% set dl_e = 'sensor.' ~ slug ~ '_download_speed' %}
-                  {% set ul_e = 'sensor.' ~ slug ~ '_upload_speed' %}
-                  {% set prog_e = 'sensor.' ~ slug ~ '_progress' %}
-                  {% set ratio_e = 'sensor.' ~ slug ~ '_ratio' %}
-                  {% set eta_e = 'sensor.' ~ slug ~ '_eta' %}
-                  {% set size_e = 'sensor.' ~ slug ~ '_size' %}
-                  {% set seeds_e = 'sensor.' ~ slug ~ '_seeds' %}
-                  {% set peers_e = 'sensor.' ~ slug ~ '_peers' %}
-                  {% set dl = states(dl_e) | float(0) %}
-                  {% set ul = states(ul_e) | float(0) %}
-                  {% set name = state_attr('sensor.' ~ slug ~ '_state', 'friendly_name')
-                       | default(slug, true)
-                       | regex_replace(' State$', '')
-                       | replace('&', '&amp;')
-                       | replace('<', '&lt;')
-                       | replace('>', '&gt;')
-                       | replace('"', '&quot;') %}
-                  {% set prog_s = states(prog_e) %}
-                  {% set prog_n = prog_s | float(0) if prog_s not in ['unknown', 'unavailable', 'none', ''] else 0 %}
-                  {% set prog_txt = '—' if prog_s in ['unknown', 'unavailable', 'none', '']
-                       else (prog_n | round(1) ~ '%') %}
-                  {% set dl_s = states(dl_e) %}
-                  {% set ul_s = states(ul_e) %}
-                  {% set dl_txt = '—' if dl_s in ['unknown', 'unavailable']
-                       else ((dl_s | float(0) | round(1)) ~ '&nbsp;' ~ (state_attr(dl_e, 'unit_of_measurement') or '')) %}
-                  {% set ul_txt = '—' if ul_s in ['unknown', 'unavailable']
-                       else ((ul_s | float(0) | round(1)) ~ '&nbsp;' ~ (state_attr(ul_e, 'unit_of_measurement') or '')) %}
-                  {% set ratio_s = states(ratio_e) %}
-                  {% set ratio_txt = '—' if ratio_s in ['unknown', 'unavailable']
-                       else (ratio_s | float(0) | round(2)) %}
-                  {% set eta_s = states(eta_e) %}
-                  {% set eta_n = eta_s | int(0) %}
-                  {% set eta = namespace(txt='—') %}
-                  {% if eta_s in ['unknown', 'unavailable', 'none', ''] %}
-                    {% set eta.txt = '—' %}
-                  {% elif eta_n <= 0 or eta_n >= 8640000 %}
-                    {% set eta.txt = '∞' %}
-                  {% elif eta_n >= 86400 %}
-                    {% set eta.txt = (eta_n // 86400) ~ 'd ' ~ ((eta_n % 86400) // 3600) ~ 'h' %}
-                  {% elif eta_n >= 3600 %}
-                    {% set eta.txt = (eta_n // 3600) ~ 'h ' ~ ((eta_n % 3600) // 60) ~ 'm' %}
-                  {% elif eta_n >= 60 %}
-                    {% set eta.txt = (eta_n // 60) ~ 'm' %}
-                  {% else %}
-                    {% set eta.txt = eta_n ~ 's' %}
-                  {% endif %}
-                  {% set size_s = states(size_e) %}
-                  {% set size_txt = '—' if size_s in ['unknown', 'unavailable']
-                       else ((size_s | float(0) | round(2)) ~ '&nbsp;' ~ (state_attr(size_e, 'unit_of_measurement') or '')) %}
-                  {% set state_l = st | lower %}
-                  {% set sc = namespace(color='#90a4ae') %}
-                  {% if 'download' in state_l or 'forceddl' in state_l or 'metadl' in state_l or 'queueddl' in state_l %}
-                    {% set sc.color = '#42a5f5' %}
-                  {% elif 'upload' in state_l or 'forcedup' in state_l or 'queuedup' in state_l or state_l == 'up' %}
-                    {% set sc.color = '#66bb6a' %}
-                  {% elif 'stall' in state_l %}
-                    {% set sc.color = '#ffa726' %}
-                  {% elif 'pause' in state_l or 'stop' in state_l %}
-                    {% set sc.color = '#78909c' %}
-                  {% elif 'error' in state_l or 'missing' in state_l %}
-                    {% set sc.color = '#ef5350' %}
-                  {% endif %}
-                  {% set bar_color = '#66bb6a' if prog_n >= 100 else sc.color %}
-                  {% set rows.items = rows.items + [{
-                    'name': name,
-                    'run': s.state,
-                    'state': st,
-                    'state_color': sc.color,
-                    'progress': prog_txt,
-                    'prog_n': [prog_n, 100] | min,
-                    'bar_color': bar_color,
-                    'dl': dl_txt,
-                    'ul': ul_txt,
-                    'ratio': ratio_txt,
-                    'eta': eta.txt,
-                    'size': size_txt,
-                    'seeds': states(seeds_e),
-                    'peers': states(peers_e),
-                    'speed': dl + ul
-                  }] %}
-                {% endif %}
-              {% endfor %}
-              {% set sorted = rows.items | sort(attribute='speed') | reverse | list %}
-              {% if sorted | length == 0 %}
-              <div style="opacity:0.7;padding:12px 4px;">No active torrents exposed.</div>
-              {% else %}
-              <div style="width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px 4px;">
-              <table style="width:100%;min-width:920px;border-collapse:separate;border-spacing:0;font-size:0.82rem;line-height:1.35;">
-              <thead>
-              <tr>
-              <th style="text-align:left;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Name</th>
-              <th style="text-align:center;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Run</th>
-              <th style="text-align:left;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">State</th>
-              <th style="text-align:left;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;min-width:110px;">Progress</th>
-              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">↓</th>
-              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">↑</th>
-              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Ratio</th>
-              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">ETA</th>
-              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Size</th>
-              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Seeds</th>
-              <th style="text-align:right;position:sticky;top:0;background:rgba(20,20,20,0.96);padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.7rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.75;white-space:nowrap;">Peers</th>
-              </tr>
-              </thead>
-              <tbody>
-              {% for r in sorted -%}
-              <tr style="background:{% if loop.index is odd %}rgba(255,255,255,0.03){% else %}transparent{% endif %};">
-              <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;" title="{{ r.name }}">{{ r.name }}</td>
-              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;white-space:nowrap;">
-              <span style="display:inline-block;min-width:2.4em;padding:2px 8px;border-radius:999px;font-size:0.72rem;font-weight:700;{% if r.run == 'on' %}background:rgba(102,187,106,0.2);color:#81c784;{% else %}background:rgba(120,144,156,0.25);color:#b0bec5;{% endif %}">{{ r.run }}</span>
-              </td>
-              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);white-space:nowrap;color:{{ r.state_color }};font-weight:600;">{{ r.state }}</td>
-              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);white-space:nowrap;min-width:110px;">
-              <div style="font-size:0.72rem;opacity:0.9;margin-bottom:3px;">{{ r.progress }}</div>
-              <div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden;">
-              <div style="height:100%;width:{{ r.prog_n }}%;background:{{ r.bar_color }};border-radius:3px;"></div>
-              </div>
-              </td>
-              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.dl }}</td>
-              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.ul }}</td>
-              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.ratio }}</td>
-              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.eta }}</td>
-              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.size }}</td>
-              <td style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.seeds }}</td>
-              <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ r.peers }}</td>
-              </tr>
-              {% endfor %}
-              </tbody>
-              </table>
-              </div>
-              {% endif %}
+            card_mod:
+              style: |
+                ha-card {
+                  width: 100% !important;
+                  background: rgba(255,255,255,0.02) !important;
+                  border: 1px solid rgba(255,255,255,0.1) !important;
+                  border-radius: 12px !important;
+                  box-shadow: none !important;
+                  overflow: hidden !important;
+                }
+            cards:
+              - type: custom:button-card
+                entity: input_select.qbittorrent_active_sort
+                show_icon: false
+                show_name: false
+                show_state: false
+                triggers_update:
+                  - input_select.qbittorrent_active_sort
+                styles:
+                  card:
+                    - background: rgba(255,255,255,0.04)
+                    - border: none
+                    - border-radius: 0
+                    - box-shadow: none
+                    - padding: 12px 14px
+                    - border-bottom: 1px solid rgba(255,255,255,0.1)
+                  grid:
+                    - grid-template-areas: '"title cat prog dl ul eta size sp"'
+                    - grid-template-columns: minmax(220px, 1.6fr) 88px 110px 96px 96px 72px 80px 64px
+                    - align-items: center
+                    - column-gap: 10px
+                  custom_fields:
+                    title:
+                      - justify-self: start
+                      - font-size: 0.92rem
+                      - font-weight: 700
+                      - letter-spacing: 0.06em
+                      - text-transform: uppercase
+                      - color: "#cfd8dc"
+                    cat:
+                      - justify-self: center
+                      - font-size: 0.92rem
+                      - font-weight: 700
+                      - letter-spacing: 0.06em
+                      - text-transform: uppercase
+                      - color: "#cfd8dc"
+                    prog:
+                      - justify-self: stretch
+                    dl:
+                      - justify-self: stretch
+                    ul:
+                      - justify-self: stretch
+                    eta:
+                      - justify-self: stretch
+                    size:
+                      - justify-self: end
+                      - font-size: 0.92rem
+                      - font-weight: 700
+                      - letter-spacing: 0.06em
+                      - text-transform: uppercase
+                      - color: "#cfd8dc"
+                    sp:
+                      - justify-self: end
+                      - font-size: 0.92rem
+                      - font-weight: 700
+                      - letter-spacing: 0.06em
+                      - text-transform: uppercase
+                      - color: "#cfd8dc"
+                custom_fields:
+                  title: Title
+                  cat: Category
+                  size: Size
+                  sp: S/P
+                  prog:
+                    card:
+                      type: custom:button-card
+                      template: torrent_sort_header_btn
+                      name: |
+                        [[[
+                          const on = states['input_select.qbittorrent_active_sort'].state === 'progress';
+                          return on ? 'Progress ▾' : 'Progress';
+                        ]]]
+                      styles:
+                        name:
+                          - justify-self: start
+                          - color: |
+                              [[[
+                                return entity.state === 'progress' ? '#ffffff' : '#cfd8dc';
+                              ]]]
+                      tap_action:
+                        action: call-service
+                        service: input_select.select_option
+                        service_data:
+                          entity_id: input_select.qbittorrent_active_sort
+                          option: progress
+                  dl:
+                    card:
+                      type: custom:button-card
+                      template: torrent_sort_header_btn
+                      name: |
+                        [[[
+                          const on = states['input_select.qbittorrent_active_sort'].state === 'download';
+                          return on ? '↓ DL ▾' : '↓ DL';
+                        ]]]
+                      styles:
+                        name:
+                          - justify-self: end
+                          - color: |
+                              [[[
+                                return entity.state === 'download' ? '#90caf9' : '#42a5f5';
+                              ]]]
+                      tap_action:
+                        action: call-service
+                        service: input_select.select_option
+                        service_data:
+                          entity_id: input_select.qbittorrent_active_sort
+                          option: download
+                  ul:
+                    card:
+                      type: custom:button-card
+                      template: torrent_sort_header_btn
+                      name: |
+                        [[[
+                          const on = states['input_select.qbittorrent_active_sort'].state === 'upload';
+                          return on ? '↑ UL ▾' : '↑ UL';
+                        ]]]
+                      styles:
+                        name:
+                          - justify-self: end
+                          - color: |
+                              [[[
+                                return entity.state === 'upload' ? '#a5d6a7' : '#66bb6a';
+                              ]]]
+                      tap_action:
+                        action: call-service
+                        service: input_select.select_option
+                        service_data:
+                          entity_id: input_select.qbittorrent_active_sort
+                          option: upload
+                  eta:
+                    card:
+                      type: custom:button-card
+                      template: torrent_sort_header_btn
+                      name: |
+                        [[[
+                          const on = states['input_select.qbittorrent_active_sort'].state === 'eta';
+                          return on ? 'ETA ▴' : 'ETA';
+                        ]]]
+                      styles:
+                        name:
+                          - justify-self: end
+                          - color: |
+                              [[[
+                                return entity.state === 'eta' ? '#ffffff' : '#cfd8dc';
+                              ]]]
+                      tap_action:
+                        action: call-service
+                        service: input_select.select_option
+                        service_data:
+                          entity_id: input_select.qbittorrent_active_sort
+                          option: eta
+
+              - type: custom:auto-entities
+                show_empty: false
+                card_param: cards
+                card:
+                  type: custom:stack-in-card
+                  mode: vertical
+                  keep:
+                    background: false
+                    box_shadow: false
+                    margin: false
+                    outer_padding: false
+                    border_radius: false
+                  card_mod:
+                    style: |
+                      ha-card {
+                        background: transparent !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        border-radius: 0 !important;
+                      }
+                filter:
+                  template: |
+                    {% set sort = states('input_select.qbittorrent_active_sort') | default('eta') %}
+                    {% set ns = namespace(items=[]) %}
+                    {% for s in states.switch
+                         if s.entity_id.endswith('_running')
+                         and s.entity_id != 'switch.qbittorrent_plus_alternative_speed' %}
+                      {% set slug = s.entity_id[7:-8] %}
+                      {% set st = states('sensor.' ~ slug ~ '_state') %}
+                      {% if st not in ['unknown', 'unavailable', 'none', ''] %}
+                        {% set eta_raw = states('sensor.' ~ slug ~ '_eta') %}
+                        {% set eta_n = eta_raw | int(0) %}
+                        {% set eta_bad = eta_raw in ['unknown', 'unavailable', 'none', '']
+                             or eta_n <= 0 or eta_n >= 8640000 %}
+                        {% set ns.items = ns.items + [{
+                          'entity': s.entity_id,
+                          'eta': eta_n,
+                          'eta_bad': eta_bad,
+                          'progress': states('sensor.' ~ slug ~ '_progress') | float(0),
+                          'download': states('sensor.' ~ slug ~ '_download_speed') | float(0),
+                          'upload': states('sensor.' ~ slug ~ '_upload_speed') | float(0)
+                        }] %}
+                      {% endif %}
+                    {% endfor %}
+                    {% if sort == 'progress' %}
+                      {% set ordered = ns.items | sort(attribute='progress', reverse=true) | list %}
+                    {% elif sort == 'download' %}
+                      {% set ordered = ns.items | sort(attribute='download', reverse=true) | list %}
+                    {% elif sort == 'upload' %}
+                      {% set ordered = ns.items | sort(attribute='upload', reverse=true) | list %}
+                    {% else %}
+                      {% set known = ns.items | rejectattr('eta_bad') | sort(attribute='eta') | list %}
+                      {% set unk = ns.items | selectattr('eta_bad') | list %}
+                      {% set ordered = known + unk %}
+                    {% endif %}
+                    {% set out = namespace(rows=[]) %}
+                    {% for row in ordered %}
+                      {% set out.rows = out.rows + [{
+                        'entity': row.entity,
+                        'type': 'custom:button-card',
+                        'template': 'torrent_transfer_row'
+                      }] %}
+                    {% endfor %}
+                    {{ out.rows }}

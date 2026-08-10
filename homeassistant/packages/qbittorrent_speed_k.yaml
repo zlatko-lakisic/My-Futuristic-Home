@@ -1,5 +1,6 @@
 # qBittorrent speeds in KiB/s (kilobinary bytes per second) for dashboards.
 # Reads sensor.qbittorrent_plus_{download,upload}_speed and converts from MiB/s, MB/s, etc.
+# Also exposes Mostar proxy health (qBittorrent external IP == Mikrotik-Mostar PublicIP).
 #
 # homeassistant.packages:
 #   qbittorrent_speed_k: !include packages/qbittorrent_speed_k.yaml
@@ -55,3 +56,38 @@ template:
               {{ (v * 1024) | round(2) }}
             {% endif %}
           {% endif %}
+
+  - binary_sensor:
+      - name: qBittorrent proxied via Mostar
+        unique_id: qbittorrent_proxied_via_mostar
+        device_class: connectivity
+        icon: >
+          {% set q = states('sensor.qbittorrent_plus_external_ip') | trim %}
+          {% set m = (states('sensor.mikrotik_mostar_environment_publicip') | trim).split('/')[0] %}
+          {% set bad = ['unknown', 'unavailable', 'none', ''] %}
+          {% if q | lower in bad or m | lower in bad %}
+            mdi:help-network
+          {% elif q == m %}
+            mdi:check-circle
+          {% else %}
+            mdi:close-circle
+          {% endif %}
+        state: >
+          {% set q = states('sensor.qbittorrent_plus_external_ip') | trim %}
+          {% set m = (states('sensor.mikrotik_mostar_environment_publicip') | trim).split('/')[0] %}
+          {% set bad = ['unknown', 'unavailable', 'none', ''] %}
+          {{ q | lower not in bad and m | lower not in bad and q == m }}
+        attributes:
+          qbittorrent_ip: "{{ states('sensor.qbittorrent_plus_external_ip') }}"
+          mostar_ip: "{{ (states('sensor.mikrotik_mostar_environment_publicip') | trim).split('/')[0] }}"
+          status: >
+            {% set q = states('sensor.qbittorrent_plus_external_ip') | trim %}
+            {% set m = (states('sensor.mikrotik_mostar_environment_publicip') | trim).split('/')[0] %}
+            {% set bad = ['unknown', 'unavailable', 'none', ''] %}
+            {% if q | lower in bad or m | lower in bad %}
+              unknown
+            {% elif q == m %}
+              proxied
+            {% else %}
+              not_proxied
+            {% endif %}

@@ -1,0 +1,104 @@
+# Arr queue artwork for the Torrents dashboard.
+# Matches qBittorrent infohashes to Sonarr/Radarr queue downloadIds and exposes poster URLs.
+#
+# Requires secrets: sonarr_queue_url, sonarr_api_key, radarr_queue_url, radarr_api_key
+# homeassistant.packages:
+#   arr_queue_art: !include packages/arr_queue_art.yaml
+
+rest:
+  - resource: !secret sonarr_queue_url
+    method: GET
+    headers:
+      X-Api-Key: !secret sonarr_api_key
+    verify_ssl: false
+    scan_interval: 90
+    sensor:
+      - name: Sonarr queue records
+        unique_id: sonarr_queue_records
+        value_template: "{{ value_json.totalRecords | default(0) }}"
+        unit_of_measurement: episodes
+        json_attributes:
+          - records
+
+  - resource: !secret radarr_queue_url
+    method: GET
+    headers:
+      X-Api-Key: !secret radarr_api_key
+    verify_ssl: false
+    scan_interval: 90
+    sensor:
+      - name: Radarr queue records
+        unique_id: radarr_queue_records
+        value_template: "{{ value_json.totalRecords | default(0) }}"
+        unit_of_measurement: movies
+        json_attributes:
+          - records
+
+template:
+  - sensor:
+      - name: Arr download posters
+        unique_id: arr_download_posters
+        icon: mdi:image-album
+        state: >
+          {% set s = state_attr('sensor.sonarr_queue_records', 'records') or [] %}
+          {% set r = state_attr('sensor.radarr_queue_records', 'records') or [] %}
+          {{ (s | count) + (r | count) }}
+        attributes:
+          by_hash: >
+            {% set ns = namespace(m={}) %}
+            {% for rec in state_attr('sensor.sonarr_queue_records', 'records') or [] %}
+              {% set h = (rec.get('downloadId') or '') | upper %}
+              {% if h %}
+                {% set series = rec.get('series') or {} %}
+                {% set imgs = series.get('images') or [] %}
+                {% set poster = imgs
+                    | selectattr('coverType', 'equalto', 'poster')
+                    | map(attribute='remoteUrl')
+                    | list %}
+                {% if poster %}
+                  {% set ns.m = dict(ns.m, **{h: poster[0]}) %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {% for rec in state_attr('sensor.radarr_queue_records', 'records') or [] %}
+              {% set h = (rec.get('downloadId') or '') | upper %}
+              {% if h %}
+                {% set movie = rec.get('movie') or {} %}
+                {% set imgs = movie.get('images') or [] %}
+                {% set poster = imgs
+                    | selectattr('coverType', 'equalto', 'poster')
+                    | map(attribute='remoteUrl')
+                    | list %}
+                {% if poster %}
+                  {% set ns.m = dict(ns.m, **{h: poster[0]}) %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.m }}
+          by_title: >
+            {% set ns = namespace(m={}) %}
+            {% for rec in state_attr('sensor.sonarr_queue_records', 'records') or [] %}
+              {% set t = (rec.get('title') or '') | lower %}
+              {% set series = rec.get('series') or {} %}
+              {% set imgs = series.get('images') or [] %}
+              {% set poster = imgs
+                  | selectattr('coverType', 'equalto', 'poster')
+                  | map(attribute='remoteUrl')
+                  | list %}
+              {% if t and poster %}
+                {% set ns.m = dict(ns.m, **{t: poster[0]}) %}
+              {% endif %}
+            {% endfor %}
+            {% for rec in state_attr('sensor.radarr_queue_records', 'records') or [] %}
+              {% set t = (rec.get('title') or '') | lower %}
+              {% set movie = rec.get('movie') or {} %}
+              {% set imgs = movie.get('images') or [] %}
+              {% set poster = imgs
+                  | selectattr('coverType', 'equalto', 'poster')
+                  | map(attribute='remoteUrl')
+                  | list %}
+              {% if t and poster %}
+                {% set ns.m = dict(ns.m, **{t: poster[0]}) %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.m }}
