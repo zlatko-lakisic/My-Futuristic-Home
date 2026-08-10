@@ -12,7 +12,7 @@ For the operator wiki page, see [Home Assistant Irrigation & AI Watering](https:
 | [My-Futuristic-Home](https://github.com/zlatko-lakisic/My-Futuristic-Home) | Site YAML: zones, blueprint inputs, instance helpers, dashboards, sync |
 | [agentic-orchestration](https://github.com/zlatko-lakisic/agentic-orchestration) | Jetson k3s coordinator / warm pool / plant-knowledge MCP / OpenAI-compatible edge |
 | [hacs-msnswitch](https://github.com/zlatko-lakisic/hacs-msnswitch) | Power watchdogs (NAS2 + Omega Jetson outlet among others) |
-| [docker-infrastructure](https://git.omega-it.solutions/omegait/docker-infrastructure.git) | Traefik + Warpgate route for `ai-orchestrator.mostardesigns.com` → `172.16.90.20:30487` |
+| [docker-infrastructure](https://git.omega-it.solutions/omegait/docker-infrastructure.git) | Traefik + Warpgate for `jetson.ao.mostardesigns.com` → Jetson AO |
 
 ## Architecture (current)
 
@@ -48,7 +48,7 @@ flowchart TB
 1. **Dusk** (sunset) and **dawn** (sunrise, Jun 30–Sep 1, East + Kitchen lawns only) automations use the HACS blueprint.
 2. Blueprint calls **`script.ai_sequential_watering`** with site zone catalogs from `homeassistant/includes/`.
 3. Script gathers forecast + past rain + soil/valve history, then one **per-zone** LLM call via `rest_command.ollama_chat_completions`.
-4. LLM endpoint: `https://ai-orchestrator.mostardesigns.com/v1/chat/completions` (LAN clients may bypass Warpgate on `/v1/*`).
+4. LLM endpoint: `https://jetson.ao.mostardesigns.com/v1/chat/completions` with `Authorization: Bearer <ao_…>` (minted AO API token; see [AO Web UI — API access tokens](https://github.com/zlatko-lakisic/agentic-orchestration/wiki/Web-UI#api-access-tokens)).
 5. Zones run **sequentially** through Orbit BHyve with settle delays; run state is snapshotted to MQTT for resume-after-restart.
 
 ## What lives where
@@ -107,13 +107,15 @@ Actuation services: `bhyve.start_watering` / `bhyve.stop_watering`.
 
 ## LLM endpoint & Jetson
 
-- Public/LAN URL used by HA: `https://ai-orchestrator.mostardesigns.com/v1/chat/completions`
+- HA URL: `https://jetson.ao.mostardesigns.com/v1/chat/completions`
+- Auth: `Authorization: Bearer ao_<token>` on helper `input_text.ai_watering_llm_api_key` ([mint tokens](https://github.com/zlatko-lakisic/agentic-orchestration/wiki/Web-UI#api-access-tokens); `appId`: `home-assistant`)
 - Upstream host: **Omega Jetson Orin** `172.16.90.20` (IoT WLAN), hostname `omega-jetson-orin.mostardesigns.com`
 - Checkout on device: `/var/projects/agentic-orchestration` → [agentic-orchestration](https://github.com/zlatko-lakisic/agentic-orchestration)
 - Deploy: `bash …/scripts/jetson-deploy.sh` (git pull only; no SCP)
 - k3s namespace `agentic-orchestration`: coordinator NodePort **30487**, warm pool, delegation broker
 - Host Ollama (`systemctl` active) at `:11434` with OpenAI-compatible `/v1/*`
 - Plant knowledge MCP hostPath + `HOME_ASSISTANT_URL=https://ha.mostardesigns.com` for orchestrator agents
+- Legacy hostname `ai-orchestrator.mostardesigns.com` is superseded
 
 See [infrastructure/jetson_agentic_orchestration.md](../../infrastructure/jetson_agentic_orchestration.md).
 

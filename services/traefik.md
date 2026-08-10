@@ -42,8 +42,11 @@ Traefik is initialized with the following logic:
 ## **Dynamic Routing**
 The proxy monitors `/etc/traefik/dynamic` for manual file-based routing rules, allowing us to proxy non-containerized services (like the MikroTik WebFig or Proxmox UI) through the central Traefik ingress.
 
-### **ai-orchestrator.mostardesigns.com**
-Public edge for the Jetson Agentic Orchestration UI/API (`172.16.90.20:30487`). Warpgate authenticates browser sessions; LAN clients can call `/v1/*` (OpenAI-compatible chat) with Traefik IP bypass for Home Assistant watering. Authoritative Traefik compose docs live in [docker-infrastructure](https://git.omega-it.solutions/omegait/docker-infrastructure.git). Device-side detail: [infrastructure/jetson_agentic_orchestration.md](../infrastructure/jetson_agentic_orchestration.md). Irrigation consumer: [garden_agentic_watering.md](../homeassistant/docs_ha/garden_agentic_watering.md) / [hacs-agentic-watering](https://github.com/zlatko-lakisic/hacs-agentic-watering).
+### **jetson.ao.mostardesigns.com**
+Public edge for Jetson Agentic Orchestration UI/API (`172.16.90.20:30487`). Browser sessions use Warpgate/AO web auth; Home Assistant watering calls `POST /v1/chat/completions` with a minted AO Bearer token ([API access tokens](https://github.com/zlatko-lakisic/agentic-orchestration/wiki/Web-UI#api-access-tokens)). Legacy hostname `ai-orchestrator.mostardesigns.com` is superseded. Device-side detail: [infrastructure/jetson_agentic_orchestration.md](../infrastructure/jetson_agentic_orchestration.md). Irrigation: [garden_agentic_watering.md](../homeassistant/docs_ha/garden_agentic_watering.md).
+
+### **ada.ao.mostardesigns.com**
+ADA Agentic Orchestration on the NVR side (`10.0.10.16`). Home Assistant **LLM Vision** (gate + zone motion analysis) uses `POST /v1/chat/completions` with its own minted AO Bearer token. Separate from Jetson watering.
 
 ## **Deployment Configuration**
 The following Docker Compose stack defines the Traefik edge proxy and the automated certificate extraction logic.

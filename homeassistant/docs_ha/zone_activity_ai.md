@@ -13,7 +13,7 @@ Document the `zone_activity_llm_vision` blueprint and live instances that replac
 1. Frigate reports person and/or car occupancy in a named zone (`driveway_zone`, `near_front_door`).
 2. Automation settles briefly, optionally waits for a person after a car trigger (driveway), then captures a still burst and stitches a GIF under `/config/www/tmp/`.
 3. Frigate face sub-labels for the visit are resolved when configured.
-4. LLM Vision (`gpt-4o-mini`, temperature `0.1`) analyzes the **first few** frames (GIF keeps the full burst) so empty late frames do not force `CLEAR`/junk.
+4. LLM Vision (`gpt-4o-mini` via **ADA AO** `https://ada.ao.mostardesigns.com/v1/chat/completions`, Bearer `ao_…` token) analyzes the **first few** frames (GIF keeps the full burst) so empty late frames do not force `CLEAR`/junk.
 5. Reply must be three plain lines: classification (`PERSON` / `CAR` / `DOG` / `OTHER` / `CLEAR`), home log (≤160), phone line (≤100).
 6. Notify only for confirmed activity:
    - Driveway: `PERSON` or `CAR` (or Frigate latch fallback if LLM junk).

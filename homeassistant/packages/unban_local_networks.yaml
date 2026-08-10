@@ -1,0 +1,67 @@
+# Keep LAN / lab CIDRs out of Home Assistant ip_bans.yaml.
+#
+# HA core has no official ban allowlist (whitelist PRs are declined). trusted_proxies
+# only controls X-Forwarded-For trust — it does NOT mean "never ban this IP".
+# This package scrubs local-range bans from disk and restarts Core when one was
+# removed so the in-memory ban table matches the file.
+#
+# Never-ban CIDRs (must match scrub_local_ip_bans.py):
+#   192.168.88.0/24, 192.168.89.0/24, 192.168.90.0/24,
+#   172.16.90.0/24, 172.16.91.0/24, 10.0.10.0/24, 127.0.0.0/8
+
+shell_command:
+  scrub_local_ip_bans: /usr/local/bin/python3 /config/packages/scrub_local_ip_bans.py
+
+input_datetime:
+  local_ip_ban_scrub_restart:
+    name: Local IP ban scrub last restart
+    has_date: true
+    has_time: true
+
+automation:
+  - id: scrub_local_ip_bans
+    alias: Scrub local IP bans
+    description: >
+      Remove any ip_bans.yaml entries inside home/lab LAN CIDRs. If the file
+      changed, restart Core once (cooldown 30m) so HA drops the in-memory ban.
+    mode: single
+    triggers:
+      - trigger: homeassistant
+        event: start
+      - trigger: time_pattern
+        minutes: "/10"
+    actions:
+      - action: shell_command.scrub_local_ip_bans
+        response_variable: scrub
+      - variables:
+          out: "{{ scrub['stdout'] | default('', true) | string | trim }}"
+          changed: "{{ out.startswith('CHANGED') }}"
+          last: "{{ states('input_datetime.local_ip_ban_scrub_restart') }}"
+          cool: >-
+            {% set t = as_timestamp(last, 0) %}
+            {{ (now().timestamp() - t) > 1800 }}
+      - if:
+          - condition: template
+            value_template: "{{ changed }}"
+        then:
+          - action: persistent_notification.create
+            data:
+              notification_id: scrub_local_ip_bans
+              title: Local IP ban cleared
+              message: >
+                Removed LAN/lab ban(s) from ip_bans.yaml: {{ out }}.
+                {% if cool %}Restarting Core to clear the in-memory ban table.
+                {% else %}Skipped restart (cooldown); restart manually if access is still blocked.
+                {% endif %}
+          - if:
+              - condition: template
+                value_template: "{{ cool }}"
+            then:
+              - action: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.local_ip_ban_scrub_restart
+                data:
+                  datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+              - delay:
+                  seconds: 3
+              - action: homeassistant.restart

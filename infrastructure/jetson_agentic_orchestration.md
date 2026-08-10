@@ -54,21 +54,28 @@ curl -sS http://127.0.0.1:11434/v1/models
 
 | URL | Path |
 |-----|------|
-| `https://ai-orchestrator.mostardesigns.com` | Traefik → Warpgate (UI) / IP-bypass for `/v1/*` → `172.16.90.20:30487` |
+| `https://jetson.ao.mostardesigns.com` | Traefik → Jetson AO web/API (`172.16.90.20:30487`) |
+| Legacy | `https://ai-orchestrator.mostardesigns.com` (superseded hostname) |
 | LAN | `http://172.16.90.20:30487/` |
 
-Auth and LDAP header injection for the UI are documented in the Traefik stack:
-
-- Homelab compose: [docker-infrastructure Traefik README](https://git.omega-it.solutions/omegait/docker-infrastructure) (`ai-orchestrator.mostardesigns.com`)
-- Local mirror notes: [services/traefik.md](../services/traefik.md)
+Auth: browser UI via Warpgate / AO web session; **machine clients** (Home Assistant watering) use minted API tokens — see [AO Web UI — API access tokens](https://github.com/zlatko-lakisic/agentic-orchestration/wiki/Web-UI#api-access-tokens).
 
 Home Assistant watering uses:
 
 ```text
-https://ai-orchestrator.mostardesigns.com/v1/chat/completions
+https://jetson.ao.mostardesigns.com/v1/chat/completions
+Authorization: Bearer ao_<token>
 ```
 
-(see [homeassistant/docs_ha/garden_agentic_watering.md](../homeassistant/docs_ha/garden_agentic_watering.md)).
+(helper: `input_text.ai_watering_llm_api_key`; see [garden_agentic_watering.md](../homeassistant/docs_ha/garden_agentic_watering.md)).
+
+**ADA AO** (NVR / motion vision for gates + zone AI) is a separate edge host:
+
+```text
+https://ada.ao.mostardesigns.com/v1/chat/completions
+```
+
+configured in the LLM Vision Custom OpenAI provider (not this Jetson deploy).
 
 ## HostPath / Jetson overlays
 
