@@ -647,43 +647,112 @@ views:
                 secondary: {}
                 tap_action:
                   action: more-info
-              - type: custom:statistics-graph-chart-card
-                card_header: WAN (ISP)
-                show_grid: false
-                show_tooltip: true
-                show_legend: false
-                show_y_axis: false
-                show_x_axis: true
-                show_x_ticks: false
-                show_y_ticks: false
-                cache: true
-                animate_graph: false
-                hours_to_show: 6
-                points_per_hour: 4
-                height: 112
-                chart_mode: timeline
-                group_by: interval
-                entities:
-                  - entity: sensor.mikrotik_home_ether1_rx
-                    name: Download
-                    color: '#ff9800'
-                    graph_type: line
-                    line_width: 2
-                    show_fill: true
-                    smooth: true
-                    decimals: 2
-                    aggregate_func: avg
-                  - entity: sensor.mikrotik_home_ether1_tx
-                    name: Upload
-                    color: '#ab47bc'
-                    graph_type: line
-                    line_width: 2
-                    show_fill: true
-                    smooth: true
-                    decimals: 2
-                    aggregate_func: avg
+              - type: vertical-stack
+                cards:
+                  - type: custom:button-card
+                    entity: sensor.ookla_speedtest_download
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    show_label: false
+                    triggers_update:
+                      - sensor.ookla_speedtest_upload
+                      - sensor.ookla_speedtest_ping
+                      - sensor.ookla_speedtest_server
+                      - sensor.ookla_speedtest_last_test
                     tap_action:
                       action: more-info
+                    styles:
+                      card:
+                        - background-color: '#1c1c1c'
+                        - border: 1px solid rgba(255, 255, 255, 0.1)
+                        - border-radius: 14px
+                        - padding: 6px 10px
+                        - box-shadow: none
+                        - margin: 0
+                      grid:
+                        - grid-template-areas: '"st"'
+                        - grid-template-rows: min-content
+                      custom_fields:
+                        st:
+                          - width: 100%
+                    custom_fields:
+                      st: |
+                        [[[
+                          const bad = (v) => v == null || ['unknown','unavailable','none',''].includes(String(v).toLowerCase());
+                          const n = (id) => {
+                            const st = hass.states[id];
+                            if (!st || bad(st.state)) return null;
+                            const v = parseFloat(st.state);
+                            return Number.isFinite(v) ? v : null;
+                          };
+                          const fmt = (v, d=1) => v == null ? '—' : String(parseFloat((Math.round(v * 10**d) / 10**d).toFixed(d)));
+                          const dl = hass.states['sensor.ookla_speedtest_download'];
+                          const ul = hass.states['sensor.ookla_speedtest_upload'];
+                          const ping = hass.states['sensor.ookla_speedtest_ping'];
+                          const last = hass.states['sensor.ookla_speedtest_last_test'];
+                          const srvSt = hass.states['sensor.ookla_speedtest_server'];
+                          const whenRaw = (!bad(last?.state) ? last.state : null) || dl?.last_updated || ul?.last_updated;
+                          let when = '—';
+                          if (whenRaw) {
+                            const d = new Date(whenRaw);
+                            if (!Number.isNaN(d.getTime())) {
+                              when = d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                            }
+                          }
+                          const server = (!bad(srvSt?.state) ? String(srvSt.state) : '') || '';
+                          const dlU = dl?.attributes?.unit_of_measurement || 'Mbit/s';
+                          const pingU = ping?.attributes?.unit_of_measurement || 'ms';
+                          return `<div style="font-family:var(--ha-font-family,sans-serif);color:#fff;line-height:1.2;">
+                            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin-bottom:3px;">
+                              <div style="font-weight:700;font-size:0.7rem;">Speed test</div>
+                              <div style="font-size:0.55rem;opacity:0.7;">${when}</div>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;gap:4px;font-size:0.62rem;">
+                              <span style="color:#4fc3f7;">↓ ${fmt(n('sensor.ookla_speedtest_download'))}</span>
+                              <span style="color:#81c784;">↑ ${fmt(n('sensor.ookla_speedtest_upload'))}</span>
+                              <span style="color:#ffb74d;">${fmt(n('sensor.ookla_speedtest_ping'), 0)}${pingU}</span>
+                            </div>
+                            <div style="font-size:0.5rem;opacity:0.5;margin-top:2px;">${server ? server : dlU}</div>
+                          </div>`;
+                        ]]]
+                  - type: custom:statistics-graph-chart-card
+                    card_header: WAN (ISP)
+                    show_grid: false
+                    show_tooltip: true
+                    show_legend: false
+                    show_y_axis: false
+                    show_x_axis: true
+                    show_x_ticks: false
+                    show_y_ticks: false
+                    cache: true
+                    animate_graph: false
+                    hours_to_show: 6
+                    points_per_hour: 4
+                    height: 48
+                    chart_mode: timeline
+                    group_by: interval
+                    entities:
+                      - entity: sensor.mikrotik_home_ether1_rx
+                        name: Download
+                        color: '#ff9800'
+                        graph_type: line
+                        line_width: 2
+                        show_fill: true
+                        smooth: true
+                        decimals: 2
+                        aggregate_func: avg
+                      - entity: sensor.mikrotik_home_ether1_tx
+                        name: Upload
+                        color: '#ab47bc'
+                        graph_type: line
+                        line_width: 2
+                        show_fill: true
+                        smooth: true
+                        decimals: 2
+                        aggregate_func: avg
+                        tap_action:
+                          action: more-info
               - type: custom:statistics-graph-chart-card
                 card_header: LAN (Core)
                 show_grid: false
@@ -1136,8 +1205,13 @@ views:
                               const rate = (id) => {
                                 const st = hass.states[id];
                                 const v = parseFloat(st?.state);
-                                const u = st?.attributes?.unit_of_measurement ?? '';
+                                const u = String(st?.attributes?.unit_of_measurement ?? '').trim();
                                 if (!Number.isFinite(v)) return '—';
+                                const ul = u.toLowerCase();
+                                if (ul === 'b/s' || ul === 'bytes/s' || ul === 'byte/s') {
+                                  if (v > 9999) return `${fmt(v / 1000000)} MB/s`;
+                                  return `${fmt(v / 1000)} KB/s`;
+                                }
                                 return `${fmt(v)} ${u}`.trim();
                               };
                               const memMiB = hass.states['sensor.homeassistant_memory_use']?.state;
@@ -1232,7 +1306,9 @@ views:
                         show_label: false
                         triggers_update:
                           - sensor.infra_garden_speaker_memory_usage
-                          - sensor.garden_speaker_glances_state
+                          - sensor.infra_garden_speaker_nic_rx
+                          - sensor.infra_garden_speaker_nic_tx
+                          - sensor.infra_glances_hosts
                         tap_action:
                           action: more-info
                         styles:
@@ -1261,7 +1337,25 @@ views:
                                   </div>
                                 </div>`;
                               };
-                              const st = hass.states['sensor.garden_speaker_glances_state']?.state ?? '—';
+                              const rate = (id) => {
+                                const st = hass.states[id];
+                                const v = parseFloat(st?.state);
+                                const u = String(st?.attributes?.unit_of_measurement ?? '').trim();
+                                if (!Number.isFinite(v)) return '—';
+                                const ul = u.toLowerCase();
+                                if (ul === 'b/s' || ul === 'bytes/s' || ul === 'byte/s') {
+                                  if (v > 9999) return `${fmt(v / 1000000)} MB/s`;
+                                  return `${fmt(v / 1000)} KB/s`;
+                                }
+                                return `${fmt(v)} ${u}`.trim();
+                              };
+                              const gs = hass.states['sensor.infra_glances_hosts']?.attributes?.garden_speaker;
+                              const cpuRaw = hass.states['sensor.infra_garden_speaker_cpu_usage']?.state;
+                              const cpuOk = cpuRaw != null && !['unknown','unavailable'].includes(String(cpuRaw));
+                              const online = gs?.ok === true || cpuOk;
+                              const stLbl = online ? 'online' : 'offline';
+                              const stCol = online ? '#81c784' : '#ef5350';
+                              const up = (gs && gs.uptime) ? String(gs.uptime) : '—';
                               return `<div style="display:flex;gap:10px;align-items:flex-start;">
                                 <ha-icon icon="mdi:speaker-wireless" style="flex-shrink:0;color:#66bb6a;--mdc-icon-size:26px;"></ha-icon>
                                 <div style="flex:1;min-width:0;">
@@ -1269,8 +1363,112 @@ views:
                                 <div style="font-size:0.65rem;opacity:0.7;margin-bottom:8px;">Glances · garden-speaker (host)</div>
                                 ${bar('CPU', 'sensor.infra_garden_speaker_cpu_usage', 'linear-gradient(90deg,#66bb6a,#43a047)')}
                                 ${bar('Memory', 'sensor.infra_garden_speaker_memory_usage', 'linear-gradient(90deg,#26a69a,#00695c)')}
-                                <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:2px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);">
-                                  <span style="color:#b0bec5;">State</span><span>${st}</span>
+                                <div style="margin-top:4px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                                  <div style="font-size:0.68rem;font-weight:600;opacity:0.85;margin-bottom:6px;">Network</div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px;">
+                                    <span style="color:#4fc3f7;">Download</span><span>${rate('sensor.infra_garden_speaker_nic_rx')}</span>
+                                  </div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:6px;">
+                                    <span style="color:#81c784;">Upload</span><span>${rate('sensor.infra_garden_speaker_nic_tx')}</span>
+                                  </div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);">
+                                    <span style="color:#b0bec5;">Status</span><span style="color:${stCol};font-weight:600;">${stLbl}</span>
+                                  </div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:4px;">
+                                    <span style="color:#b0bec5;">Uptime</span><span>${up}</span>
+                                  </div>
+                                </div>
+                                </div>
+                              </div>`;
+                            ]]]
+                      - type: custom:button-card
+                        entity: sensor.infra_gateway_cpu_usage
+                        show_icon: false
+                        show_name: false
+                        show_state: false
+                        show_label: false
+                        triggers_update:
+                          - sensor.infra_gateway_memory_usage
+                          - sensor.infra_gateway_disk_usage
+                          - sensor.infra_gateway_nic_rx
+                          - sensor.infra_gateway_nic_tx
+                          - sensor.infra_gateway_uptime
+                          - sensor.infra_glances_hosts
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 12px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"gw"'
+                          custom_fields:
+                            gw:
+                              - width: 100%
+                        custom_fields:
+                          gw: |
+                            [[[
+                              const fmt = (n) => String(parseFloat((Math.round(n * 100) / 100).toFixed(2)));
+                              const bar = (label, id, grad) => {
+                                const raw = hass.states[id]?.state;
+                                const v = Math.min(100, Math.max(0, parseFloat(raw) || 0));
+                                return `<div style="margin-bottom:8px;font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                                  <div style="display:flex;justify-content:space-between;font-size:0.76rem;margin-bottom:3px;"><span>${label}</span><span>${fmt(v)}%</span></div>
+                                  <div style="height:7px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">
+                                    <div style="width:${v}%;height:100%;background:${grad};"></div>
+                                  </div>
+                                </div>`;
+                              };
+                              const rate = (id) => {
+                                const st = hass.states[id];
+                                const v = parseFloat(st?.state);
+                                const u = String(st?.attributes?.unit_of_measurement ?? '').trim();
+                                if (!Number.isFinite(v)) return '—';
+                                const ul = u.toLowerCase();
+                                if (ul === 'b/s' || ul === 'bytes/s' || ul === 'byte/s') {
+                                  if (v > 9999) return `${fmt(v / 1000000)} MB/s`;
+                                  return `${fmt(v / 1000)} KB/s`;
+                                }
+                                return `${fmt(v)} ${u}`.trim();
+                              };
+                              const gw = hass.states['sensor.infra_glances_hosts']?.attributes?.gateway;
+                              const cpuRaw = hass.states['sensor.infra_gateway_cpu_usage']?.state;
+                              const cpuOk = cpuRaw != null && !['unknown','unavailable'].includes(String(cpuRaw));
+                              const online = gw?.ok === true || cpuOk;
+                              const stLbl = online ? 'online' : 'offline';
+                              const stCol = online ? '#81c784' : '#ef5350';
+                              const upEnt = hass.states['sensor.infra_gateway_uptime'];
+                              let up = '—';
+                              if (upEnt && !['unknown', 'unavailable', 'none', ''].includes(String(upEnt.state).toLowerCase())) {
+                                up = String(upEnt.state);
+                              } else if (gw && gw.uptime) {
+                                up = String(gw.uptime);
+                              }
+                              return `<div style="display:flex;gap:10px;align-items:flex-start;">
+                                <ha-icon icon="mdi:router-network" style="flex-shrink:0;color:#29b6f6;--mdc-icon-size:26px;"></ha-icon>
+                                <div style="flex:1;min-width:0;">
+                                <div style="font-weight:700;font-size:0.95rem;margin-bottom:2px;color:#fff;">Gateway</div>
+                                <div style="font-size:0.65rem;opacity:0.7;margin-bottom:8px;">Glances · traefik (host)</div>
+                                ${bar('CPU', 'sensor.infra_gateway_cpu_usage', 'linear-gradient(90deg,#29b6f6,#0277bd)')}
+                                ${bar('Memory', 'sensor.infra_gateway_memory_usage', 'linear-gradient(90deg,#26c6da,#00838f)')}
+                                ${bar('Disk (/)', 'sensor.infra_gateway_disk_usage', 'linear-gradient(90deg,#7e57c2,#5e35b1)')}
+                                <div style="margin-top:4px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);font-family:var(--ha-font-family,sans-serif);color:#fff;">
+                                  <div style="font-size:0.68rem;font-weight:600;opacity:0.85;margin-bottom:6px;">Network</div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px;">
+                                    <span style="color:#4fc3f7;">Download</span><span>${rate('sensor.infra_gateway_nic_rx')}</span>
+                                  </div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:6px;">
+                                    <span style="color:#81c784;">Upload</span><span>${rate('sensor.infra_gateway_nic_tx')}</span>
+                                  </div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);">
+                                    <span style="color:#b0bec5;">Status</span><span style="color:${stCol};font-weight:600;">${stLbl}</span>
+                                  </div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:4px;">
+                                    <span style="color:#b0bec5;">Uptime</span><span>${up}</span>
+                                  </div>
                                 </div>
                                 </div>
                               </div>`;
@@ -1289,6 +1487,7 @@ views:
                           - sensor.infra_jetson_nic_tx
                           - sensor.infra_jetson_uptime
                           - sensor.infra_jetson_gpu_usage
+                          - sensor.infra_glances_hosts
                         tap_action:
                           action: more-info
                         styles:
@@ -1320,10 +1519,21 @@ views:
                               const rate = (id) => {
                                 const st = hass.states[id];
                                 const v = parseFloat(st?.state);
-                                const u = st?.attributes?.unit_of_measurement ?? '';
+                                const u = String(st?.attributes?.unit_of_measurement ?? '').trim();
                                 if (!Number.isFinite(v)) return '—';
+                                const ul = u.toLowerCase();
+                                if (ul === 'b/s' || ul === 'bytes/s' || ul === 'byte/s') {
+                                  if (v > 9999) return `${fmt(v / 1000000)} MB/s`;
+                                  return `${fmt(v / 1000)} KB/s`;
+                                }
                                 return `${fmt(v)} ${u}`.trim();
                               };
+                              const jet = hass.states['sensor.infra_glances_hosts']?.attributes?.jetson;
+                              const cpuRaw = hass.states['sensor.infra_jetson_cpu_usage']?.state;
+                              const cpuOk = cpuRaw != null && !['unknown','unavailable'].includes(String(cpuRaw));
+                              const online = jet?.ok === true || cpuOk;
+                              const stLbl = online ? 'online' : 'offline';
+                              const stCol = online ? '#81c784' : '#ef5350';
                               const memMiB = hass.states['sensor.infra_jetson_memory_use']?.state;
                               const memExtra = Number.isFinite(parseFloat(memMiB)) ? `<div style="font-size:0.65rem;opacity:0.72;margin:-4px 0 6px 0;">${fmt(parseFloat(memMiB))} MiB in use</div>` : '';
                               const up = hass.states['sensor.infra_jetson_uptime'];
@@ -1331,6 +1541,8 @@ views:
                               if (up && !['unknown', 'unavailable', 'none', ''].includes(String(up.state).toLowerCase())) {
                                 const uu = up.attributes?.unit_of_measurement;
                                 upStr = uu ? `${up.state} ${uu}` : String(up.state);
+                              } else if (jet && jet.uptime) {
+                                upStr = String(jet.uptime);
                               }
                               return `<div style="display:flex;gap:10px;align-items:flex-start;">
                                 <ha-icon icon="mdi:developer-board" style="flex-shrink:0;color:#76B900;--mdc-icon-size:28px;"></ha-icon>
@@ -1351,6 +1563,9 @@ views:
                                     <span style="color:#81c784;">Upload</span><span>${rate('sensor.infra_jetson_nic_tx')}</span>
                                   </div>
                                   <div style="display:flex;justify-content:space-between;font-size:0.72rem;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);">
+                                    <span style="color:#b0bec5;">Status</span><span style="color:${stCol};font-weight:600;">${stLbl}</span>
+                                  </div>
+                                  <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:4px;">
                                     <span style="color:#b0bec5;">Uptime</span><span>${upStr}</span>
                                   </div>
                                 </div>
@@ -3888,7 +4103,7 @@ views:
                     filter:
                       include:
                         - domain: sensor
-                          entity_id: '/sensor\..*_cpu_usage_total$/'
+                          entity_id: '/^sensor\.(?!k8s_).+_cpu_usage_total$/'
                           options:
                             type: custom:button-card
                             show_icon: false
@@ -4014,5 +4229,7 @@ views:
                                       - width: 16px
                                       - height: 16px
                                       - color: rgba(255, 255, 255, 0.85)
+                      exclude:
+                        - entity_id: "sensor.k8s_*"
 
         column_span: 4
