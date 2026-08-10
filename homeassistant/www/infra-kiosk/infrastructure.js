@@ -10,6 +10,11 @@ var ENTITIES = [
     "sensor.mikrotik_home_hap_ac_memory_usage",
     "sensor.mikrotik_home_ether1_rx",
     "sensor.mikrotik_home_ether1_tx",
+    "sensor.ookla_speedtest_download",
+    "sensor.ookla_speedtest_upload",
+    "sensor.ookla_speedtest_ping",
+    "sensor.ookla_speedtest_server",
+    "sensor.ookla_speedtest_last_test",
     "sensor.mikrotik_home_ether3_rx",
     "sensor.mikrotik_home_ether3_tx",
     "sensor.mikrotik_home_home_wifi_vlan_rx",
@@ -66,7 +71,15 @@ var ENTITIES = [
     "sensor.qemu_active_directory_104_memory_used_percentage",
     "sensor.infra_garden_speaker_cpu_usage",
     "sensor.infra_garden_speaker_memory_usage",
-    "sensor.garden_speaker_glances_state",
+    "sensor.infra_garden_speaker_nic_rx",
+    "sensor.infra_garden_speaker_nic_tx",
+    "sensor.infra_glances_hosts",
+    "sensor.infra_gateway_cpu_usage",
+    "sensor.infra_gateway_memory_usage",
+    "sensor.infra_gateway_disk_usage",
+    "sensor.infra_gateway_nic_rx",
+    "sensor.infra_gateway_nic_tx",
+    "sensor.infra_gateway_uptime",
     "sensor.infra_jetson_cpu_usage",
     "sensor.infra_jetson_memory_usage",
     "sensor.infra_jetson_memory_use",
@@ -164,6 +177,11 @@ var ENTITIES = [
     var v = parseFloat(s.state);
     if (!isFinite(v)) return "—";
     var u = (s.attributes && s.attributes.unit_of_measurement) || "";
+    var ul = String(u).trim().toLowerCase();
+    if (ul === "b/s" || ul === "bytes/s" || ul === "byte/s") {
+      if (v > 9999) return fmt(v / 1000000, 2) + " MB/s";
+      return fmt(v / 1000, 2) + " KB/s";
+    }
     return fmt(v, 2) + (u ? " " + u : "");
   }
 
@@ -321,7 +339,43 @@ function setHtml(id, html) {
       apCard("AP Top Floor", "U7NHD", "sensor.ap_top_floor_clients", "sensor.ap_top_floor_cpu_utilization", "sensor.ap_top_floor_memory_utilization");
   }
 
-  function trafficCard(title, rxId, txId) {
+  function speedtestMeta() {
+    var dl = st("sensor.ookla_speedtest_download");
+    var ul = st("sensor.ookla_speedtest_upload");
+    var ping = st("sensor.ookla_speedtest_ping");
+    var last = st("sensor.ookla_speedtest_last_test");
+    var srv = st("sensor.ookla_speedtest_server");
+    if ((!dl || bad(dl.state)) && (!ul || bad(ul.state))) return "";
+    var whenRaw = (last && !bad(last.state) ? last.state : null) ||
+      (dl && dl.last_updated) || (ul && ul.last_updated);
+    var when = "—";
+    if (whenRaw) {
+      var d = new Date(whenRaw);
+      if (!isNaN(d.getTime())) {
+        when = d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      }
+    }
+    var dlN = num("sensor.ookla_speedtest_download");
+    var ulN = num("sensor.ookla_speedtest_upload");
+    var pingN = num("sensor.ookla_speedtest_ping");
+    var dlU = (dl && dl.attributes && dl.attributes.unit_of_measurement) || "Mbit/s";
+    var ulU = (ul && ul.attributes && ul.attributes.unit_of_measurement) || "Mbit/s";
+    var pingU = (ping && ping.attributes && ping.attributes.unit_of_measurement) || "ms";
+    var server = (srv && !bad(srv.state)) ? String(srv.state) : "";
+    return (
+      '<div class="speedtest-meta">' +
+        '<div class="speedtest-head"><span>Speed test</span><span>' + escHtml(when) + "</span></div>" +
+        '<div class="speedtest-row">' +
+          '<span style="color:#4fc3f7">↓ ' + (dlN == null ? "—" : fmt(dlN, 1)) + " " + escHtml(dlU) + "</span>" +
+          '<span style="color:#81c784">↑ ' + (ulN == null ? "—" : fmt(ulN, 1)) + " " + escHtml(ulU) + "</span>" +
+          '<span style="color:#ffb74d">' + (pingN == null ? "—" : fmt(pingN, 0)) + " " + escHtml(pingU) + "</span>" +
+        "</div>" +
+        '<div class="traffic-meta">' + escHtml(server || "Ookla Speedtest") + "</div>" +
+      "</div>"
+    );
+  }
+
+  function trafficCard(title, rxId, txId, extraHtml) {
     var rx = num(rxId);
     var tx = num(txId);
     var rxN = rx == null ? 0 : Math.max(0, rx);
@@ -333,7 +387,7 @@ function setHtml(id, html) {
         '<div class="card-title">' + title + "</div>" +
         metric("RX", (rxN / ceil) * 100, "fill-rx", rateText(rxId)) +
         metric("TX", (txN / ceil) * 100, "fill-tx", rateText(txId)) +
-        '<div class="traffic-meta">live · no sparkline</div>' +
+        (extraHtml || '<div class="traffic-meta">live · no sparkline</div>') +
       "</div>"
     );
   }
@@ -346,7 +400,8 @@ function setHtml(id, html) {
       '<div class="card gauge-card"><div class="ring" style="--pct:' + clampPct(mem) + ";--ring:" + memRingColor(clampPct(mem)) +
         '"><div class="ring-val">' + (mem == null ? "—" : Math.round(clampPct(mem)) + "%") +
         '</div></div><div class="gauge-label">Gateway Memory</div></div>' +
-      trafficCard("WAN (ISP)", "sensor.mikrotik_home_ether1_rx", "sensor.mikrotik_home_ether1_tx") +
+      trafficCard("WAN (ISP)", "sensor.mikrotik_home_ether1_rx", "sensor.mikrotik_home_ether1_tx",
+        speedtestMeta() + '<div class="traffic-meta">live throughput</div>') +
       trafficCard("LAN", "sensor.mikrotik_home_ether3_rx", "sensor.mikrotik_home_ether3_tx") +
       trafficCard("Home WLAN", "sensor.mikrotik_home_home_wifi_vlan_rx", "sensor.mikrotik_home_home_wifi_vlan_tx") +
       trafficCard("IoT WLAN", "sensor.mikrotik_home_iot_vlan_rx", "sensor.mikrotik_home_iot_vlan_tx") +
@@ -713,19 +768,43 @@ function setHtml(id, html) {
 
     var gsCpu = num("sensor.infra_garden_speaker_cpu_usage");
     var gsMem = num("sensor.infra_garden_speaker_memory_usage");
-    var gsState = st("sensor.garden_speaker_glances_state");
-    var gsStateTxt = gsState && !bad(gsState.state) ? gsState.state : "—";
+    var gsBlob = attr("sensor.infra_glances_hosts", "garden_speaker") || {};
+    var gsOnline = gsBlob.ok === true || gsCpu != null;
+    var gsStatusTxt = gsOnline ? "online" : "offline";
+    var gsStatusCol = gsOnline ? "#81c784" : "#ef5350";
+    var gsUpTxt = gsBlob.uptime ? String(gsBlob.uptime) : "—";
+
+    var gwCpu = num("sensor.infra_gateway_cpu_usage");
+    var gwMem = num("sensor.infra_gateway_memory_usage");
+    var gwDisk = num("sensor.infra_gateway_disk_usage");
+    var gwBlob = attr("sensor.infra_glances_hosts", "gateway") || {};
+    var gwOnline = gwBlob.ok === true || gwCpu != null;
+    var gwStatusTxt = gwOnline ? "online" : "offline";
+    var gwStatusCol = gwOnline ? "#81c784" : "#ef5350";
+    var gwUp = st("sensor.infra_gateway_uptime");
+    var gwUpTxt = "—";
+    if (gwUp && !bad(gwUp.state)) {
+      gwUpTxt = String(gwUp.state);
+    } else if (gwBlob.uptime) {
+      gwUpTxt = String(gwBlob.uptime);
+    }
 
     var jCpu = num("sensor.infra_jetson_cpu_usage");
     var jMem = num("sensor.infra_jetson_memory_usage");
     var jDisk = num("sensor.infra_jetson_disk_usage");
     var jGpu = num("sensor.infra_jetson_gpu_usage");
     var jMemMiB = num("sensor.infra_jetson_memory_use");
+    var jBlob = attr("sensor.infra_glances_hosts", "jetson") || {};
+    var jOnline = jBlob.ok === true || jCpu != null;
+    var jStatusTxt = jOnline ? "online" : "offline";
+    var jStatusCol = jOnline ? "#81c784" : "#ef5350";
     var jUp = st("sensor.infra_jetson_uptime");
     var jUpTxt = "—";
     if (jUp && !bad(jUp.state)) {
       var uu = jUp.attributes && jUp.attributes.unit_of_measurement;
       jUpTxt = uu ? jUp.state + " " + uu : String(jUp.state);
+    } else if (jBlob.uptime) {
+      jUpTxt = String(jBlob.uptime);
     }
 
     $("card-servers").innerHTML =
@@ -762,8 +841,34 @@ function setHtml(id, html) {
             '<div class="card-sub">Glances · garden-speaker (host)</div>' +
             pctBar("CPU", gsCpu, "linear-gradient(90deg,#66bb6a,#43a047)") +
             pctBar("Memory", gsMem, "linear-gradient(90deg,#26a69a,#00695c)") +
-            '<div class="host-net-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);font-size:0.72rem">' +
-              '<span style="color:#b0bec5">State</span><span>' + escHtml(gsStateTxt) + "</span></div>" +
+            '<div class="host-net"><div class="card-sub" style="margin-bottom:6px;font-weight:600;opacity:0.85">Network</div>' +
+            '<div class="host-net-row"><span style="color:#4fc3f7">Download</span><span>' + rateText("sensor.infra_garden_speaker_nic_rx") + "</span></div>" +
+            '<div class="host-net-row"><span style="color:#81c784">Upload</span><span>' + rateText("sensor.infra_garden_speaker_nic_tx") + "</span></div>" +
+            '<div class="host-net-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);font-size:0.72rem">' +
+              '<span style="color:#b0bec5">Status</span><span style="color:' + gsStatusCol + ';font-weight:600">' +
+              escHtml(gsStatusTxt) + "</span></div>" +
+            '<div class="host-net-row" style="font-size:0.72rem">' +
+              '<span style="color:#b0bec5">Uptime</span><span>' + escHtml(gsUpTxt) + "</span></div></div>" +
+          "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="card">' +
+        '<div class="host-head">' +
+          '<div class="host-badge" style="background:rgba(41,182,246,0.18);color:#29b6f6">GW</div>' +
+          '<div class="host-card-body">' +
+            '<div class="card-title">Gateway</div>' +
+            '<div class="card-sub">Glances · traefik (host)</div>' +
+            pctBar("CPU", gwCpu, "linear-gradient(90deg,#29b6f6,#0277bd)") +
+            pctBar("Memory", gwMem, "linear-gradient(90deg,#26c6da,#00838f)") +
+            pctBar("Disk (/)", gwDisk, "linear-gradient(90deg,#7e57c2,#5e35b1)") +
+            '<div class="host-net"><div class="card-sub" style="margin-bottom:6px;font-weight:600;opacity:0.85">Network</div>' +
+            '<div class="host-net-row"><span style="color:#4fc3f7">Download</span><span>' + rateText("sensor.infra_gateway_nic_rx") + "</span></div>" +
+            '<div class="host-net-row"><span style="color:#81c784">Upload</span><span>' + rateText("sensor.infra_gateway_nic_tx") + "</span></div>" +
+            '<div class="host-net-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);font-size:0.72rem">' +
+              '<span style="color:#b0bec5">Status</span><span style="color:' + gwStatusCol + ';font-weight:600">' +
+              escHtml(gwStatusTxt) + "</span></div>" +
+            '<div class="host-net-row" style="font-size:0.72rem">' +
+              '<span style="color:#b0bec5">Uptime</span><span>' + escHtml(gwUpTxt) + "</span></div></div>" +
           "</div>" +
         "</div>" +
       "</div>" +
@@ -781,8 +886,11 @@ function setHtml(id, html) {
             '<div class="host-net"><div class="card-sub" style="margin-bottom:6px;font-weight:600;opacity:0.85">Network</div>' +
             '<div class="host-net-row"><span style="color:#4fc3f7">Download</span><span>' + rateText("sensor.infra_jetson_nic_rx") + "</span></div>" +
             '<div class="host-net-row"><span style="color:#81c784">Upload</span><span>' + rateText("sensor.infra_jetson_nic_tx") + "</span></div>" +
-            '<div class="host-net-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06)"><span style="color:#b0bec5">Uptime</span><span>' +
-              escHtml(jUpTxt) + "</span></div></div>" +
+            '<div class="host-net-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);font-size:0.72rem">' +
+              '<span style="color:#b0bec5">Status</span><span style="color:' + jStatusCol + ';font-weight:600">' +
+              escHtml(jStatusTxt) + "</span></div>" +
+            '<div class="host-net-row" style="font-size:0.72rem">' +
+              '<span style="color:#b0bec5">Uptime</span><span>' + escHtml(jUpTxt) + "</span></div></div>" +
           "</div>" +
         "</div>" +
       "</div>";

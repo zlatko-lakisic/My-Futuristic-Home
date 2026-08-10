@@ -1,4 +1,4 @@
-# Host metrics for infrastructure dashboard (Garden Speaker + Jetson + NVR core counts).
+# Host metrics for infrastructure dashboard (Garden Speaker + Gateway + Jetson + NVR).
 # Uses Glances API v4 light endpoints (not /api/4/all) because Jetson fs plugin hangs
 # on Docker overlay mounts and stalls /api/4/all past HA command_line timeout.
 #
@@ -18,11 +18,14 @@ command_line:
       command: /usr/local/bin/python3 /config/packages/infra_glances_hosts.py
       value_template: >-
         {% set j = value_json %}
-        {% if j.garden_speaker.ok and j.jetson.ok and j.nvr.ok %}ok
-        {% elif j.garden_speaker.ok or j.jetson.ok or j.nvr.ok %}partial
+        {% set hosts = [j.garden_speaker, j.gateway, j.jetson, j.nvr] %}
+        {% set ok = hosts | selectattr('ok') | list | count %}
+        {% if ok == 4 %}ok
+        {% elif ok > 0 %}partial
         {% else %}error{% endif %}
       json_attributes:
         - garden_speaker
+        - gateway
         - jetson
         - nvr
 
@@ -42,10 +45,64 @@ template:
         icon: mdi:memory
         state: "{{ state_attr('sensor.infra_glances_hosts', 'garden_speaker').memory_usage | default('unknown') }}"
 
+      - name: Infra Garden Speaker NIC RX
+        unique_id: infra_garden_speaker_nic_rx
+        unit_of_measurement: B/s
+        state_class: measurement
+        icon: mdi:download-network
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'garden_speaker').rx | default('unknown') }}"
+
+      - name: Infra Garden Speaker NIC TX
+        unique_id: infra_garden_speaker_nic_tx
+        unit_of_measurement: B/s
+        state_class: measurement
+        icon: mdi:upload-network
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'garden_speaker').tx | default('unknown') }}"
+
       - name: Infra Garden Speaker total CPU
         unique_id: infra_garden_speaker_total_cpu
         icon: mdi:chip
         state: "{{ state_attr('sensor.infra_glances_hosts', 'garden_speaker').cpu_count | default(4) }}"
+
+      - name: Infra Gateway CPU usage
+        unique_id: infra_gateway_cpu_usage
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:cpu-64-bit
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'gateway').cpu_usage | default('unknown') }}"
+
+      - name: Infra Gateway Memory usage
+        unique_id: infra_gateway_memory_usage
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:memory
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'gateway').memory_usage | default('unknown') }}"
+
+      - name: Infra Gateway Disk usage
+        unique_id: infra_gateway_disk_usage
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:harddisk
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'gateway').disk_usage | default('unknown') }}"
+
+      - name: Infra Gateway NIC RX
+        unique_id: infra_gateway_nic_rx
+        unit_of_measurement: B/s
+        state_class: measurement
+        icon: mdi:download-network
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'gateway').rx | default('unknown') }}"
+
+      - name: Infra Gateway NIC TX
+        unique_id: infra_gateway_nic_tx
+        unit_of_measurement: B/s
+        state_class: measurement
+        icon: mdi:upload-network
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'gateway').tx | default('unknown') }}"
+
+      - name: Infra Gateway Uptime
+        unique_id: infra_gateway_uptime
+        icon: mdi:clock-outline
+        state: "{{ state_attr('sensor.infra_glances_hosts', 'gateway').uptime | default('unknown') }}"
 
       - name: Infra Jetson CPU usage
         unique_id: infra_jetson_cpu_usage

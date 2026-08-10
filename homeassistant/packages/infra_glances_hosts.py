@@ -16,6 +16,7 @@ from typing import Any
 
 HOSTS = {
     "garden_speaker": "http://192.168.89.27:61208",
+    "gateway": "http://192.168.89.6:61208",
     "jetson": "http://172.16.90.20:61208",
     "nvr": "http://10.0.10.16:61208",
 }
