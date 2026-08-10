@@ -8,6 +8,7 @@
 # qBittorrent Plus (HACS): instance sensors + hybrid active-torrent entities.
 # Speed gauges & transfer chart use template sensors (KiB/s): see packages/qbittorrent_speed_k.yaml.
 # Active transfers: auto-entities + button-card rows; sort via input_select.qbittorrent_active_sort.
+# Responsive: layout-card + button-card extra_styles @media (1100px / 700px / 600px).
 
 button_card_templates:
   torrent_transfer_row:
@@ -27,13 +28,16 @@ button_card_templates:
         - border-bottom: 1px solid rgba(255,255,255,0.06)
       grid:
         - grid-template-areas: '"title cat prog dl ul eta size sp"'
-        - grid-template-columns: minmax(220px, 1.6fr) 88px 110px 96px 96px 72px 80px 64px
+        - grid-template-columns: minmax(0, 1.6fr) 80px 100px 88px 88px 68px 72px 56px
         - align-items: center
         - column-gap: 10px
       custom_fields:
         title:
-          - justify-self: start
+          - justify-self: stretch
+          - align-self: center
           - min-width: 0
+          - max-width: 100%
+          - width: 100%
           - overflow: hidden
         cat:
           - justify-self: center
@@ -63,6 +67,54 @@ button_card_templates:
           - justify-self: end
           - font-family: ui-monospace, SFMono-Regular, Menlo, monospace
           - font-size: 0.76rem
+    extra_styles: |
+      #container {
+        width: 100%;
+        min-width: 0;
+      }
+      #title {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        overflow: hidden !important;
+      }
+      #title .torrent-title-row {
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+      }
+      #title .torrent-title-text {
+        min-width: 0;
+        flex: 1 1 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      @media (max-width: 1100px) {
+        #container {
+          grid-template-areas: "title title title cat" "prog dl ul eta" "size sp . ." !important;
+          grid-template-columns: 1.2fr 1fr 1fr 1fr !important;
+          row-gap: 8px !important;
+          column-gap: 8px !important;
+        }
+      }
+      @media (max-width: 700px) {
+        #container {
+          grid-template-areas: "title title" "cat prog" "dl ul" "eta size" "sp sp" !important;
+          grid-template-columns: 1fr 1fr !important;
+          row-gap: 10px !important;
+          column-gap: 10px !important;
+          align-items: center !important;
+        }
+        #title { justify-self: stretch !important; }
+        #cat { justify-self: start !important; }
+        #prog { justify-self: stretch !important; }
+        #dl { justify-self: start !important; font-size: 0.8rem !important; }
+        #ul { justify-self: end !important; font-size: 0.8rem !important; }
+        #eta { justify-self: start !important; font-size: 0.8rem !important; }
+        #size { justify-self: end !important; font-size: 0.8rem !important; }
+        #sp { justify-self: start !important; font-size: 0.8rem !important; }
+      }
     custom_fields:
       title: |
         [[[
@@ -82,12 +134,15 @@ button_card_templates:
             .replace(/</g,'&lt;')
             .replace(/>/g,'&gt;')
             .replace(/"/g,'&quot;');
+          const narrow = window.matchMedia('(max-width: 700px)').matches;
+          const pw = narrow ? 36 : 40;
+          const ph = narrow ? 52 : 58;
           const art = url
-            ? `<img src="${esc(url)}" alt="" referrerpolicy="no-referrer" style="width:40px;height:58px;object-fit:cover;border-radius:6px;flex-shrink:0;background:#333;box-shadow:0 1px 4px rgba(0,0,0,.4);" />`
-            : `<div style="width:40px;height:58px;border-radius:6px;flex-shrink:0;background:rgba(255,255,255,.08);"></div>`;
-          return `<div style="display:flex;align-items:center;gap:12px;min-width:0;width:100%;">
+            ? `<img src="${esc(url)}" alt="" referrerpolicy="no-referrer" style="width:${pw}px;height:${ph}px;object-fit:cover;border-radius:6px;flex-shrink:0;background:#333;box-shadow:0 1px 4px rgba(0,0,0,.4);" />`
+            : `<div style="width:${pw}px;height:${ph}px;border-radius:6px;flex-shrink:0;background:rgba(255,255,255,.08);"></div>`;
+          return `<div class="torrent-title-row" style="display:flex;align-items:center;gap:12px;min-width:0;max-width:100%;width:100%;overflow:hidden;">
             ${art}
-            <div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:0.88rem;color:#f1f3f4;" title="${esc(clean)}">${esc(clean)}</div>
+            <div class="torrent-title-text" style="min-width:0;flex:1 1 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:${narrow ? '0.86' : '0.88'}rem;color:#f1f3f4;" title="${esc(clean)}">${esc(clean)}</div>
           </div>`;
         ]]]
       cat: |
@@ -128,51 +183,64 @@ button_card_templates:
         [[[
           const slug = entity.entity_id.slice(7, -8);
           const e = hass.states[`sensor.${slug}_download_speed`];
-          if (!e || ['unknown','unavailable'].includes(e.state)) return `<span style="color:#78909c;">—</span>`;
+          const narrow = window.matchMedia('(max-width: 700px)').matches;
+          const label = narrow ? '<span style="opacity:.55;font-size:0.65rem;margin-right:6px;">↓</span>' : '';
+          if (!e || ['unknown','unavailable'].includes(e.state)) return `${label}<span style="color:#78909c;">—</span>`;
           const n = Number(e.state) || 0;
           const u = e.attributes.unit_of_measurement || '';
           const c = n > 0 ? '#42a5f5' : '#78909c';
-          return `<span style="color:${c};">${n.toFixed(1)}&nbsp;${u}</span>`;
+          return `${label}<span style="color:${c};">${n.toFixed(1)}&nbsp;${u}</span>`;
         ]]]
       ul: |
         [[[
           const slug = entity.entity_id.slice(7, -8);
           const e = hass.states[`sensor.${slug}_upload_speed`];
-          if (!e || ['unknown','unavailable'].includes(e.state)) return `<span style="color:#78909c;">—</span>`;
+          const narrow = window.matchMedia('(max-width: 700px)').matches;
+          const label = narrow ? '<span style="opacity:.55;font-size:0.65rem;margin-right:6px;">↑</span>' : '';
+          if (!e || ['unknown','unavailable'].includes(e.state)) return `${label}<span style="color:#78909c;">—</span>`;
           const n = Number(e.state) || 0;
           const u = e.attributes.unit_of_measurement || '';
           const c = n > 0 ? '#66bb6a' : '#78909c';
-          return `<span style="color:${c};">${n.toFixed(1)}&nbsp;${u}</span>`;
+          return `${label}<span style="color:${c};">${n.toFixed(1)}&nbsp;${u}</span>`;
         ]]]
       eta: |
         [[[
           const slug = entity.entity_id.slice(7, -8);
           const e = hass.states[`sensor.${slug}_eta`];
-          if (!e || ['unknown','unavailable','none',''].includes(String(e.state))) return '—';
+          const narrow = window.matchMedia('(max-width: 700px)').matches;
+          const label = narrow ? '<span style="opacity:.55;font-size:0.65rem;margin-right:6px;">ETA</span>' : '';
+          if (!e || ['unknown','unavailable','none',''].includes(String(e.state))) return `${label}—`;
           const n = parseInt(e.state, 10);
-          if (!Number.isFinite(n) || n <= 0 || n >= 8640000) return '∞';
-          if (n >= 86400) return `${Math.floor(n/86400)}d ${Math.floor((n%86400)/3600)}h`;
-          if (n >= 3600) return `${Math.floor(n/3600)}h ${Math.floor((n%3600)/60)}m`;
-          if (n >= 60) return `${Math.floor(n/60)}m`;
-          return `${n}s`;
+          let txt = '∞';
+          if (Number.isFinite(n) && n > 0 && n < 8640000) {
+            if (n >= 86400) txt = `${Math.floor(n/86400)}d ${Math.floor((n%86400)/3600)}h`;
+            else if (n >= 3600) txt = `${Math.floor(n/3600)}h ${Math.floor((n%3600)/60)}m`;
+            else if (n >= 60) txt = `${Math.floor(n/60)}m`;
+            else txt = `${n}s`;
+          }
+          return `${label}${txt}`;
         ]]]
       size: |
         [[[
           const slug = entity.entity_id.slice(7, -8);
           const e = hass.states[`sensor.${slug}_size`];
-          if (!e || ['unknown','unavailable'].includes(e.state)) return '—';
+          const narrow = window.matchMedia('(max-width: 700px)').matches;
+          const label = narrow ? '<span style="opacity:.55;font-size:0.65rem;margin-right:6px;">Size</span>' : '';
+          if (!e || ['unknown','unavailable'].includes(e.state)) return `${label}—`;
           const n = Number(e.state) || 0;
           const u = e.attributes.unit_of_measurement || '';
-          return `${n.toFixed(2)}&nbsp;${u}`;
+          return `${label}${n.toFixed(2)}&nbsp;${u}`;
         ]]]
       sp: |
         [[[
           const slug = entity.entity_id.slice(7, -8);
           const seeds = hass.states[`sensor.${slug}_seeds`];
           const peers = hass.states[`sensor.${slug}_peers`];
+          const narrow = window.matchMedia('(max-width: 700px)').matches;
+          const label = narrow ? '<span style="opacity:.55;font-size:0.65rem;margin-right:6px;">S/P</span>' : '';
           const s = seeds ? seeds.state : '—';
           const p = peers ? peers.state : '—';
-          return `<span style="color:#81c784;">${s}</span><span style="color:#5f6b73;">/</span><span style="color:#64b5f6;">${p}</span>`;
+          return `${label}<span style="color:#81c784;">${s}</span><span style="color:#5f6b73;">/</span><span style="color:#64b5f6;">${p}</span>`;
         ]]]
 
   torrent_sort_header_btn:
@@ -218,10 +286,17 @@ views:
             icon: mdi:speedometer
             heading: Session & transfer speed
 
-          # Native grid avoids layout-card overlap in sections. Gauge max: Mostar path caps when proxied.
-          - type: grid
-            square: false
-            columns: 4
+          # Responsive gauges/charts. Gauge max: Mostar path caps when proxied.
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: repeat(4, minmax(0, 1fr))
+              grid-gap: 12px
+              mediaquery:
+                "(max-width: 1100px)":
+                  grid-template-columns: repeat(2, minmax(0, 1fr))
+                "(max-width: 600px)":
+                  grid-template-columns: 1fr
             grid_options:
               columns: full
             cards:
@@ -431,9 +506,15 @@ views:
                     decimals: 0
                     aggregate_func: max
 
-          - type: grid
-            square: false
-            columns: 2
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: repeat(2, minmax(0, 1fr))
+              grid-gap: 12px
+              place-items: stretch
+              mediaquery:
+                "(max-width: 900px)":
+                  grid-template-columns: 1fr
             grid_options:
               columns: full
             cards:
@@ -466,9 +547,14 @@ views:
                     heading_style: subtitle
                     icon: mdi:counter
                     heading: Torrent counts
-                  - type: grid
-                    square: false
-                    columns: 3
+                  - type: custom:layout-card
+                    layout_type: custom:grid-layout
+                    layout:
+                      grid-template-columns: repeat(3, minmax(0, 1fr))
+                      grid-gap: 8px
+                      mediaquery:
+                        "(max-width: 700px)":
+                          grid-template-columns: repeat(2, minmax(0, 1fr))
                     cards:
                       - type: tile
                         entity: sensor.qbittorrent_plus_active_torrents
@@ -601,6 +687,11 @@ views:
                   box-shadow: none !important;
                   overflow: hidden !important;
                 }
+                @media (max-width: 700px) {
+                  ha-card {
+                    border-radius: 10px !important;
+                  }
+                }
             cards:
               - type: custom:button-card
                 entity: input_select.qbittorrent_active_sort
@@ -619,7 +710,7 @@ views:
                     - border-bottom: 1px solid rgba(255,255,255,0.1)
                   grid:
                     - grid-template-areas: '"title cat prog dl ul eta size sp"'
-                    - grid-template-columns: minmax(220px, 1.6fr) 88px 110px 96px 96px 72px 80px 64px
+                    - grid-template-columns: minmax(0, 1.6fr) 80px 100px 88px 88px 68px 72px 56px
                     - align-items: center
                     - column-gap: 10px
                   custom_fields:
@@ -659,6 +750,24 @@ views:
                       - letter-spacing: 0.06em
                       - text-transform: uppercase
                       - color: "#cfd8dc"
+                extra_styles: |
+                  #container { width: 100%; }
+                  @media (max-width: 1100px) {
+                    #container {
+                      grid-template-areas: ". . prog dl" "ul eta . ." !important;
+                      grid-template-columns: 1fr 1fr 1fr 1fr !important;
+                      row-gap: 6px !important;
+                    }
+                    #title, #cat, #size, #sp { display: none !important; }
+                  }
+                  @media (max-width: 700px) {
+                    #container {
+                      grid-template-areas: "prog dl ul eta" !important;
+                      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+                      column-gap: 6px !important;
+                    }
+                    #title, #cat, #size, #sp { display: none !important; }
+                  }
                 custom_fields:
                   title: Title
                   cat: Category
