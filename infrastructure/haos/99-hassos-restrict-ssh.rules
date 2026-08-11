@@ -1,0 +1,3 @@
+# Re-apply LAN-only SSH filter at boot (lo always appears).
+# Script lives on the HAOS overlay at /etc/default/hassos-restrict-ssh.sh
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="lo", RUN+="/etc/default/hassos-restrict-ssh.sh"
