@@ -27,3 +27,4 @@ Manual unban: edit `/config/ip_bans.yaml`, remove the IP, restart Core.
 
 - Live file: `/config/ip_bans.yaml`
 - Traefik edge: [services/traefik.md](../../services/traefik.md)
+- HAOS host SSH uses the same CIDRs: [haos_ssh.md](haos_ssh.md)
