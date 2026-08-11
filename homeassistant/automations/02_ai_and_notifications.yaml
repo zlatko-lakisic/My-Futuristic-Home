@@ -38,6 +38,7 @@
       # No camera.east_side_2 (AXIS) on this host; Frigate entity for snapshots.
       camera: camera.east_side
       frigate_person_sensor: binary_sensor.east_side_gate_person_occupancy
+      frigate_dog_sensor: binary_sensor.east_side_dog_occupancy
       llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
       llmvision_model: gpt-4o-mini
       target_width: 1280
@@ -58,6 +59,7 @@
       gate_open_state: 'on'
       camera: camera.west_side_2
       frigate_person_sensor: binary_sensor.west_side_gate_person_occupancy
+      frigate_dog_sensor: binary_sensor.west_side_dog_occupancy
       llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
       llmvision_model: gpt-4o-mini
       target_width: 1280
@@ -78,6 +80,7 @@
       gate_open_state: 'on'
       camera: camera.back_yard_2
       frigate_person_sensor: binary_sensor.back_yard_person_occupancy
+      frigate_dog_sensor: binary_sensor.back_yard_dog_occupancy
       llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
       llmvision_model: gpt-4o-mini
       target_width: 1280
@@ -102,18 +105,20 @@
       dog_sensor: binary_sensor.driveway_zone_dog_occupancy
       people_only: false
       known_vehicle_hint: >-
-        Household vehicle may be Family Car. Say Family Car only on a clear visual match.
-        Do not invent plates or other household names. Never write plate characters.
+        Household vehicle may be Family Car. If Frigate LPR says Family Car, call it
+        Family Car and do not describe color/make/model. Otherwise describe the vehicle
+        and include a plate only when clearly readable. Never invent plates.
       camera: camera.driveway
       llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
       llmvision_model: gpt-4o-mini
       target_width: 1280
-      capture_settle_seconds: 1
+      capture_settle_seconds: 0
       prefer_person_wait_seconds: 12
       frame_interval_seconds: 1
-      stream_max_frames: 6
+      stream_max_frames: 8
       gif_frame_duration_ms: 800
       event_clear_seconds: 180
+      lpr_wait_seconds: 15
       frigate_camera: driveway
       frigate_zone: driveway_zone
       recognized_face_sensor: sensor.driveway_last_recognized_face
@@ -147,6 +152,7 @@
       prefer_person_wait_seconds: 0
       frame_interval_seconds: 2
       stream_max_frames: 15
+      lpr_wait_seconds: 0
       gif_frame_duration_ms: 1000
       event_clear_seconds: 180
       frigate_camera: front_door

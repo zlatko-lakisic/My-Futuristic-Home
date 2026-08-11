@@ -6,9 +6,11 @@ blueprint:
     resolve any Frigate-recognized faces for the visit, ask LLM Vision what is there,
     and notify only when confirmed.
 
-    - Driveway mode: notify for PERSON / CAR. When a vehicle is visible, the LLM should
-      include color + make/model when identifiable, and a license plate only if clearly
-      readable (never invent plates). Known-vehicle hints can be supplied as context.
+    - Driveway mode: notify for PERSON / CAR. Capture starts immediately on a car so the
+      vehicle is in the first frames (Frigate detection snapshot overlays frame 1).
+      Wait for Frigate LPR on the AI server before asking the LLM to describe.
+      Family Car: say Family Car — do not describe color/make/model.
+      Unknown vehicle: color + make/model, and a plate if LPR or the stills clearly show one.
     - People-only mode (front steps): notify for PERSON only.
     - Prompt is low-temperature and factual (light wit OK; no invented pets/plots/dialogue).
     - Recognized faces (sub_labels) are pulled from Frigate events and added to the
@@ -105,8 +107,8 @@ blueprint:
     capture_settle_seconds:
       name: Seconds to wait before first snapshot
       description: >
-        Short settle after occupancy so the subject is more likely in-frame before
-        the burst starts (important when one visit is coalesced into a single notify).
+        Short settle after occupancy before the burst. Skipped when a car triggered
+        first so the vehicle is not already leaving the frame.
       default: 3
       selector:
         number:
@@ -117,9 +119,9 @@ blueprint:
     prefer_person_wait_seconds:
       name: Extra wait for person (driveway)
       description: >
-        When a car/vehicle can trigger first, wait this long for zone person occupancy
-        before capturing so the preview GIF includes the person when they arrive shortly
-        after. Times out and captures anyway (car-only visits still notify). Use 0 to disable.
+        After the first car frames are already captured, wait this long for zone person
+        occupancy before taking the remaining stills so the GIF can include a driver.
+        Does not delay the first frames. Use 0 to disable.
       default: 12
       selector:
         number:
@@ -223,11 +225,24 @@ blueprint:
     recognized_plate_sensor:
       name: Last recognized plate sensor (Frigate LPR)
       description: >
-        Camera sensor like sensor.driveway_last_recognized_plate. When set, notify titles
-        and Plate lines use this Frigate value only (not LLM-guessed plates).
+        Camera sensor like sensor.driveway_last_recognized_plate. The automation waits
+        for this to update after occupancy, then passes it into the LLM. Family Car
+        suppresses color/make/model. Unknown plates are included in the description.
       default: ""
       selector:
         text:
+    lpr_wait_seconds:
+      name: Seconds to wait for Frigate LPR
+      description: >
+        After capture, wait up to this long for recognized_plate_sensor to change from
+        its visit-start value (AI server LPR). Times out and describes anyway.
+      default: 15
+      selector:
+        number:
+          min: 0
+          max: 60
+          step: 1
+          mode: slider
     frigate_base_url:
       name: Frigate API base URL
       default: "http://192.168.89.37:5000"
@@ -253,6 +268,7 @@ variables:
   frigate_zone: !input frigate_zone
   recognized_face_sensor: !input recognized_face_sensor
   recognized_plate_sensor: !input recognized_plate_sensor
+  lpr_wait_seconds: !input lpr_wait_seconds
   frigate_base_url: !input frigate_base_url
   notify_group: !input notify_group
   notify_channel: !input notify_channel
@@ -306,26 +322,58 @@ actions:
         {% else %}
           no
         {% endif %}
-  - alias: Settle so subject is more likely in frame
-    delay:
-      seconds: '{{ capture_settle_seconds | int }}'
-  - alias: If vehicle arrived first, wait briefly for a person
+      plate_at_start: >-
+        {% set ps = recognized_plate_sensor | default('', true) | string | trim %}
+        {% if ps in ['', 'None', 'none', 'unknown', 'unavailable'] %}
+        {% else %}
+          {{ states(ps) | default('', true) | string | trim }}
+        {% endif %}
+      car_first: >-
+        {% set only_people = people_only is true or (people_only | string | lower) in ['true', 'on', 'yes'] %}
+        {{ 'yes' if (not only_people)
+           and (saw_car | default('no') | string | trim) == 'yes'
+           and (saw_person | default('no') | string | trim) != 'yes'
+           else 'no' }}
+      snapshot_label: >-
+        {{ 'car' if (car_first | string | trim) == 'yes' else 'person' }}
+      early_frame_count: >-
+        {% set n = snapshot_frame_count | int %}
+        {% set wait_s = prefer_person_wait_seconds | int %}
+        {% if (car_first | string | trim) == 'yes' and wait_s > 0 and n > 4 %}
+          4
+        {% else %}
+          {{ n }}
+        {% endif %}
+  - alias: Settle only when this is not a car-first visit
+    if:
+    - condition: template
+      value_template: "{{ (car_first | string | trim) != 'yes' }}"
+    then:
+    - delay:
+        seconds: '{{ capture_settle_seconds | int }}'
+  - alias: First live snapshot immediately
+    action: camera.snapshot
+    target:
+      entity_id: !input camera
+    data:
+      filename: '/config/www/tmp/{{ zone_slug }}_{{ snapshot_timestamp }}_1.jpg'
+  - alias: Overlay Frigate detection-time snapshot when available
     if:
     - condition: template
       value_template: >-
-        {% set only_people = people_only is true or (people_only | string | lower) in ['true', 'on', 'yes'] %}
-        {% set wait_s = prefer_person_wait_seconds | int %}
-        {% set person_eid = person_sensor | default('', true) | string | trim %}
-        {{ (not only_people)
-           and wait_s > 0
-           and person_eid not in ['', 'None', 'none', 'unknown', 'unavailable']
-           and not is_state(person_eid, 'on') }}
+        {% set cam = frigate_camera | default('', true) | string | trim %}
+        {{ cam not in ['', 'None', 'none'] }}
     then:
-    - wait_template: "{{ is_state(person_sensor, 'on') }}"
-      timeout:
-        seconds: '{{ prefer_person_wait_seconds | int }}'
-      continue_on_timeout: true
-  - alias: Refresh occupancy latch after settle / person wait
+    - action: shell_command.frigate_event_snapshot
+      continue_on_error: true
+      data:
+        camera: '{{ frigate_camera }}'
+        since_epoch: '{{ event_start_epoch }}'
+        dest: '/config/www/tmp/{{ zone_slug }}_{{ snapshot_timestamp }}_1.jpg'
+        label: '{{ snapshot_label }}'
+        zone: "{{ frigate_zone | default('', true) }}"
+        base_url: '{{ frigate_base_url }}'
+  - alias: Latch occupancy after first frame
     variables:
       saw_person: >-
         {% set person_eid = person_sensor | default('', true) | string | trim %}
@@ -354,49 +402,109 @@ actions:
         {% else %}
           no
         {% endif %}
-  - repeat:
-      count: '{{ snapshot_frame_count | int }}'
-      sequence:
-      - if:
-        - condition: template
-          value_template: '{{ repeat.index > 1 }}'
-        then:
+  - alias: Remaining early live frames (car already in frame 1)
+    if:
+    - condition: template
+      value_template: '{{ (early_frame_count | int) > 1 }}'
+    then:
+    - repeat:
+        count: '{{ (early_frame_count | int) - 1 }}'
+        sequence:
         - delay:
             seconds: '{{ frame_interval_seconds }}'
-      - action: camera.snapshot
-        target:
-          entity_id: !input camera
-        data:
-          filename: '/config/www/tmp/{{ zone_slug }}_{{ snapshot_timestamp }}_{{ repeat.index }}.jpg'
-      - alias: Keep latching occupancy seen during the burst
-        variables:
-          saw_person: >-
-            {% set person_eid = person_sensor | default('', true) | string | trim %}
-            {% if (saw_person | default('no') | string | trim) == 'yes' %}
-              yes
-            {% elif person_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(person_eid, 'on') %}
-              yes
-            {% else %}
-              no
-            {% endif %}
-          saw_car: >-
-            {% set car_eid = car_sensor | default('', true) | string | trim %}
-            {% if (saw_car | default('no') | string | trim) == 'yes' %}
-              yes
-            {% elif car_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(car_eid, 'on') %}
-              yes
-            {% else %}
-              no
-            {% endif %}
-          saw_dog: >-
-            {% set dog_eid = dog_sensor | default('', true) | string | trim %}
-            {% if (saw_dog | default('no') | string | trim) == 'yes' %}
-              yes
-            {% elif dog_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(dog_eid, 'on') %}
-              yes
-            {% else %}
-              no
-            {% endif %}
+        - action: camera.snapshot
+          target:
+            entity_id: !input camera
+          data:
+            filename: '/config/www/tmp/{{ zone_slug }}_{{ snapshot_timestamp }}_{{ repeat.index + 1 }}.jpg'
+        - alias: Keep latching occupancy seen during the burst
+          variables:
+            saw_person: >-
+              {% set person_eid = person_sensor | default('', true) | string | trim %}
+              {% if (saw_person | default('no') | string | trim) == 'yes' %}
+                yes
+              {% elif person_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(person_eid, 'on') %}
+                yes
+              {% else %}
+                no
+              {% endif %}
+            saw_car: >-
+              {% set car_eid = car_sensor | default('', true) | string | trim %}
+              {% if (saw_car | default('no') | string | trim) == 'yes' %}
+                yes
+              {% elif car_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(car_eid, 'on') %}
+                yes
+              {% else %}
+                no
+              {% endif %}
+            saw_dog: >-
+              {% set dog_eid = dog_sensor | default('', true) | string | trim %}
+              {% if (saw_dog | default('no') | string | trim) == 'yes' %}
+                yes
+              {% elif dog_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(dog_eid, 'on') %}
+                yes
+              {% else %}
+                no
+              {% endif %}
+  - alias: After car frames, optionally wait for a person before remaining stills
+    if:
+    - condition: template
+      value_template: >-
+        {% set person_eid = person_sensor | default('', true) | string | trim %}
+        {{ (car_first | string | trim) == 'yes'
+           and (prefer_person_wait_seconds | int) > 0
+           and (early_frame_count | int) < (snapshot_frame_count | int)
+           and person_eid not in ['', 'None', 'none', 'unknown', 'unavailable']
+           and not is_state(person_eid, 'on') }}
+    then:
+    - wait_template: "{{ is_state(person_sensor, 'on') }}"
+      timeout:
+        seconds: '{{ prefer_person_wait_seconds | int }}'
+      continue_on_timeout: true
+  - alias: Remaining frames after optional person wait
+    if:
+    - condition: template
+      value_template: '{{ (snapshot_frame_count | int) > (early_frame_count | int) }}'
+    then:
+    - repeat:
+        count: '{{ (snapshot_frame_count | int) - (early_frame_count | int) }}'
+        sequence:
+        - delay:
+            seconds: '{{ frame_interval_seconds }}'
+        - action: camera.snapshot
+          target:
+            entity_id: !input camera
+          data:
+            filename: '/config/www/tmp/{{ zone_slug }}_{{ snapshot_timestamp }}_{{ (early_frame_count | int) + repeat.index }}.jpg'
+        - alias: Keep latching occupancy seen during the burst
+          variables:
+            saw_person: >-
+              {% set person_eid = person_sensor | default('', true) | string | trim %}
+              {% if (saw_person | default('no') | string | trim) == 'yes' %}
+                yes
+              {% elif person_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(person_eid, 'on') %}
+                yes
+              {% else %}
+                no
+              {% endif %}
+            saw_car: >-
+              {% set car_eid = car_sensor | default('', true) | string | trim %}
+              {% if (saw_car | default('no') | string | trim) == 'yes' %}
+                yes
+              {% elif car_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(car_eid, 'on') %}
+                yes
+              {% else %}
+                no
+              {% endif %}
+            saw_dog: >-
+              {% set dog_eid = dog_sensor | default('', true) | string | trim %}
+              {% if (saw_dog | default('no') | string | trim) == 'yes' %}
+                yes
+              {% elif dog_eid not in ['', 'None', 'none', 'unknown', 'unavailable'] and is_state(dog_eid, 'on') %}
+                yes
+              {% else %}
+                no
+              {% endif %}
   - action: shell_command.gate_frames_to_gif
     continue_on_error: true
     data:
@@ -405,6 +513,39 @@ actions:
       count: '{{ snapshot_frame_count | int }}'
       duration_ms: '{{ gif_frame_duration_ms | int }}'
       gif_interp_factor: 4
+  - alias: Wait for Frigate LPR on the AI server before describing
+    if:
+    - condition: template
+      value_template: >-
+        {% set ps = recognized_plate_sensor | default('', true) | string | trim %}
+        {% set wait_s = lpr_wait_seconds | default(15) | int %}
+        {{ wait_s > 0
+           and ps not in ['', 'None', 'none', 'unknown', 'unavailable']
+           and ((car_first | default('no') | string | trim) == 'yes'
+                or (saw_car | default('no') | string | trim) == 'yes') }}
+    then:
+    - wait_template: >-
+        {% set ps = recognized_plate_sensor | default('', true) | string | trim %}
+        {% set cur = states(ps) | default('', true) | string | trim %}
+        {% set start = plate_at_start | default('', true) | string | trim %}
+        {{ cur | lower not in ['', 'none', 'unknown', 'unavailable', 'null']
+           and cur != start }}
+      timeout:
+        seconds: '{{ lpr_wait_seconds | default(15) | int }}'
+      continue_on_timeout: true
+  - alias: LPR identity for this visit
+    variables:
+      lpr_plate: >-
+        {% set ps = recognized_plate_sensor | default('', true) | string | trim %}
+        {% set ns = namespace(p='') %}
+        {% if ps | length > 0 %}
+          {% set st = states(ps) | default('', true) | string | trim %}
+          {% if st | length > 0 and (st | lower) not in ['unknown', 'unavailable', 'none', 'null'] %}
+            {% set ns.p = st %}
+          {% endif %}
+        {% endif %}
+        {{ ns.p }}
+      is_family_car: "{{ (lpr_plate | default('', true) | string | trim | lower) == 'family car' }}"
   - alias: Give Frigate a moment to attach face names
     delay:
       seconds: 2
@@ -493,11 +634,23 @@ actions:
         Subject: people on the steps/entry. Ignore vehicles and pets unless a person is also clear.
         {% else %}
         Subject: people and vehicles. Mention a dog/cat only if clearly visible (never invent pets).
-        For any vehicle: color + make/model if identifiable. Do NOT write license plate
-        characters — Frigate LPR owns plates for notifications. Never guess plates.
+        {% set plate = lpr_plate | default('', true) | string | trim %}
+        {% set family = (is_family_car | string | lower) in ['true', 'yes', 'on'] or (plate | lower) == 'family car' %}
+        {% if family %}
+        Vehicle identity from Frigate LPR: Family Car (household). Call it Family Car.
+        Do NOT describe color, make, or model — no grey/silver Hyundai SUV or similar.
+        Do NOT write plate characters.
+        {% elif plate | length > 0 %}
+        Frigate LPR read: {{ plate }}. Include that plate. Also color + make/model if identifiable.
+        If you can clearly read a different plate in the stills, include it. Never invent plates.
+        {% else %}
+        No household LPR match yet. Describe color + make/model if identifiable.
+        If a license plate is clearly readable in the stills, include the characters.
+        Never invent or guess plates.
+        {% endif %}
         {% set kv = known_vehicle_hint | default('', true) | string | trim %}
-        {% if kv | length > 0 %}
-        Known vehicle names (use name only on clear visual match; never invent plates): {{ kv }}
+        {% if kv | length > 0 and not family %}
+        Known vehicle names (use name only on a clear visual match): {{ kv }}
         {% endif %}
         {% endif %}
 
@@ -514,7 +667,12 @@ actions:
         Output exactly 3 plain-text lines (no JSON, no tools, no lists of labels):
         Line 1: one word only — PERSON or CAR or DOG or OTHER or CLEAR
         (PERSON if any human; CAR if vehicle and no person; DOG if pet only; CLEAR if nothing.)
-        Line 2: factual home log ≤160 chars (who/what/where). Car color/make OK; never plate digits.
+        Line 2: factual home log ≤160 chars (who/what/where).
+        {% if (is_family_car | string | lower) in ['true', 'yes', 'on'] %}
+        Say Family Car; no color/make/model; no plate digits.
+        {% else %}
+        Car color/make OK. Include a plate only if LPR provided one or it is clearly readable.
+        {% endif %}
         Line 3: factual phone line ≤100 chars. Same facts, shorter.
     response_variable: ai_response
   - alias: Refresh Frigate-recognized people before notify
@@ -723,15 +881,20 @@ actions:
           {{ t if t | length > 8 else log_description }}
         {% endif %}
       car_plate_hint: >-
-        {% set ps = recognized_plate_sensor | default('', true) | string | trim %}
-        {% set ns = namespace(p='') %}
-        {% if ps | length > 0 %}
-          {% set st = states(ps) | default('', true) | string | trim %}
-          {% if st | length > 0 and (st | lower) not in ['unknown', 'unavailable', 'none', 'null'] %}
-            {% set ns.p = st %}
+        {% set existing = lpr_plate | default('', true) | string | trim %}
+        {% if existing | length > 0 and (existing | lower) not in ['unknown', 'unavailable', 'none', 'null'] %}
+          {{ existing }}
+        {% else %}
+          {% set ps = recognized_plate_sensor | default('', true) | string | trim %}
+          {% set ns = namespace(p='') %}
+          {% if ps | length > 0 %}
+            {% set st = states(ps) | default('', true) | string | trim %}
+            {% if st | length > 0 and (st | lower) not in ['unknown', 'unavailable', 'none', 'null'] %}
+              {% set ns.p = st %}
+            {% endif %}
           {% endif %}
+          {{ ns.p }}
         {% endif %}
-        {{ ns.p }}
       notify_title: >-
         {% set unusable = (llm_unusable | string | trim) == 'yes' %}
         {% set label = llm_label | string | trim | upper %}
@@ -780,6 +943,53 @@ actions:
           {{ ('CAR:' ~ plate) | truncate(32, true, '') }}
         {% else %}
           {{ label | truncate(32, true, '') }}
+        {% endif %}
+  - alias: Prefer Family Car wording over color/make when LPR matched
+    variables:
+      log_description: >-
+        {% set raw = log_description | default('', true) | string | trim %}
+        {% set plate = car_plate_hint | default('', true) | string | trim %}
+        {% if plate | lower != 'family car' %}
+          {{ raw }}
+        {% else %}
+          {% set t = raw
+            | regex_replace('(?i)\\b(a |an )?(dark |light )?(grey|gray|silver|white|black|blue|red)\\s+((hyundai|kia|toyota|honda|ford|nissan)\\s+)?(suv|sedan|crossover|vehicle|car)\\b', 'Family Car')
+            | regex_replace('(?i)\\bhyundai\\s+(santa\\s*fe|tucson|kona|palisade)?\\b', 'Family Car')
+            | regex_replace('\\s+', ' ')
+            | trim %}
+          {% if 'family car' not in (t | lower) %}
+            {{ ('Family Car at ' ~ zone_name ~ ('. ' ~ t if t | length > 0 else '.')) | truncate(160, true, '…') }}
+          {% else %}
+            {{ t | truncate(160, true, '…') }}
+          {% endif %}
+        {% endif %}
+      phone_line: >-
+        {% set raw = phone_line | default('', true) | string | trim %}
+        {% set plate = car_plate_hint | default('', true) | string | trim %}
+        {% if plate | lower != 'family car' %}
+          {{ raw }}
+        {% else %}
+          {% set t = raw
+            | regex_replace('(?i)\\b(a |an )?(dark |light )?(grey|gray|silver|white|black|blue|red)\\s+((hyundai|kia|toyota|honda|ford|nissan)\\s+)?(suv|sedan|crossover|vehicle|car)\\b', 'Family Car')
+            | regex_replace('(?i)\\bhyundai\\s+(santa\\s*fe|tucson|kona|palisade)?\\b', 'Family Car')
+            | regex_replace('\\s+', ' ')
+            | trim %}
+          {% if 'family car' not in (t | lower) %}
+            {{ ('Family Car at ' ~ zone_name) | truncate(100, true, '…') }}
+          {% else %}
+            {{ t | truncate(100, true, '…') }}
+          {% endif %}
+        {% endif %}
+  - alias: Refresh phone body after Family Car rewrite
+    variables:
+      mobile_short: >-
+        {% set people = recognized_people_label | string | trim %}
+        {% set phone = phone_line | string | trim %}
+        {% set body = phone if phone | length > 8 else (log_description | string) %}
+        {% if people | length > 0 and (people | lower) not in (body | lower) %}
+          {{ (people ~ ' — ' ~ body) | truncate(100, true, '…') }}
+        {% else %}
+          {{ body | truncate(100, true, '…') }}
         {% endif %}
   - action: input_text.set_value
     data:

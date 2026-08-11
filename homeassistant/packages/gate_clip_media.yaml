@@ -10,6 +10,10 @@ shell_command:
   frigate_zone_people: >-
     python3 /config/shell/frigate_zone_people.py
     "{{ camera }}" "{{ since_epoch }}" "{{ zone | default('') }}" "{{ base_url | default('http://192.168.89.37:5000') }}"
+  frigate_event_snapshot: >-
+    python3 /config/shell/frigate_event_snapshot.py
+    "{{ camera }}" "{{ since_epoch }}" "{{ dest }}"
+    "{{ label | default('') }}" "{{ zone | default('') }}" "{{ base_url | default('http://192.168.89.37:5000') }}"
 
 input_text:
   gate_ai_last_media:
