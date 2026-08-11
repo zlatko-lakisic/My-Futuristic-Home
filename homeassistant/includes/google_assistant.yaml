@@ -1,0 +1,118 @@
+# Google Home publish policy: docs_ha/google_assistant_expose.md
+#
+# Auto-expose only household domains. Technical switches (MSN, torrents, k8s,
+# Docker, MikroTik, Frigate, Nest options, BHyve programs) stay unpublished
+# because `switch` is not in exposed_domains.
+secure_devices_pin: !secret google_assistant_secure_devices_pin
+project_id: "home-assistant-1142"
+service_account: !include ../service_account.json
+report_state: true
+expose_by_default: true
+exposed_domains:
+  - light
+  - cover
+  - lock
+  - climate
+  - valve
+
+entity_config:
+  # --- Covers ---
+  cover.garage_door_door:
+    name: garage door
+    expose: true
+
+  # --- Locks ---
+  lock.office_door:
+    name: Office Door Lock
+    expose: true
+  lock.front_door:
+    name: Front Door Lock
+    expose: true
+  lock.back_door:
+    name: Back Door Lock
+    expose: true
+  lock.door_to_garage:
+    name: Garage Door Lock
+    expose: true
+
+  # --- Door / gate contacts (binary_sensor is not an exposed domain) ---
+  binary_sensor.office_door_door:
+    name: Office Door
+    expose: true
+  binary_sensor.front_door_door:
+    name: Front Door
+    expose: true
+  binary_sensor.back_door_door:
+    name: Back Door
+    expose: true
+  binary_sensor.door_to_garage_door:
+    name: Door to Garage
+    expose: true
+  binary_sensor.east_side_door_door:
+    name: East Side Door
+    expose: true
+  binary_sensor.fence_gate_door:
+    name: Fence Gate
+    expose: true
+  binary_sensor.west_side_gate_door:
+    name: West Side Gate
+    expose: true
+
+  # --- Household switches (lights-as-switch + fan) ---
+  switch.light_switch:
+    expose: true
+  switch.light_switch_2:
+    expose: true
+  switch.light_switch_3:
+    expose: true
+  switch.light_switch_4:
+    expose: true
+  switch.light_switch_5:
+    expose: true
+  switch.front_door_light:
+    expose: true
+  switch.walkway_light:
+    expose: true
+  switch.master_bedroom_light_switch:
+    expose: true
+  switch.vanity:
+    expose: true
+  switch.spotlight_switch:
+    expose: true
+  switch.porch_light:
+    expose: true
+  switch.flood_lights:
+    expose: true
+  switch.flood_lights_2:
+    expose: true
+  switch.soffet_lights_socket_1:
+    expose: true
+  switch.house_fan:
+    name: House Fan
+    expose: true
+
+  # TVs stay unpublished even if switch is ever re-added to exposed_domains.
+  switch.living_room_tv:
+    expose: false
+  switch.tv:
+    expose: false
+  switch.master_bedroom_tv:
+    expose: false
+
+  # --- Technical lights still in the light domain ---
+  light.ap_back_yard_led:
+    expose: false
+  light.ap_bottom_floor_led:
+    expose: false
+  light.ap_top_floor_led:
+    expose: false
+  light.garden_south_ir_light_0:
+    expose: false
+  light.garden_north_ir_light_0:
+    expose: false
+
+  # --- Not house climate ---
+  climate.bhyve_manual_watering:
+    expose: false
+  climate.150633094697190_climate:
+    expose: false

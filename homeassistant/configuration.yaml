@@ -287,42 +287,8 @@ device_tracker:
   - platform: google_maps
     username: "vahida.zujo1@gmail.com"
     
-google_assistant:
-  secure_devices_pin: !secret google_assistant_secure_devices_pin
-  project_id: "home-assistant-1142"
-  service_account: !include service_account.json
-  report_state: true
-  exposed_domains:
-    - switch
-    - light
-    - cover
-    - door
-    - lock
-    - binary
-    - climate
-  entity_config:
-    cover.google_garagedoor:
-      name: 'garage door'
-      expose: true
-    lock.office_door:
-      name: 'Office Door Lock'
-      expose: true
-    binary_sensor.office_door_door:
-      name: 'Office Door'
-      expose: true
-    lock.front_door:
-      name: 'Front Door Lock'
-      expose: true
-    binary_sensor.front_door_door:
-      name: 'Front Door'
-      expose: true
-    binary_sensor.back_door_door:
-      name: 'Back Door'
-      expose: true
-    switch.living_room_tv:
-      expose: false
-    switch.tv:
-      expose: false
+# Google Home allowlist: includes/google_assistant.yaml (docs_ha/google_assistant_expose.md)
+google_assistant: !include includes/google_assistant.yaml
 
 system_log:
   fire_event: true
