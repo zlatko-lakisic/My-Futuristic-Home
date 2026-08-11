@@ -302,7 +302,7 @@ views:
             cards:
               - type: custom:modern-circular-gauge
                 entity: sensor.qbittorrent_download_speed_kib
-                name: Download
+                name: Leeching
                 gauge_type: standard
                 needle: false
                 smooth_segments: true
@@ -354,17 +354,12 @@ views:
                       - 179
                       - 229
                       - 252
-                secondary: >
-                  {% if is_state('binary_sensor.qbittorrent_proxied_via_mostar', 'on') %}
-                    Mostar↑ · 200 KiB/s
-                  {% else %}
-                    Direct · 10 MiB/s scale
-                  {% endif %}
+                secondary: Leeching
                 tap_action:
                   action: more-info
               - type: custom:modern-circular-gauge
                 entity: sensor.qbittorrent_upload_speed_kib
-                name: Upload
+                name: Seeding
                 gauge_type: standard
                 needle: false
                 smooth_segments: true
@@ -416,12 +411,7 @@ views:
                       - 200
                       - 230
                       - 201
-                secondary: >
-                  {% if is_state('binary_sensor.qbittorrent_proxied_via_mostar', 'on') %}
-                    Mostar↓ · 350 KiB/s
-                  {% else %}
-                    Direct · 10 MiB/s scale
-                  {% endif %}
+                secondary: Seeding
                 tap_action:
                   action: more-info
               - type: custom:statistics-graph-chart-card
