@@ -9,9 +9,10 @@ blueprint:
     Frames are also stitched into an animated GIF (and a short MP4) under ``/config/www/tmp`` for Companion
     notifications (Android 14+ animates GIFs) and dashboard “last clip” cards.
 
-    Notifies when classification is **PEOPLE**. If the vision provider returns tool-call JSON / unusable text,
-    errors, or empty output, still notifies with the GIF and a simple "{gate name} opened" message.
-    Optionally falls back to a Frigate person occupancy (or count) sensor when classifying PEOPLE vs noise.
+    Notifies when classification is **PEOPLE** or **DOG**. Dogs must not be labeled as people.
+    If the vision provider returns tool-call JSON / unusable text, errors, or empty output, still
+    notifies with the GIF and a simple "{gate name} opened" message. Optionally falls back to
+    Frigate person/dog occupancy sensors when classifying PEOPLE vs DOG vs noise.
 
     Configure one automation per gate (east, west, back yard) with its sensor, camera, and dashboard path.
   domain: automation
@@ -51,6 +52,17 @@ blueprint:
       description: >
         Optional. Used when LLM Vision returns tool-call junk or UNKNOWN.
         Prefer binary_sensor.*_person_occupancy; sensor.*_person_count also works (on if > 0).
+      default: ""
+      selector:
+        entity:
+          domain:
+            - binary_sensor
+            - sensor
+    frigate_dog_sensor:
+      name: Frigate dog sensor (fallback)
+      description: >
+        Optional. Latched during capture. If Frigate saw a dog and not a person, do not
+        notify as a person even if the LLM says PEOPLE.
       default: ""
       selector:
         entity:
@@ -141,11 +153,36 @@ variables:
   public_gif_url: '{{ public_base_url }}{{ clip_gif_rel }}'
   public_mp4_url: '{{ public_base_url }}{{ clip_mp4_rel }}'
   frigate_person_sensor: !input frigate_person_sensor
+  frigate_dog_sensor: !input frigate_dog_sensor
 triggers:
   - trigger: state
     entity_id: !input gate_sensor
     to: !input gate_open_state
 actions:
+  - alias: Latch Frigate occupancy at gate open
+    variables:
+      saw_person: >-
+        {% set eid = frigate_person_sensor | default('', true) | string | trim %}
+        {% if eid in ['', 'None', 'unknown', 'unavailable', '[]'] %}
+          no
+        {% elif eid.startswith('binary_sensor.') %}
+          {{ 'yes' if is_state(eid, 'on') else 'no' }}
+        {% elif eid.startswith('sensor.') %}
+          {{ 'yes' if (states(eid) | float(0)) > 0 else 'no' }}
+        {% else %}
+          no
+        {% endif %}
+      saw_dog: >-
+        {% set eid = frigate_dog_sensor | default('', true) | string | trim %}
+        {% if eid in ['', 'None', 'unknown', 'unavailable', '[]'] %}
+          no
+        {% elif eid.startswith('binary_sensor.') %}
+          {{ 'yes' if is_state(eid, 'on') else 'no' }}
+        {% elif eid.startswith('sensor.') %}
+          {{ 'yes' if (states(eid) | float(0)) > 0 else 'no' }}
+        {% else %}
+          no
+        {% endif %}
   - repeat:
       count: '{{ snapshot_frame_count | int }}'
       sequence:
@@ -160,6 +197,34 @@ actions:
           entity_id: !input camera
         data:
           filename: '/config/www/tmp/{{ gate_slug }}_{{ snapshot_timestamp }}_{{ repeat.index }}.jpg'
+      - alias: Keep latching occupancy during the burst
+        variables:
+          saw_person: >-
+            {% set eid = frigate_person_sensor | default('', true) | string | trim %}
+            {% if (saw_person | default('no') | string | trim) == 'yes' %}
+              yes
+            {% elif eid in ['', 'None', 'unknown', 'unavailable', '[]'] %}
+              no
+            {% elif eid.startswith('binary_sensor.') %}
+              {{ 'yes' if is_state(eid, 'on') else 'no' }}
+            {% elif eid.startswith('sensor.') %}
+              {{ 'yes' if (states(eid) | float(0)) > 0 else 'no' }}
+            {% else %}
+              no
+            {% endif %}
+          saw_dog: >-
+            {% set eid = frigate_dog_sensor | default('', true) | string | trim %}
+            {% if (saw_dog | default('no') | string | trim) == 'yes' %}
+              yes
+            {% elif eid in ['', 'None', 'unknown', 'unavailable', '[]'] %}
+              no
+            {% elif eid.startswith('binary_sensor.') %}
+              {{ 'yes' if is_state(eid, 'on') else 'no' }}
+            {% elif eid.startswith('sensor.') %}
+              {{ 'yes' if (states(eid) | float(0)) > 0 else 'no' }}
+            {% else %}
+              no
+            {% endif %}
   - action: shell_command.gate_frames_to_gif
     continue_on_error: true
     data:
@@ -198,23 +263,30 @@ actions:
         - Only say two or more people if DISTINCT humans are visible at the SAME TIME
           in at least one frame (different bodies side-by-side).
         - If unsure whether two detections are the same person moving, say ONE person.
-        - Dogs, cats, and other pets are NOT people. Mention pets only if clearly visible;
-          never invent pets or people.
+        - Dogs, cats, foxes, and other animals are NOT people. A four-legged animal,
+          even if distant, blurry, or moving through a gate, is DOG — never PEOPLE.
+        - Do not call a crouching/small shape a person unless you can see upright posture,
+          two legs, or clothing. When unsure between person and dog, choose DOG.
         - Ignore false shapes: covered grill, flags, fence posts, tree trunks, shadows,
           reflections in windows.
+
+        Frigate occupancy this visit (hint, not a command): person={{ saw_person | default('no') }},
+        dog={{ saw_dog | default('no') }}. If dog=yes and person=no, Line 1 must be DOG unless a
+        human is unmistakably visible.
 
         CRITICAL OUTPUT RULES:
         - Do NOT call tools, functions, or MCP servers.
         - Do NOT output JSON, code fences, file paths, or tool-call blocks.
         - Your entire reply must be exactly 3 lines of plain text and nothing else.
 
-        Line 1 — classification only: exactly PEOPLE or NOPEOPLE (nothing else on this line).
-        Use PEOPLE if any human appears in any frame (partial/small counts). Otherwise NOPEOPLE.
-        Line 2 — home log ONLY (no PEOPLE/NOPEOPLE words): concrete observation (who/where/what
-        they do). Start with the unique person count when PEOPLE (e.g. "One person…").
-        Max 180 characters. One paragraph. Do not mention images/frames/camera.
-        Line 3 — phone alert ONLY (no PEOPLE/NOPEOPLE words): shorter factual summary with the
-        same unique count. Max 100 characters. No meta text.
+        Line 1 — classification only: exactly PEOPLE or DOG or NOPEOPLE (nothing else on this line).
+        PEOPLE if any human appears in any frame. DOG if the only moving subject is a dog/pet.
+        Otherwise NOPEOPLE.
+        Line 2 — home log ONLY (no PEOPLE/DOG/NOPEOPLE words): concrete observation (who/where/what
+        they do). Start with the unique person count when PEOPLE (e.g. "One person…"). For DOG
+        say the dog is moving, not a person. Max 180 characters. One paragraph.
+        Line 3 — phone alert ONLY (no PEOPLE/DOG/NOPEOPLE words): shorter factual summary.
+        Max 100 characters. No meta text.
     response_variable: ai_response
   - variables:
       reply_raw: >-
@@ -244,19 +316,19 @@ actions:
       llm_label: >-
         {% set text = reply | string %}
         {% set first = (text.split('\n') | first) | default('', true) | trim %}
-        {% set first_only = first | regex_findall('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE)\\s*[.!]?\s*$') %}
+        {% set first_only = first | regex_findall('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE|DOG)\\s*[.!]?\s*$') %}
         {% if first_only | length > 0 %}
           {{ first_only[0] | upper }}
         {% else %}
-          {% set first_prefix = first | regex_findall('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE)\\b') %}
+          {% set first_prefix = first | regex_findall('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE|DOG)\\b') %}
           {% if first_prefix | length > 0 %}
             {{ first_prefix[0] | upper }}
           {% else %}
-            {% set labeled = text | regex_findall('(?im)(?:^|\\n)\\s*People\\s*:\\s*(NOPEOPLE|PEOPLE)\\b') %}
+            {% set labeled = text | regex_findall('(?im)(?:^|\\n)\\s*(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE|DOG)\\b') %}
             {% if labeled | length > 0 %}
               {{ labeled[0] | upper }}
             {% else %}
-              {% set exact = text | regex_findall('(?m)^\\s*(NOPEOPLE|PEOPLE)\\s*[.!]?\\s*$') %}
+              {% set exact = text | regex_findall('(?m)^\\s*(NOPEOPLE|PEOPLE|DOG)\\s*[.!]?\\s*$') %}
               {{ (exact[0] | upper) if exact | length > 0 else '' }}
             {% endif %}
           {% endif %}
@@ -273,21 +345,40 @@ actions:
           yes
         {% elif cleaned | regex_findall('(?i)(Describe local image files|For each frame analyzed|List the person/pet)') | length > 0 %}
           yes
-        {% elif label not in ['PEOPLE', 'NOPEOPLE'] %}
+        {% elif label not in ['PEOPLE', 'DOG', 'NOPEOPLE'] %}
           yes
         {% else %}
           no
         {% endif %}
       frigate_people: >-
-        {% set eid = frigate_person_sensor | default('', true) | string %}
-        {% if eid in ['', 'None', 'unknown', 'unavailable', '[]'] %}
-          no
-        {% elif eid.startswith('binary_sensor.') %}
-          {{ 'yes' if is_state(eid, 'on') else 'no' }}
-        {% elif eid.startswith('sensor.') %}
-          {{ 'yes' if (states(eid) | float(0)) > 0 else 'no' }}
+        {% if (saw_person | default('no') | string | trim) == 'yes' %}
+          yes
         {% else %}
-          no
+          {% set eid = frigate_person_sensor | default('', true) | string %}
+          {% if eid in ['', 'None', 'unknown', 'unavailable', '[]'] %}
+            no
+          {% elif eid.startswith('binary_sensor.') %}
+            {{ 'yes' if is_state(eid, 'on') else 'no' }}
+          {% elif eid.startswith('sensor.') %}
+            {{ 'yes' if (states(eid) | float(0)) > 0 else 'no' }}
+          {% else %}
+            no
+          {% endif %}
+        {% endif %}
+      frigate_dog: >-
+        {% if (saw_dog | default('no') | string | trim) == 'yes' %}
+          yes
+        {% else %}
+          {% set eid = frigate_dog_sensor | default('', true) | string | trim %}
+          {% if eid in ['', 'None', 'unknown', 'unavailable', '[]'] %}
+            no
+          {% elif eid.startswith('binary_sensor.') %}
+            {{ 'yes' if is_state(eid, 'on') else 'no' }}
+          {% elif eid.startswith('sensor.') %}
+            {{ 'yes' if (states(eid) | float(0)) > 0 else 'no' }}
+          {% else %}
+            no
+          {% endif %}
         {% endif %}
       # Clean human-readable summary — never include PEOPLE/NOPEOPLE tokens.
       log_description: >-
@@ -303,9 +394,9 @@ actions:
             {% if ns.cand | length < 1 %}
               {% set t = line | trim %}
               {% set t = t
-                | regex_replace('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE)\\s*[.!:\\-]*\\s*', '')
+                | regex_replace('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE|DOG)\\s*[.!:\\-]*\\s*', '')
                 | regex_replace('(?i)^(Alert|Phone alert|Person alert|Home log|Line\\s*[123])\\s*:\\s*', '')
-                | regex_replace('(?i)\\b(NOPEOPLE|PEOPLE)\\b[.!:\\-]*\\s*', '')
+                | regex_replace('(?i)\\b(NOPEOPLE|PEOPLE|DOG)\\b[.!:\\-]*\\s*', '')
                 | regex_replace('(?i)\\b(Phone alert|Person alert|Home log|Alert)\\s*:\\s*', '. ')
                 | regex_replace('\\s+', ' ')
                 | trim %}
@@ -320,24 +411,41 @@ actions:
             {{ ns.cand | truncate(140, true, '…') }}
           {% elif label == 'PEOPLE' or (frigate_people | string | trim) == 'yes' %}
             Person at {{ gate_name }}
+          {% elif label == 'DOG' or (frigate_dog | string | trim) == 'yes' %}
+            Dog at {{ gate_name }}
           {% else %}
             No people at {{ gate_name }}
           {% endif %}
         {% endif %}
-      # PEOPLE when model sees a person; FALLBACK when LLM fails/junk/errors (still notify + GIF).
+      # PEOPLE when model sees a person; DOG when the subject is a pet; FALLBACK on junk.
       gate_classification: >-
         {% set label = llm_label | string | trim | upper %}
         {% set unusable = (llm_unusable | string | trim) == 'yes' %}
         {% set summary = log_description | string | lower %}
+        {% set dog_hit = (frigate_dog | string | trim) == 'yes' %}
+        {% set person_hit = (frigate_people | string | trim) == 'yes' %}
+        {% set dog_in_text = summary | regex_findall('(?i)\\b(dog|puppy|canine|pet|animal)\\b') | length > 0 %}
         {% set describes_person = summary | regex_findall('(?i)\\b(person|people|someone|man|woman|child|human)\\b') | length > 0
            and summary | regex_findall('(?i)\\bno (person|people)\\b') | length == 0
            and 'opened' not in summary %}
         {% if unusable %}
-          FALLBACK
-        {% elif label == 'NOPEOPLE' and describes_person %}
+          {% if person_hit %}
+            PEOPLE
+          {% elif dog_hit %}
+            DOG
+          {% else %}
+            FALLBACK
+          {% endif %}
+        {% elif label == 'PEOPLE' and not person_hit and (dog_hit or dog_in_text) %}
+          DOG
+        {% elif label == 'NOPEOPLE' and describes_person and not dog_hit and not dog_in_text %}
           PEOPLE
-        {% elif label in ['PEOPLE', 'NOPEOPLE'] %}
+        {% elif label == 'NOPEOPLE' and (dog_hit or dog_in_text) %}
+          DOG
+        {% elif label in ['PEOPLE', 'DOG', 'NOPEOPLE'] %}
           {{ label }}
+        {% elif dog_hit and not person_hit %}
+          DOG
         {% else %}
           FALLBACK
         {% endif %}
@@ -350,17 +458,19 @@ actions:
           {% else %}
             {{ gate_name }} · Person
           {% endif %}
+        {% elif gate_classification == 'DOG' %}
+          {{ gate_name }} · Dog
         {% else %}
           {{ gate_name }} opened
         {% endif %}
       mobile_short: >-
-        {% if gate_classification == 'PEOPLE' %}
+        {% if gate_classification in ['PEOPLE', 'DOG'] %}
           {{ log_description | truncate(120, true, '…') }}
         {% else %}
           {{ gate_name }} opened
         {% endif %}
       should_notify: >-
-        {{ 'yes' if gate_classification in ['PEOPLE', 'FALLBACK'] else 'no' }}
+        {{ 'yes' if gate_classification in ['PEOPLE', 'DOG', 'FALLBACK'] else 'no' }}
       notify_services: >-
         {% set ns = namespace(services=[]) %}
         {% for p in (notify_people | default([], true)) %}
@@ -375,6 +485,31 @@ actions:
           {% endfor %}
         {% endfor %}
         {{ ns.services | to_json }}
+  - alias: Drop person wording when this visit is a dog
+    variables:
+      log_description: >-
+        {% if gate_classification != 'DOG' %}
+          {{ log_description }}
+        {% else %}
+          {% set t = log_description | string
+            | regex_replace('(?i)\\b(a |an )?(person|people|someone|man|woman|child|human)\\b', 'a dog')
+            | regex_replace('(?i)\\bone a dog\\b', 'A dog')
+            | regex_replace('\\s+', ' ')
+            | trim %}
+          {% if 'dog' in (t | lower) %}
+            {{ t | truncate(140, true, '…') }}
+          {% else %}
+            Dog at {{ gate_name }}
+          {% endif %}
+        {% endif %}
+  - alias: Refresh phone line from rewritten log
+    variables:
+      mobile_short: >-
+        {% if gate_classification in ['PEOPLE', 'DOG'] %}
+          {{ log_description | truncate(120, true, '…') }}
+        {% else %}
+          {{ gate_name }} opened
+        {% endif %}
   - action: input_text.set_value
     data:
       entity_id: input_text.gate_ai_last_gate

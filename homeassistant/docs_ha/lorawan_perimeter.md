@@ -20,9 +20,10 @@ These sensors are **YoLink DoorSensor** devices on the HA **YoLink** integration
    - Trigger: gate sensor goes to open (`on`).
    - Capture several JPEG stills from the paired Frigate/go2rtc camera entity.
    - Send the still set to **LLM Vision** `image_analyzer` (model currently `gpt-4o-mini`).
-   - Parse a three-line reply: classification (`PEOPLE` / `NOPEOPLE`), home log line, short phone line.
-   - If vision output is unusable, optionally fall back to a Frigate person occupancy entity.
-   - On `PEOPLE`, notify mobile app devices and write helpers under `input_text.gate_ai_*` / `input_datetime.gate_ai_last_analysis_time`.
+   - Parse a three-line reply: classification (`PEOPLE` / `DOG` / `NOPEOPLE`), home log line, short phone line.
+   - Latch Frigate person and dog occupancy during the still burst. A dog must not be notified as a person.
+   - If vision output is unusable, fall back to those Frigate occupancy entities.
+   - On `PEOPLE` or `DOG`, notify mobile app devices and write helpers under `input_text.gate_ai_*` / `input_datetime.gate_ai_last_analysis_time`.
 4. Older standalone "Gate Open Notification" automations that called `script.process_ai_analysis_and_notification` were **removed** (broken device conditions; superseded by blueprint instances). On LLM failure the gate blueprint still notifies with a short FALLBACK “{gate} opened” message plus GIF.
 
 ## Gateway path into HA
@@ -69,14 +70,14 @@ Automation (blueprint gate_open_llm_vision_people)
         v
 LLM Vision image_analyzer (gpt-4o-mini)
         |
-        +--> Line 1: PEOPLE or NOPEOPLE
+        +--> Line 1: PEOPLE or DOG or NOPEOPLE
         +--> Line 2: home log summary
         +--> Line 3: short phone alert text
         |
-        +--(optional)--> Frigate person occupancy fallback
+        +--(optional)--> Frigate person / dog occupancy fallback
         |
         v
-If PEOPLE: notify.mobile_app_* (+ person-linked devices)
+If PEOPLE or DOG: notify.mobile_app_* (+ person-linked devices)
         |
         v
 Helpers: gate_ai_last_gate / classification / summary / analysis_time
@@ -111,7 +112,8 @@ Vision analysis uses the **LLM Vision** Custom OpenAI-compatible provider pointe
 | :--- | :--- |
 | Gate stuck closed/open in HA | Check YoLink app/cloud, battery %, and HA YoLink integration |
 | AI automation runs but no phone alert | Classification may be `NOPEOPLE`, or notify service / person devices misconfigured |
-| Vision fails / junk tool-call text | Blueprint falls back to Frigate person sensor when configured |
+| GIF shows a dog but notify says person | LLM must classify `DOG`; Frigate dog occupancy demotes PEOPLE when no person was latched |
+| Vision fails / junk tool-call text | Blueprint falls back to Frigate person/dog sensors when configured |
 | Duplicate gate notifications | Legacy `East/West Gate Open Notification` automations were removed; only blueprint AI analysis instances should remain |
 | MQTT / Frigate occupancy unavailable | Camera stills can still work over HTTP. Occupancy fallback needs Frigate MQTT healthy |
 
