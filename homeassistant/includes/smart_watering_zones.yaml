@@ -19,7 +19,7 @@
   plant_profile: 13 hosta plants and mint in mulched bed
   irrigation_hardware: Drip hose about 5 meters long in a U pattern around the bed
   estimated_flow_gpm: 0.15-0.30
-  notes: Flow estimate based on typical dripline emitter rates around 0.6-1.0 GPH at roughly 12 inch spacing over 5 meters
+  notes: Weekly need ~25 mm (hosta H). Soil target 40-68%. Flow estimate from dripline emitters ~0.6-1.0 GPH at ~12 inch spacing over 5 meters.
   soil_sensor: sensor.garden_controller_soil_moisture_2
 - label: Front Lawn
   entity_id: valve.front_yard_controller_front_yard_zone
@@ -49,7 +49,7 @@
   plant_profile: Basil, parsley, kale, and peppers
   irrigation_hardware: Long soaker hose, about 30 feet
   estimated_flow_gpm: 0.25-0.50
-  notes: Zone dimensions are about 22ft x 3ft, black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
+  notes: Weekly need ~16 mm (WUCOLS M). Soil target 40-65%; skip when wet (>=65%). Zone ~22ft x 3ft, black topsoil, soaker-hose estimate 0.5-1.0 GPH per foot.
   soil_sensor: sensor.garden_controller_soil_moisture_3
 - label: Tomato
   entity_id: valve.vegitable_garden_timer_tomato_zone_zone
@@ -59,7 +59,7 @@
   plant_profile: 8 tomato plants
   irrigation_hardware: Long soaker hose, about 30 feet
   estimated_flow_gpm: 0.25-0.50
-  notes: Same setup style as Peppers and Kale zone; black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
+  notes: Weekly need ~25 mm (WUCOLS H). Soil target 45-62%. Typical dry soaker session 15-25 min — not 1-6 min token runs. Same setup style as Peppers and Kale zone; black topsoil.
   soil_sensor: sensor.garden_controller_soil_moisture_4
 - label: Zucchini
   entity_id: valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone
@@ -69,7 +69,7 @@
   plant_profile: 8 zucchini plants, 8 pea plants, and 8 eggplant plants
   irrigation_hardware: Amazon B0F174M21Y watering setup with 12 spray stake nozzles and 4 misters (for peas)
   estimated_flow_gpm: 1.2-2.0
-  notes: Approximate combined flow estimated from common micro-irrigation ranges (spray stakes plus low-flow misters); tune after observing pressure and runoff
+  notes: Weekly need ~25 mm (high-water veg). When driest probe <48% (esp. <30%), run 15-25 min micro — never 1-6 min. Approximate flow from spray stakes + misters; tune after observing runoff.
   soil_sensor: sensor.garden_controller_soil_moisture_6
   soil_sensor_secondary: sensor.garden_controller_soil_moisture_1
 - label: Kitchen Lawn
@@ -90,5 +90,5 @@
   plant_profile: 24 corn plants
   irrigation_hardware: Soaker hose in bed, same style as Flower Bed dripline/soaker layout
   estimated_flow_gpm: 0.25-0.50
-  notes: Roughly same footprint as Tomato zone (~22ft x 3ft); black topsoil, soaker-hose estimate based on typical 0.5-1.0 GPH per foot
+  notes: Weekly need ~25 mm (sweet corn H). No soil probe — prefer 12-20 min soaker when overdue/dry. Roughly same footprint as Tomato (~22ft x 3ft).
   soil_sensor: ''
