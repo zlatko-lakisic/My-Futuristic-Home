@@ -1,6 +1,6 @@
 # Garden Agentic Watering
 
-Site documentation for the LLM-driven sequential irrigation stack: Home Assistant blueprints/packages, the HACS **Agentic Watering** integration, BHyve valves, and the Jetson-hosted OpenAI-compatible LLM endpoint.
+Site documentation for the LLM-driven sequential irrigation stack: Home Assistant blueprints/packages, the HACS **Agentic Watering** integration (**AO Reach** on Jetson), BHyve valves, and weather-mcp.
 
 For the operator wiki page, see [Home Assistant Irrigation & AI Watering](https://github.com/zlatko-lakisic/My-Futuristic-Home/wiki/Home-Assistant-Irrigation-AI-Watering).
 
@@ -8,48 +8,51 @@ For the operator wiki page, see [Home Assistant Irrigation & AI Watering](https:
 
 | Repo | Role |
 |------|------|
-| [hacs-agentic-watering](https://github.com/zlatko-lakisic/hacs-agentic-watering) | HACS integration + blueprint + generic script/REST packages (`v1.2.0` on HA) |
+| [hacs-agentic-watering](https://github.com/zlatko-lakisic/hacs-agentic-watering) | HACS integration + blueprint + script/REST + **AO Reach** (`v1.4.0+`) |
+| [agentic-orchestration-reach](https://github.com/zlatko-lakisic/agentic-orchestration-reach) | AO Reach SDK (`ao_reach`) |
 | [My-Futuristic-Home](https://github.com/zlatko-lakisic/My-Futuristic-Home) | Site YAML: zones, blueprint inputs, instance helpers, dashboards, sync |
-| [agentic-orchestration](https://github.com/zlatko-lakisic/agentic-orchestration) | Jetson k3s coordinator / warm pool / plant-knowledge MCP / OpenAI-compatible edge |
+| [agentic-orchestration](https://github.com/zlatko-lakisic/agentic-orchestration) | Jetson AO engine / Ollama / session overlay |
+| [weather-mcp](https://github.com/weather-mcp/weather-mcp) | Tunnel MCP for forecast / precip / alerts |
 | [hacs-msnswitch](https://github.com/zlatko-lakisic/hacs-msnswitch) | Power watchdogs (NAS2 + Omega Jetson outlet among others) |
 | [docker-infrastructure](https://git.omega-it.solutions/omegait/docker-infrastructure.git) | Traefik + Warpgate for `jetson.ao.mostardesigns.com` → Jetson AO |
 
 ## Architecture (current)
 
 ```mermaid
-flowchart TB
-  subgraph ha [Home Assistant 192.168.89.25]
-    DUSK[automation.ai_sequential_watering dusk]
-    DAWN[automation.ai_sequential_watering_lawns_dawn]
-    BP[blueprint smart_sequential_watering]
-    SCR[script.ai_sequential_watering]
-    REST[rest_command.* from HACS packages]
-    MQTT[MQTT snapshot topic]
-    BHYVE[bhyve.start_watering / stop_watering]
-  end
-  subgraph edge [Edge]
-    TR[Traefik + Warpgate]
-    JET[Jetson Orin 172.16.90.20]
-    OLL[Ollama :11434]
-    COORD[k3s agentic-coordinator NodePort 30487]
-  end
-  DUSK --> BP --> SCR
-  DAWN --> BP
-  SCR --> REST
-  REST -->|OWM / Open-Meteo| WX[Weather APIs]
-  REST -->|Recorder history| HAAPI[HA REST]
-  REST -->|llm_api_url chat completions| TR
-  TR --> COORD
-  COORD -.-> OLL
-  SCR --> BHYVE
-  SCR --> MQTT
+flowchart TD
+  dusk[Dusk/dawn blueprint] --> script[script.ai_sequential_watering]
+  script --> soil[HA: soil + valve history]
+  script --> svc[agentic_watering.plan_zone_minutes]
+  svc --> bridge[SessionBridge on Jetson :8765]
+  bridge --> overlay[session_overlay_register client.* agents]
+  bridge --> wxMcp[tunnel MCP weather-mcp via npx]
+  bridge --> chat["chat runMode=dynamic selectedAgentProviderIds"]
+  chat --> engine[AO engine]
+  engine --> wxMcp
+  engine --> reply[MINUTES line]
+  reply --> clamp[HA parse + probe-skip]
+  clamp --> valves[bhyve.start/stop]
+  script -.->|fallback| httpLegacy["rest_command.ollama_chat_completions"]
 ```
 
-1. **Dusk** (sunset) and **dawn** (sunrise, Jun 30–Sep 1, East + Kitchen lawns only) automations use the HACS blueprint.
-2. Blueprint calls **`script.ai_sequential_watering`** with site zone catalogs from `homeassistant/includes/`.
-3. Script gathers forecast + past rain + soil/valve history, then one **per-zone** LLM call via `rest_command.ollama_chat_completions`.
-4. LLM endpoint: `https://jetson.ao.mostardesigns.com/v1/chat/completions` with `Authorization: Bearer <ao_…>` (minted AO API token; see [AO Web UI — API access tokens](https://github.com/zlatko-lakisic/agentic-orchestration/wiki/Web-UI#api-access-tokens)).
-5. Zones run **sequentially** through Orbit BHyve with settle delays; run state is snapshotted to MQTT for resume-after-restart.
+1. **Dusk** / **dawn** automations use the HACS blueprint → `script.ai_sequential_watering`.
+2. Script gathers soil/valve history (+ optional Open-Meteo fallback), then calls **`agentic_watering.plan_zone_minutes`** (AO Reach `chat` with selected agents).
+3. Jetson engine requires `AGENTIC_SERVE_SESSION_OVERLAY=1` and `AGENTIC_SERVE_MCP_TUNNEL=1`; mint token **`appId: agentic-watering`** (see [ao_api_tokens.md](ao_api_tokens.md)).
+4. Agents use **weather-mcp** for forecast/precip; HA still sequences BHyve valves.
+5. If Reach fails, script falls back to legacy `/v1/chat/completions`.
+
+### Pre / post deploy verification
+
+```bash
+# Pre-deploy (no valves)
+cd custom_components/../..  # hacs-agentic-watering checkout
+python -m pytest tests/ -q
+python scripts/mock_watering_run.py
+# HA: script.ai_watering_simulate_test (simulate=true)
+
+# Post-deploy
+python scripts/verify_live_watering.py --ha-url https://ha.mostardesigns.com --token <LONG_LIVED>
+```
 
 ## What lives where
 
@@ -57,9 +60,11 @@ flowchart TB
 
 | Path | Purpose |
 |------|---------|
-| `packages/smart_sequential_watering_script.yaml` | `script.ai_sequential_watering` |
-| `packages/rest_command_ai_watering.yaml` | OWM, Open-Meteo (72h past), HA history, chat completions |
-| `blueprints/automation/zlatko-lakisic/smart_sequential_watering.yaml` | Dusk/dawn/manual trigger wrapper |
+| `ao_reach/` | Vendored AO Reach 0.9.0 |
+| `overlays/` | `client.irrigation_planner`, `client.irrigation_zone_specialist`, weather-mcp |
+| `packages/smart_sequential_watering_script.yaml` | `script.ai_sequential_watering` (Reach-first) |
+| `packages/rest_command_ai_watering.yaml` | OWM, Open-Meteo, HA history, legacy chat completions |
+| `blueprints/automation/zlatko-lakisic/smart_sequential_watering.yaml` | Dusk/dawn wrapper |
 
 Live HA `configuration.yaml` includes those packages:
 

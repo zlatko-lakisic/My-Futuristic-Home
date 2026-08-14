@@ -60,14 +60,41 @@ curl -sS http://127.0.0.1:11434/v1/models
 
 Auth: browser UI via Warpgate / AO web session; **machine clients** (Home Assistant watering) use minted API tokens — see [AO Web UI — API access tokens](https://github.com/zlatko-lakisic/agentic-orchestration/wiki/Web-UI#api-access-tokens).
 
-Home Assistant watering uses:
+### Reach (session overlay) — Agentic Watering
+
+HACS **Agentic Watering** talks to the AO **engine** over AO Reach (WebSocket), not only the chat-completions proxy:
+
+| Item | Value |
+|------|--------|
+| Engine base URL | `https://172.16.90.20:8765` (LAN) — expose/publish engine `:8765` if not already |
+| Flags required | `AGENTIC_SERVE_SESSION_OVERLAY=1`, `AGENTIC_SERVE_MCP_TUNNEL=1` |
+| Token `appId` | **`agentic-watering`** (mint separately; do **not** reuse `home-assistant` or `comstar-ha`) |
+| mTLS | **Required** — engine reports `mtls.required: true`; mint an **enrollment token** as well as the API token |
+| Client | HA host needs **Node.js / `npx`** for tunnel MCP `@dangahagan/weather-mcp` |
+| See | [garden_agentic_watering.md](../homeassistant/docs_ha/garden_agentic_watering.md), [ao_api_tokens.md](../homeassistant/docs_ha/ao_api_tokens.md) |
+
+Verify on device after enabling flags:
+
+```bash
+curl -skS https://127.0.0.1:8765/health
+# WS clients expect hello.sessionOverlay == true
+```
+
+**mTLS is enforced on `/ws`.** A bearer token alone returns **403** on the WebSocket
+upgrade. `GET /api/v1/mtls/ca` is unauthenticated (clients pin the CA on first
+enroll), but `POST /api/v1/mtls/enroll` needs a dedicated enrollment token — an API
+token is rejected with `400 invalid enrollment token`. Agentic Watering stores the
+redeemed material in `config/agentic_watering_mtls_<entry_id>/` and re-pairs via the
+`agentic_watering.pair` service.
+
+### Legacy OpenAI-compatible chat (still used by some tools)
 
 ```text
 https://jetson.ao.mostardesigns.com/v1/chat/completions
 Authorization: Bearer ao_<token>
 ```
 
-(helper: `input_text.ai_watering_llm_api_key`; see [garden_agentic_watering.md](../homeassistant/docs_ha/garden_agentic_watering.md)).
+(helper: `input_text.ai_watering_llm_api_key` for older HTTP path; Reach uses the integration config token with `appId: agentic-watering`).
 
 **ADA AO** (NVR / motion vision for gates + zone AI) is a separate edge host:
 
@@ -99,5 +126,5 @@ Env highlights (non-secret): `HOME_ASSISTANT_URL=https://ha.mostardesigns.com`, 
 ## Related
 
 - [agentic-orchestration](https://github.com/zlatko-lakisic/agentic-orchestration) — product README, k8s manifests, Jetson scripts
-- [hacs-agentic-watering](https://github.com/zlatko-lakisic/hacs-agentic-watering) — HA consumer of `/v1/chat/completions`
+- [hacs-agentic-watering](https://github.com/zlatko-lakisic/hacs-agentic-watering) — HA consumer via **AO Reach** (`SessionBridge.chat`) + optional legacy `/v1/chat/completions`
 - [infrastructure/msn_switches.md](msn_switches.md) — power path for this host
