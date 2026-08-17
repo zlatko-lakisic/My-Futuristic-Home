@@ -1,6 +1,6 @@
 # Zone Activity AI Notifications
 
-Frigate zone occupancy → snapshot GIF → LLM Vision → phone notify for driveway and front steps.
+Frigate zone occupancy → snapshot GIF → **Comstar Vision** (AO Reach on ADA) → phone notify for driveway and front steps.
 
 Wiki mirror: [Home Assistant Automations](https://github.com/zlatko-lakisic/My-Futuristic-Home/wiki/Home-Assistant-Automations) (catalog section), blueprint notes on [Home Assistant Blueprints](https://github.com/zlatko-lakisic/My-Futuristic-Home/wiki/Home-Assistant-Blueprints).
 
@@ -12,20 +12,20 @@ Document the `zone_activity_llm_vision` blueprint and live instances that replac
 
 1. Frigate reports person and/or car occupancy in a named zone (`driveway_zone`, `near_front_door`).
 2. On a car-first visit, capture starts immediately (live still + Frigate detection snapshot as frame 1). Person-wait happens **after** those early frames so the vehicle is not already gone. Remaining stills can still pick up a driver.
-3. Automation waits for Frigate LPR (`sensor.driveway_last_recognized_plate`) to update from the AI server, then asks LLM Vision to describe.
+3. Automation waits for Frigate LPR (`sensor.driveway_last_recognized_plate`) to update from the AI server, then asks Comstar Vision to describe.
 4. Frigate face sub-labels for the visit are resolved when configured.
-5. LLM Vision (`gpt-4o-mini` via **ADA AO** `https://ada.ao.mostardesigns.com/v1/chat/completions`, Bearer `ao_…` token) analyzes the **first few** frames (GIF keeps the full burst) so empty late frames do not force `CLEAR`/junk.
+5. Comstar Vision (`comstar_vision.image_analyzer` → ADA AO Reach `:8765`, `appId: comstar-vision`) analyzes the **first few** frames (GIF keeps the full burst) so empty late frames do not force `CLEAR`/junk. AO picks the vision model from the engine catalog (plugin overlays agents / MCPs / skills / harness — no model pin). Multimodal Reach: [hacs-comstar-vision handoff](https://github.com/zlatko-lakisic/hacs-comstar-vision/blob/main/docs/AO_REACH_MULTIMODAL_HANDOFF.md).
 6. Reply must be three plain lines: classification (`PERSON` / `CAR` / `DOG` / `OTHER` / `CLEAR`), home log (≤160), phone line (≤100).
    - Family Car (LPR known plate): say Family Car — no grey Hyundai SUV / color / make / model.
    - Unknown vehicle: color + make/model, and a plate if LPR or the stills clearly show one.
 7. Notify only for confirmed activity:
-   - Driveway: `PERSON` or `CAR` (or Frigate latch fallback if LLM junk).
+   - Driveway: `PERSON` or `CAR` (or Frigate latch fallback if vision junk).
    - Front steps: `PERSON` only (`people_only: true`).
 8. Event holds until trigger sensors stay clear for `event_clear_seconds` (default 180) so one visit does not spam.
 
 Occupancy used for fallback is **latched** during the visit (trigger + capture), including optional dog occupancy for “with dog” fallback text. Checking live Frigate state after a long capture+LLM window was dropping real alerts.
 
-Driveway capture is tuned for cars that cross the apron quickly: settle 0 on car-first, 8 frames @ 1s (first 4 immediately, then up to 12s for a person before the rest). LPR wait is 15s before the LLM description.
+Driveway capture is tuned for cars that cross the apron quickly: settle 0 on car-first, 8 frames @ 1s (first 4 immediately, then up to 12s for a person before the rest). LPR wait is 15s before the vision description.
 
 ## Live instances
 

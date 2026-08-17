@@ -59,7 +59,8 @@ Entries marked **ignored** or **not_loaded** are discovery leftovers or intentio
 | `go2rtc` | go2rtc | loaded | Stream proxy used with Frigate / Lovelace. |
 | `axis` | Five Axis cameras (P1448-LE / P3375-VE) | loaded | Native Axis camera devices alongside Frigate. |
 | `generic` | `192_168_89_14` | loaded | Generic camera / IP endpoint. |
-| `llmvision` | LLM Vision Settings + Custom OpenAI compatible Provider | loaded | Gate-open multi-frame people classification and event summaries. |
+| `llmvision` | LLM Vision Settings + Custom OpenAI compatible Provider | loaded | Legacy / event_summary; gate+zone motion moved to Comstar Vision |
+| `comstar_vision` | Comstar Vision (AO Reach) | install + config entry | Gate/zone still-burst `image_analyzer` via ADA Reach |
 | `mcp_server` | Assist | loaded | Expose Assist / MCP tooling to agents. |
 
 ## Networking and infrastructure monitoring

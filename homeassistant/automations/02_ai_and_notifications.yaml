@@ -1,4 +1,4 @@
-﻿- id: '1748680509520'
+- id: '1748680509520'
   alias: LLM Testing
   description: ''
   triggers: []
@@ -27,7 +27,7 @@
   mode: single
 - id: gate_open_llm_east
   alias: East Gate Open AI Analysis
-  description: Blueprint gate_open_llm_vision_people â€” east gate.
+  description: Blueprint gate_open_llm_vision_people — east gate.
   use_blueprint:
     path: gate_open_llm_vision_people.yaml
     input:
@@ -39,8 +39,7 @@
       camera: camera.east_side
       frigate_person_sensor: binary_sensor.east_side_gate_person_occupancy
       frigate_dog_sensor: binary_sensor.east_side_dog_occupancy
-      llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
-      llmvision_model: gpt-4o-mini
+      vision_model: gpt-4o-mini
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /backyard-yaml/backyard-east-side
@@ -49,7 +48,7 @@
       notify_service: notify.notify
 - id: gate_open_llm_west
   alias: West Gate Open AI Analysis
-  description: Blueprint gate_open_llm_vision_people â€” west gate.
+  description: Blueprint gate_open_llm_vision_people — west gate.
   use_blueprint:
     path: gate_open_llm_vision_people.yaml
     input:
@@ -60,8 +59,7 @@
       camera: camera.west_side_2
       frigate_person_sensor: binary_sensor.west_side_gate_person_occupancy
       frigate_dog_sensor: binary_sensor.west_side_dog_occupancy
-      llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
-      llmvision_model: gpt-4o-mini
+      vision_model: gpt-4o-mini
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /backyard-yaml/backyard-west-side
@@ -70,7 +68,7 @@
       notify_service: notify.notify
 - id: gate_open_llm_back_yard_gate
   alias: Back Yard Gate Open AI Analysis
-  description: Blueprint gate_open_llm_vision_people â€” fence / back yard gate.
+  description: Blueprint gate_open_llm_vision_people — fence / back yard gate.
   use_blueprint:
     path: gate_open_llm_vision_people.yaml
     input:
@@ -81,8 +79,7 @@
       camera: camera.back_yard_2
       frigate_person_sensor: binary_sensor.back_yard_person_occupancy
       frigate_dog_sensor: binary_sensor.back_yard_dog_occupancy
-      llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
-      llmvision_model: gpt-4o-mini
+      vision_model: gpt-4o-mini
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /backyard-yaml/backyard-back-yard
@@ -109,8 +106,7 @@
         Family Car and do not describe color/make/model. Otherwise describe the vehicle
         and include a plate only when clearly readable. Never invent plates.
       camera: camera.driveway
-      llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
-      llmvision_model: gpt-4o-mini
+      vision_model: gpt-4o-mini
       target_width: 1280
       capture_settle_seconds: 0
       prefer_person_wait_seconds: 12
@@ -145,8 +141,7 @@
       car_sensor: ''
       people_only: true
       camera: camera.front_door
-      llmvision_provider: 01KR1YDS2H88N44EA4MJHW0PP8
-      llmvision_model: gpt-4o-mini
+      vision_model: gpt-4o-mini
       target_width: 1280
       capture_settle_seconds: 3
       prefer_person_wait_seconds: 0
@@ -205,4 +200,3 @@
       file_path: /media/local/snapshots/{{ camera_file_path }}/last_motion.jpg
       notification_channel: '{{ camera }} snapshot'
       model: gpt-4o-mini
-
