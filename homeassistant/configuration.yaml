@@ -293,3 +293,5 @@ google_assistant: !include includes/google_assistant.yaml
 system_log:
   fire_event: true
 
+input_text: !include input_text.yaml
+
