@@ -19,12 +19,12 @@ These sensors are **YoLink DoorSensor** devices on the HA **YoLink** integration
 3. Enabled automations use blueprint `gate_open_llm_vision_people.yaml`:
    - Trigger: gate sensor goes to open (`on`).
    - Capture several JPEG stills from the paired Frigate/go2rtc camera entity.
-   - Send the still set to **LLM Vision** `image_analyzer` (model currently `gpt-4o-mini`).
+   - Send the still set to **Comstar Vision** `image_analyzer` (AO Reach on ADA).
    - Parse a three-line reply: classification (`PEOPLE` / `DOG` / `NOPEOPLE`), home log line, short phone line.
    - Latch Frigate person and dog occupancy during the still burst. A dog must not be notified as a person.
    - If vision output is unusable, fall back to those Frigate occupancy entities.
    - On `PEOPLE` or `DOG`, notify mobile app devices and write helpers under `input_text.gate_ai_*` / `input_datetime.gate_ai_last_analysis_time`.
-4. Older standalone "Gate Open Notification" automations that called `script.process_ai_analysis_and_notification` were **removed** (broken device conditions; superseded by blueprint instances). On LLM failure the gate blueprint still notifies with a short FALLBACK “{gate} opened” message plus GIF.
+4. Older standalone "Gate Open Notification" automations that called `script.process_ai_analysis_and_notification` were **removed** (broken device conditions; superseded by blueprint instances). On vision failure the gate blueprint still notifies with a short FALLBACK “{gate} opened” message plus GIF.
 
 ## Gateway path into HA
 
@@ -68,7 +68,7 @@ Automation (blueprint gate_open_llm_vision_people)
         |         (Frigate / go2rtc camera.*, short interval)
         |
         v
-LLM Vision image_analyzer (gpt-4o-mini)
+Comstar Vision image_analyzer (AO Reach ADA, appId comstar-vision)
         |
         +--> Line 1: PEOPLE or DOG or NOPEOPLE
         +--> Line 2: home log summary
@@ -100,11 +100,11 @@ Helpers in `configuration.yaml`: `input_text.gate_ai_last_gate`, `gate_ai_last_c
 
 ### Inference path
 
-Vision analysis uses the **LLM Vision** Custom OpenAI-compatible provider pointed at **ADA AO**:
+Vision analysis uses **Comstar Vision** (`comstar_vision.image_analyzer`) over **AO Reach** to the ADA engine:
 
-`https://ada.ao.mostardesigns.com/v1/chat/completions`
+`https://10.0.10.16:8765` (WSS `/ws`, `appId: comstar-vision`)
 
-(model currently `gpt-4o-mini`). Requests require `Authorization: Bearer <ao_…>` — mint an external-client token in ADA Admin → Access → API tokens ([docs](https://github.com/zlatko-lakisic/agentic-orchestration/wiki/Web-UI#api-access-tokens)). This is separate from Jetson watering (`jetson.ao.mostardesigns.com`). Frigate supplies the camera feed and optional person occupancy fallback.
+Mint API + mTLS enrollment tokens separately — see [ao_api_tokens.md](ao_api_tokens.md). Multimodal `images` on Reach chat is required ([handoff](https://github.com/zlatko-lakisic/hacs-comstar-vision/blob/main/docs/AO_REACH_MULTIMODAL_HANDOFF.md)). AO selects the vision model; configure agents / MCPs / skills / harness in the Comstar Vision options. This is separate from Jetson watering and from Comstar Assist (`comstar-ha`). Frigate supplies the camera feed and optional person/dog occupancy fallback.
 
 ## Troubleshooting
 

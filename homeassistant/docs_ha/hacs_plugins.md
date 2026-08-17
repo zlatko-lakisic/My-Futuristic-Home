@@ -39,7 +39,8 @@ Owner-maintained forks used in production:
 | :--- | :--- | :--- | :--- |
 | `hacs/integration` | 2.0.5 | HACS itself | Store |
 | `zlatko-lakisic/hacs-agentic-watering` | v1.2.0 | Dusk/dawn sequential watering scripts, REST, blueprint | Irrigation AI |
-| `valentinfrlch/ha-llmvision` | v1.7.0 | Gate/camera vision analysis actions | Vision / notify |
+| `valentinfrlch/ha-llmvision` | v1.7.0 | Legacy vision actions (event_summary / older scripts) | Vision / notify |
+| `zlatko-lakisic/hacs-comstar-vision` | 1.0.0 | Gate/zone still analysis via AO Reach (replaces LLM Vision for motion) | Vision / notify |
 | `blakeblackshear/frigate-hass-integration` | v5.15.4 | Frigate cameras and MQTT entities in HA | NVR |
 | `AlexxIT/WebRTC` | v3.6.1 | Low-latency camera streams in Lovelace | NVR UI |
 | `nielsfaber/alarmo` | v1.10.18 | Self-monitored alarm panel (arm modes, sensor tiers) | Security |

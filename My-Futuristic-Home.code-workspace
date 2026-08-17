@@ -29,6 +29,12 @@
 		},
 		{
 			"path": "../hacs-comstar"
+		},
+		{
+			"path": "../hacs-garden-speaker"
+		},
+		{
+			"path": "../hacs-comstar-vision"
 		}
 	],
 	"settings": {}

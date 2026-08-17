@@ -1,10 +1,9 @@
 blueprint:
-  name: Gate open — LLM Vision people alert
+  name: Gate open — Comstar Vision people alert
   description: |
     When a gate contact opens, capture several still JPEGs from the camera at short intervals (same mechanism as
-    Lovelace snapshots — works with Frigate/go2rtc feeds). Those files are sent together to LLM Vision **image_analyzer**
-    so the model sees multiple frames without using **stream_analyzer** (which relies on camera ``entity_picture`` and
-    internal HTTP fetches and often fails with all cameras offline on Frigate cameras).
+    Lovelace snapshots — works with Frigate/go2rtc feeds). Those files are sent together to Comstar Vision
+    **image_analyzer** (AO Reach on ADA) so the model sees multiple frames without using stream_analyzer.
 
     Frames are also stitched into an animated GIF (and a short MP4) under ``/config/www/tmp`` for Companion
     notifications (Android 14+ animates GIFs) and dashboard “last clip” cards.
@@ -50,7 +49,7 @@ blueprint:
     frigate_person_sensor:
       name: Frigate person sensor (fallback)
       description: >
-        Optional. Used when LLM Vision returns tool-call junk or UNKNOWN.
+        Optional. Used when Comstar Vision returns tool-call junk or UNKNOWN.
         Prefer binary_sensor.*_person_occupancy; sensor.*_person_count also works (on if > 0).
       default: ""
       selector:
@@ -69,14 +68,9 @@ blueprint:
           domain:
             - binary_sensor
             - sensor
-    llmvision_provider:
-      name: LLM Vision provider
-      description: Config entry for your CodeProject / OpenAI-compatible provider.
-      selector:
-        config_entry:
-          integration: llmvision
-    llmvision_model:
-      name: Vision model
+    vision_model:
+      name: Vision model hint
+      description: Soft model hint for Comstar Vision / ADA AO (e.g. gpt-4o-mini).
       default: gpt-4o-mini
       selector:
         text:
@@ -238,11 +232,10 @@ actions:
       # Animated GIF for Companion (Android 14+) and dashboard; still used as fallback below.
       notify_media_image: '{{ public_gif_url }}'
       dashboard_media_rel: '{{ clip_gif_rel }}'
-  - action: llmvision.image_analyzer
+  - action: comstar_vision.image_analyzer
     continue_on_error: true
     data:
-      provider: !input llmvision_provider
-      model: !input llmvision_model
+      model: !input vision_model
       image_file: '{{ clip_image_files }}'
       include_filename: false
       store_in_timeline: false

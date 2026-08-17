@@ -1,10 +1,10 @@
 blueprint:
-  name: Zone activity — LLM Vision alert
+  name: Zone activity — Comstar Vision alert
   description: |
     When Frigate reports activity in a zone, settle briefly, capture a longer still
     burst (optionally waiting for a person if a car triggered first), stitch a GIF,
-    resolve any Frigate-recognized faces for the visit, ask LLM Vision what is there,
-    and notify only when confirmed.
+    resolve any Frigate-recognized faces for the visit, ask Comstar Vision (AO Reach)
+    what is there, and notify only when confirmed.
 
     - Driveway mode: notify for PERSON / CAR. Capture starts immediately on a car so the
       vehicle is in the first frames (Frigate detection snapshot overlays frame 1).
@@ -85,13 +85,9 @@ blueprint:
       selector:
         entity:
           domain: camera
-    llmvision_provider:
-      name: LLM Vision provider
-      selector:
-        config_entry:
-          integration: llmvision
-    llmvision_model:
-      name: Vision model
+    vision_model:
+      name: Vision model hint
+      description: Soft model hint for Comstar Vision / ADA AO (e.g. gpt-4o-mini).
       default: gpt-4o-mini
       selector:
         text:
@@ -608,11 +604,10 @@ actions:
         {{ parts | join(', ') }}
       has_recognized_people: >-
         {{ 'yes' if (recognized_people_label | string | trim | length) > 0 else 'no' }}
-  - action: llmvision.image_analyzer
+  - action: comstar_vision.image_analyzer
     continue_on_error: true
     data:
-      provider: !input llmvision_provider
-      model: !input llmvision_model
+      model: !input vision_model
       image_file: '{{ llm_image_files }}'
       include_filename: false
       store_in_timeline: false

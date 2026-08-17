@@ -59,7 +59,7 @@ Docs: [Garden Agentic Watering](garden_agentic_watering.md).
 
 | Entity | State | Role |
 | :--- | :--- | :--- |
-| `automation.east_gate_open_ai_analysis` | on | YoLink east gate → snapshot + LLM Vision people/dog alert |
+| `automation.east_gate_open_ai_analysis` | on | YoLink east gate → snapshot + Comstar Vision people/dog alert |
 | `automation.west_gate_open_ai_analysis` | on | West gate → same blueprint |
 | `automation.back_yard_gate_open_ai_analysis` | on | Fence / back yard gate → same blueprint |
 | `automation.near_driveway_zone_ai_analysis` | on | Frigate `driveway_zone` person/car → GIF + LLM zone alert |
