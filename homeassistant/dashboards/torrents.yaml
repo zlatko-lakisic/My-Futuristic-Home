@@ -8,6 +8,10 @@
 # qBittorrent Plus (HACS): instance sensors + hybrid active-torrent entities.
 # Speed gauges & transfer chart use template sensors (KiB/s): see packages/qbittorrent_speed_k.yaml.
 # Active transfers: auto-entities + button-card rows; sort via input_select.qbittorrent_active_sort.
+# Tapping a row opens the Radarr/Sonarr detail sheet (last two cards in the section) via
+# input_text.torrent_detail_hash; metadata from sensor.arr_download_details. The sheet is
+# dismissed by the backdrop card only, never by taps on the sheet itself. Hold a row for
+# the qBittorrent more-info dialog (pause/resume).
 # Responsive: layout-card + button-card extra_styles @media (1100px / 700px / 600px).
 
 button_card_templates:
@@ -16,7 +20,21 @@ button_card_templates:
     show_name: false
     show_state: false
     triggers_update: all
+    # Tap stores this torrent's infohash in input_text.torrent_detail_hash, which the
+    # detail sheet at the bottom of this view renders. Hold still opens the qBittorrent
+    # more-info dialog for pause/resume.
     tap_action:
+      action: call-service
+      service: input_text.set_value
+      service_data:
+        entity_id: input_text.torrent_detail_hash
+        value: |
+          [[[
+            const slug = entity.entity_id.slice(7, -8);
+            const st = hass.states[`sensor.${slug}_state`];
+            return String((st && st.attributes.torrent_hash) || '').toUpperCase();
+          ]]]
+    hold_action:
       action: more-info
     styles:
       card:
@@ -916,3 +934,342 @@ views:
                       }] %}
                     {% endfor %}
                     {{ out.rows }}
+
+          # Dimmed backdrop for the Radarr/Sonarr detail sheet below. Tapping it is what
+          # closes the sheet; the sheet card itself is inert (tap_action none), so taps on
+          # the sheet no longer dismiss it.
+          - type: custom:button-card
+            entity: input_text.torrent_detail_hash
+            visibility:
+              - condition: state
+                entity: input_text.torrent_detail_hash
+                state_not: ""
+              - condition: state
+                entity: input_text.torrent_detail_hash
+                state_not: unknown
+              - condition: state
+                entity: input_text.torrent_detail_hash
+                state_not: unavailable
+            show_icon: false
+            show_name: false
+            show_state: false
+            show_label: false
+            triggers_update:
+              - input_text.torrent_detail_hash
+            tap_action:
+              action: call-service
+              service: input_text.set_value
+              service_data:
+                entity_id: input_text.torrent_detail_hash
+                value: ""
+            styles:
+              card:
+                # Second line of defence: never let the backdrop swallow taps on the
+                # dashboard if the visibility conditions above are ever not applied.
+                - display: |
+                    [[[
+                      const v = String((states['input_text.torrent_detail_hash'] || {}).state || '').trim();
+                      return (!v || v === 'unknown' || v === 'unavailable') ? 'none' : 'block';
+                    ]]]
+                - position: fixed
+                - top: 0
+                - left: 0
+                - right: 0
+                - bottom: 0
+                - z-index: 998
+                - background: rgba(0, 0, 0, 0.72)
+                - backdrop-filter: blur(3px)
+                - border: none
+                - border-radius: 0
+                - box-shadow: none
+                - padding: 0
+                - margin: 0
+
+          # Radarr/Sonarr detail sheet for the row tapped above, from
+          # sensor.arr_download_details (packages/arr_queue_art.yaml). This card *is* the
+          # sheet box (fixed and centred) so the ✕ and the deep link can be nested cards:
+          # an <a> element inside a button-card never navigates, because the card's own
+          # action handler cancels the click.
+          - type: custom:button-card
+            entity: input_text.torrent_detail_hash
+            visibility:
+              - condition: state
+                entity: input_text.torrent_detail_hash
+                state_not: ""
+              - condition: state
+                entity: input_text.torrent_detail_hash
+                state_not: unknown
+              - condition: state
+                entity: input_text.torrent_detail_hash
+                state_not: unavailable
+            show_icon: false
+            show_name: false
+            show_state: false
+            show_label: false
+            triggers_update:
+              - input_text.torrent_detail_hash
+              - sensor.arr_download_details
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+            double_tap_action:
+              action: none
+            styles:
+              card:
+                - display: |
+                    [[[
+                      const v = String((states['input_text.torrent_detail_hash'] || {}).state || '').trim();
+                      return (!v || v === 'unknown' || v === 'unavailable') ? 'none' : 'block';
+                    ]]]
+                - position: fixed
+                - top: 50%
+                - left: 50%
+                - transform: translate(-50%, -50%)
+                - width: calc(100% - 32px)
+                - max-width: 760px
+                - max-height: 86vh
+                - overflow-y: auto
+                - overflow-x: hidden
+                - z-index: 999
+                - background: "#1b1b1b"
+                - border: 1px solid rgba(255, 255, 255, 0.12)
+                - border-radius: 16px
+                - box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6)
+                - padding: 0
+                - margin: 0
+                # button-card centres and nowraps everything it renders, which pushed the
+                # description off the sheet horizontally.
+                - text-align: left
+                - white-space: normal
+              grid:
+                - grid-template-areas: '"body" "link"'
+                - grid-template-columns: minmax(0, 1fr)
+              custom_fields:
+                body:
+                  - width: 100%
+                  - min-width: 0
+                x:
+                  - grid-area: body
+                  - position: absolute
+                  - top: 10px
+                  - right: 12px
+                  - z-index: 3
+                link:
+                  - justify-self: start
+                  - padding: 0 20px 20px
+            custom_fields:
+              # Close badge and deep link are nested cards so their own tap_action runs.
+              x:
+                card:
+                  type: custom:button-card
+                  icon: mdi:close
+                  show_name: false
+                  show_state: false
+                  show_label: false
+                  size: 18px
+                  tap_action:
+                    action: call-service
+                    service: input_text.set_value
+                    service_data:
+                      entity_id: input_text.torrent_detail_hash
+                      value: ""
+                  styles:
+                    card:
+                      - width: 32px
+                      - height: 32px
+                      - min-height: 0
+                      - border-radius: 50%
+                      - background: rgba(0, 0, 0, 0.55)
+                      - border: 1px solid rgba(255, 255, 255, 0.18)
+                      - box-shadow: none
+                      - padding: 0
+                    icon:
+                      - color: "#eceff1"
+                      - width: 18px
+              link:
+                card:
+                  type: custom:button-card
+                  entity: input_text.torrent_detail_hash
+                  triggers_update:
+                    - input_text.torrent_detail_hash
+                    - sensor.arr_download_details
+                  show_icon: false
+                  show_state: false
+                  show_label: false
+                  show_name: true
+                  name: |
+                    [[[
+                      const hash = String((states['input_text.torrent_detail_hash'] || {}).state || '')
+                        .trim().toUpperCase();
+                      const det = hass.states['sensor.arr_download_details'];
+                      const d = ((det && det.attributes.by_hash) || {})[hash];
+                      return d && d.kind === 'movie' ? 'Open in Radarr' : 'Open in Sonarr';
+                    ]]]
+                  tap_action:
+                    action: url
+                    url_path: |
+                      [[[
+                        const hash = String((states['input_text.torrent_detail_hash'] || {}).state || '')
+                          .trim().toUpperCase();
+                        const det = hass.states['sensor.arr_download_details'];
+                        const d = ((det && det.attributes.by_hash) || {})[hash];
+                        if (!d || !d.slug) return '';
+                        const movie = d.kind === 'movie';
+                        const base = String((movie ? det.attributes.radarr_base : det.attributes.sonarr_base) || '')
+                          .replace(/\/+$/, '');
+                        return `${base}/${movie ? 'movie' : 'series'}/${encodeURIComponent(d.slug)}`;
+                      ]]]
+                  styles:
+                    card:
+                      - display: |
+                          [[[
+                            const hash = String((states['input_text.torrent_detail_hash'] || {}).state || '')
+                              .trim().toUpperCase();
+                            const det = hass.states['sensor.arr_download_details'];
+                            const d = ((det && det.attributes.by_hash) || {})[hash];
+                            return d && d.slug ? 'block' : 'none';
+                          ]]]
+                      - background: |
+                          [[[
+                            const hash = String((states['input_text.torrent_detail_hash'] || {}).state || '')
+                              .trim().toUpperCase();
+                            const det = hass.states['sensor.arr_download_details'];
+                            const d = ((det && det.attributes.by_hash) || {})[hash];
+                            return d && d.kind === 'movie' ? '#42a5f5' : '#26a69a';
+                          ]]]
+                      - width: auto
+                      - height: auto
+                      - min-height: 0
+                      - padding: 9px 16px
+                      - border: none
+                      - border-radius: 10px
+                      - box-shadow: none
+                    name:
+                      - font-size: 0.8rem
+                      - font-weight: 700
+                      - color: "#0b0b0b"
+                      - white-space: nowrap
+              body: |
+                [[[
+                  const hash = String((states['input_text.torrent_detail_hash'] || {}).state || '')
+                    .trim().toUpperCase();
+                  if (!hash) return '';
+                  const det = hass.states['sensor.arr_download_details'];
+                  const map = (det && det.attributes.by_hash) || {};
+                  const d = map[hash];
+                  const esc = (s) => String(s === null || s === undefined ? '' : s)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+                  const hint = 'Tap outside the sheet or the ✕ to close · hold a row for pause/resume';
+                  if (!d) {
+                    let name = '';
+                    for (const id in hass.states) {
+                      if (!id.startsWith('sensor.') || !id.endsWith('_state')) continue;
+                      const a = hass.states[id].attributes || {};
+                      if (String(a.torrent_hash || '').toUpperCase() === hash) {
+                        name = String(a.torrent_name || a.friendly_name || '').replace(/ State$/, '');
+                        break;
+                      }
+                    }
+                    return `<div style="padding:22px;">
+                      <div style="font-weight:700;font-size:1rem;margin-bottom:8px;">Not in a Radarr or Sonarr queue</div>
+                      <div style="opacity:.75;font-size:.85rem;line-height:1.5;overflow-wrap:anywhere;">${esc(name || hash)}</div>
+                      <div style="opacity:.45;font-size:.72rem;margin-top:16px;">${hint}</div>
+                    </div>`;
+                  }
+                  const movie = d.kind === 'movie';
+                  const accent = movie ? '#42a5f5' : '#26a69a';
+                  const chip = (label, color) => `<span style="display:inline-block;padding:4px 9px;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.03em;color:${color};background:${color}22;border:1px solid ${color}55;">${esc(label)}</span>`;
+                  const badges = [];
+                  if (d.certification) badges.push(chip(d.certification, '#b0bec5'));
+                  if (d.runtime) badges.push(chip(`${d.runtime} min`, '#b0bec5'));
+                  if (d.quality) badges.push(chip(d.quality, accent));
+                  (d.genres || []).slice(0, 3).forEach((g) => badges.push(chip(g, '#90a4ae')));
+                  const rate = [];
+                  if (d.imdb) rate.push(`<span style="color:#f5c518;font-weight:700;">IMDb ${Number(d.imdb).toFixed(1)}</span>`);
+                  if (d.rating) rate.push(`<span style="color:#f5c518;font-weight:700;">TVDB ${Number(d.rating).toFixed(1)}</span>`);
+                  if (d.tmdb) rate.push(`<span style="color:#01b4e4;font-weight:700;">TMDB ${Number(d.tmdb).toFixed(1)}</span>`);
+                  if (d.rotten) rate.push(`<span style="color:#fa320a;font-weight:700;">RT ${Math.round(d.rotten)}%</span>`);
+                  const gib = d.size ? `${(Number(d.size) / 1073741824).toFixed(2)} GiB` : '';
+                  const app = movie ? 'Radarr' : 'Sonarr';
+                  // Plain-English wording for the queue status / trackedDownloadState pair.
+                  // The queue status wins when it says something the state cannot (paused,
+                  // queued, indexer delay, unreachable client); otherwise the state does.
+                  const stateLabels = {
+                    downloading: ['Downloading', '#42a5f5'],
+                    importPending: [`Downloaded · waiting for ${app} to import it`, '#ffa726'],
+                    importing: [`Importing into ${movie ? 'the movie library' : 'the series'}`, '#66bb6a'],
+                    imported: ['Imported · ready to watch', '#66bb6a'],
+                    importBlocked: [`Import blocked · ${app} needs a manual decision`, '#ffa726'],
+                    failedPending: ['Download failed · retry pending', '#ef5350'],
+                    failed: ['Download failed', '#ef5350'],
+                    ignored: [`Ignored by ${app}`, '#90a4ae']
+                  };
+                  const statusLabels = {
+                    queued: ['Queued · waiting to start', '#90a4ae'],
+                    paused: ['Paused in qBittorrent', '#ffa726'],
+                    delay: ['Held back by the indexer delay profile', '#ffa726'],
+                    downloadClientUnavailable: ['qBittorrent unreachable', '#ef5350'],
+                    failed: ['Download failed', '#ef5350'],
+                    fallback: ['Trying another release', '#ffa726']
+                  };
+                  // Anything the *arr apps add later still reads sensibly: importFoo -> "Import foo".
+                  const pretty = (s) => String(s || '')
+                    .replace(/([a-z])([A-Z])/g, '$1 $2')
+                    .replace(/^./, (c) => c.toUpperCase());
+                  let pick = statusLabels[String(d.status || '')]
+                    || stateLabels[String(d.download_state || '')]
+                    || ((d.download_state || d.status)
+                      ? [pretty(d.download_state || d.status), '#cfd8dc'] : null);
+                  // A pending import carrying a warning is not just slow, it is waiting on
+                  // someone: the message line below spells out which decision is needed.
+                  if (pick && String(d.download_state) === 'importPending'
+                      && ['warning', 'error'].includes(String(d.tracked_status || ''))) {
+                    pick = [`Downloaded · ${app} needs a decision before importing`, '#ffa726'];
+                  }
+                  const status = pick
+                    ? `<div style="font-family:var(--ha-font-family,sans-serif);color:${pick[1]};font-weight:700;">${esc(pick[0])}</div>`
+                      + (d.message
+                        ? `<div style="font-family:var(--ha-font-family,sans-serif);font-weight:400;opacity:.6;font-size:.72rem;margin-top:3px;">${esc(d.message)}</div>`
+                        : '')
+                    : '';
+                  const meta = [
+                    ['Release', d.release],
+                    ['Indexer', d.indexer],
+                    [movie ? 'Studio' : 'Network', d.source],
+                    ['Size', gib],
+                    ['Status', status, true]
+                  ].filter((r) => r[1]).map((r) => `<div style="display:flex;gap:10px;padding:7px 0;border-top:1px solid rgba(255,255,255,.07);font-size:.78rem;">
+                      <div style="flex:0 0 84px;opacity:.55;text-transform:uppercase;letter-spacing:.04em;font-size:.66rem;padding-top:2px;">${esc(r[0])}</div>
+                      <div style="min-width:0;flex:1;overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${r[2] ? r[1] : esc(r[1])}</div>
+                    </div>`).join('');
+                  const hero = d.fanart
+                    ? `<div style="height:168px;background-image:linear-gradient(180deg,rgba(27,27,27,.1),rgba(27,27,27,.96)),url('${esc(d.fanart)}');background-size:cover;background-position:center;"></div>`
+                    : `<div style="height:104px;background:linear-gradient(140deg,${accent}55,#1b1b1b);"></div>`;
+                  const poster = d.poster
+                    ? `<img src="${esc(d.poster)}" alt="" referrerpolicy="no-referrer" style="width:104px;height:156px;object-fit:cover;border-radius:10px;background:#333;box-shadow:0 6px 18px rgba(0,0,0,.55);flex-shrink:0;" />`
+                    : `<div style="width:104px;height:156px;border-radius:10px;background:rgba(255,255,255,.08);flex-shrink:0;"></div>`;
+                  const epLine = (!movie && (d.episode || d.episode_title))
+                    ? `<div style="font-size:.84rem;color:${accent};font-weight:600;margin-bottom:10px;">${esc([d.episode, d.episode_title].filter(Boolean).join(' · '))}</div>`
+                    : '';
+                  return `<div>
+                    ${hero}
+                    <div style="display:flex;gap:16px;padding:0 20px;margin-top:-64px;position:relative;">
+                      ${poster}
+                      <div style="flex:1;min-width:0;padding-top:72px;">
+                        <div style="font-size:1.16rem;font-weight:700;line-height:1.25;overflow-wrap:anywhere;">${esc(d.title)}${d.year ? ` <span style="opacity:.6;font-weight:600;">(${esc(d.year)})</span>` : ''}</div>
+                      </div>
+                    </div>
+                    <div style="padding:14px 20px 6px;">
+                      ${epLine}
+                      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">${badges.join('')}</div>
+                      ${rate.length ? `<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:.78rem;margin-bottom:12px;">${rate.join('')}</div>` : ''}
+                      <div style="font-size:.86rem;line-height:1.6;opacity:.86;white-space:normal;overflow-wrap:anywhere;">${esc(d.overview) || '<span style="opacity:.5;">No description available.</span>'}</div>
+                      <div style="margin-top:16px;">${meta}</div>
+                      <div style="opacity:.45;font-size:.72rem;margin-top:16px;">${hint}</div>
+                    </div>
+                  </div>`;
+                ]]]

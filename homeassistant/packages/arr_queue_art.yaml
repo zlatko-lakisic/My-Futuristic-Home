@@ -1,7 +1,9 @@
 # Arr queue artwork for the Torrents dashboard.
-# Matches qBittorrent infohashes to Sonarr/Radarr queue downloadIds and exposes poster URLs.
+# Matches qBittorrent infohashes to Sonarr/Radarr queue downloadIds and exposes poster URLs
+# plus the full metadata sheet used by the Active transfers detail modal.
 #
-# Requires secrets: sonarr_queue_url, sonarr_api_key, radarr_queue_url, radarr_api_key
+# Requires secrets: sonarr_url, sonarr_queue_url, sonarr_api_key,
+#                   radarr_url, radarr_queue_url, radarr_api_key
 # homeassistant.packages:
 #   arr_queue_art: !include packages/arr_queue_art.yaml
 
@@ -99,6 +101,130 @@ template:
                   | list %}
               {% if t and poster %}
                 {% set ns.m = dict(ns.m, **{t: poster[0]}) %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.m }}
+
+      # Metadata sheet for the Active transfers detail modal, keyed by qBittorrent infohash.
+      # Deliberately carries no progress/speed/ETA fields: the payload then only changes when
+      # queue membership changes, so the recorder is not handed a fresh copy every 90 s.
+      - name: Arr download details
+        unique_id: arr_download_details
+        icon: mdi:movie-open-play
+        state: >
+          {% set s = state_attr('sensor.sonarr_queue_records', 'records') or [] %}
+          {% set r = state_attr('sensor.radarr_queue_records', 'records') or [] %}
+          {{ (s | count) + (r | count) }}
+        attributes:
+          # Web UI roots so the modal can deep-link to the Radarr movie / Sonarr series page.
+          radarr_base: !secret radarr_url
+          sonarr_base: !secret sonarr_url
+          by_hash: >
+            {% set ns = namespace(m={}) %}
+            {% for rec in state_attr('sensor.radarr_queue_records', 'records') or [] %}
+              {% set h = (rec.get('downloadId') or '') | upper %}
+              {% set movie = rec.get('movie') or {} %}
+              {% if h and movie %}
+                {% set imgs = movie.get('images') or [] %}
+                {% set poster = imgs
+                    | selectattr('coverType', 'equalto', 'poster')
+                    | map(attribute='remoteUrl')
+                    | list %}
+                {% set fanart = imgs
+                    | selectattr('coverType', 'equalto', 'fanart')
+                    | map(attribute='remoteUrl')
+                    | list %}
+                {% set rat = movie.get('ratings') or {} %}
+                {% set qual = (rec.get('quality') or {}).get('quality') or {} %}
+                {% set msg = namespace(lines=[]) %}
+                {% for sm in rec.get('statusMessages') or [] %}
+                  {% for line in sm.get('messages') or [] %}
+                    {% set msg.lines = msg.lines + [line] %}
+                  {% endfor %}
+                  {% if not (sm.get('messages') or []) and sm.get('title') %}
+                    {% set msg.lines = msg.lines + [sm.get('title')] %}
+                  {% endif %}
+                {% endfor %}
+                {% set joined = msg.lines | join(' · ') %}
+                {% set ns.m = dict(ns.m, **{h: {
+                    'kind': 'movie',
+                    'title': movie.get('title'),
+                    'year': movie.get('year'),
+                    'overview': (movie.get('overview') or '')[:700],
+                    'poster': poster[0] if poster else '',
+                    'fanart': fanart[0] if fanart else '',
+                    'runtime': movie.get('runtime'),
+                    'certification': movie.get('certification'),
+                    'genres': movie.get('genres') or [],
+                    'source': movie.get('studio'),
+                    'imdb': (rat.get('imdb') or {}).get('value'),
+                    'tmdb': (rat.get('tmdb') or {}).get('value'),
+                    'rotten': (rat.get('rottenTomatoes') or {}).get('value'),
+                    'slug': movie.get('titleSlug'),
+                    'quality': qual.get('name'),
+                    'indexer': rec.get('indexer'),
+                    'release': rec.get('title'),
+                    'size': rec.get('size'),
+                    'status': rec.get('status'),
+                    'tracked_status': rec.get('trackedDownloadStatus'),
+                    'download_state': rec.get('trackedDownloadState'),
+                    'message': joined if joined | length <= 300 else joined[:300] ~ '…'
+                  }}) %}
+              {% endif %}
+            {% endfor %}
+            {% for rec in state_attr('sensor.sonarr_queue_records', 'records') or [] %}
+              {% set h = (rec.get('downloadId') or '') | upper %}
+              {% set series = rec.get('series') or {} %}
+              {% set ep = rec.get('episode') or {} %}
+              {% if h and series %}
+                {% set imgs = series.get('images') or [] %}
+                {% set poster = imgs
+                    | selectattr('coverType', 'equalto', 'poster')
+                    | map(attribute='remoteUrl')
+                    | list %}
+                {% set fanart = imgs
+                    | selectattr('coverType', 'equalto', 'fanart')
+                    | map(attribute='remoteUrl')
+                    | list %}
+                {% set rat = series.get('ratings') or {} %}
+                {% set qual = (rec.get('quality') or {}).get('quality') or {} %}
+                {% set msg = namespace(lines=[]) %}
+                {% for sm in rec.get('statusMessages') or [] %}
+                  {% for line in sm.get('messages') or [] %}
+                    {% set msg.lines = msg.lines + [line] %}
+                  {% endfor %}
+                  {% if not (sm.get('messages') or []) and sm.get('title') %}
+                    {% set msg.lines = msg.lines + [sm.get('title')] %}
+                  {% endif %}
+                {% endfor %}
+                {% set joined = msg.lines | join(' · ') %}
+                {% set sn = ep.get('seasonNumber') %}
+                {% set en = ep.get('episodeNumber') %}
+                {% set ns.m = dict(ns.m, **{h: {
+                    'kind': 'tv',
+                    'title': series.get('title'),
+                    'year': series.get('year'),
+                    'overview': (ep.get('overview') or series.get('overview') or '')[:700],
+                    'poster': poster[0] if poster else '',
+                    'fanart': fanart[0] if fanart else '',
+                    'runtime': ep.get('runtime') or series.get('runtime'),
+                    'certification': series.get('certification'),
+                    'genres': series.get('genres') or [],
+                    'source': series.get('network'),
+                    'rating': rat.get('value'),
+                    'slug': series.get('titleSlug'),
+                    'episode': 'S{:02d}E{:02d}'.format(sn, en)
+                        if sn is not none and en is not none else '',
+                    'episode_title': ep.get('title'),
+                    'quality': qual.get('name'),
+                    'indexer': rec.get('indexer'),
+                    'release': rec.get('title'),
+                    'size': rec.get('size'),
+                    'status': rec.get('status'),
+                    'tracked_status': rec.get('trackedDownloadStatus'),
+                    'download_state': rec.get('trackedDownloadState'),
+                    'message': joined if joined | length <= 300 else joined[:300] ~ '…'
+                  }}) %}
               {% endif %}
             {% endfor %}
             {{ ns.m }}

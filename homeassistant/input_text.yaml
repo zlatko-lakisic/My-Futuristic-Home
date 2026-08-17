@@ -1,0 +1,11 @@
+livingroom_climate_state:
+  name: Livingroom Climate State
+livingroom_climate_target_temperature:
+  name: Livingroom Climate Target Temperature
+
+# Infohash of the transfer whose Radarr/Sonarr detail sheet is open on the Torrents
+# dashboard; empty means closed. initial clears it so a restart never reopens the sheet.
+torrent_detail_hash:
+  name: Torrent detail hash
+  max: 64
+  initial: ""
