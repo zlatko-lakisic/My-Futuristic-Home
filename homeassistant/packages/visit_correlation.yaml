@@ -220,6 +220,7 @@ script:
                 continue_on_error: true
                 data:
                   image_file: "{{ image_lines }}"
+                  model: gemma4:26b
                   priority: background
                   visit_id: "{{ visit_id }}"
                   visit_context: "{{ visit_ctx }}"
