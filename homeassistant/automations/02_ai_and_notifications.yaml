@@ -42,7 +42,7 @@
       camera: camera.east_side
       frigate_person_sensor: binary_sensor.east_side_gate_person_occupancy
       frigate_dog_sensor: binary_sensor.east_side_dog_occupancy
-      vision_model: gpt-4o-mini
+      vision_model: gemma4:26b
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /backyard-yaml/backyard-east-side
@@ -65,7 +65,7 @@
       camera: camera.west_side_2
       frigate_person_sensor: binary_sensor.west_side_gate_person_occupancy
       frigate_dog_sensor: binary_sensor.west_side_dog_occupancy
-      vision_model: gpt-4o-mini
+      vision_model: gemma4:26b
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /backyard-yaml/backyard-west-side
@@ -85,7 +85,7 @@
       camera: camera.back_yard_2
       frigate_person_sensor: binary_sensor.back_yard_person_occupancy
       frigate_dog_sensor: binary_sensor.back_yard_dog_occupancy
-      vision_model: gpt-4o-mini
+      vision_model: gemma4:26b
       target_width: 1280
       public_base_url: 'https://ha.mostardesigns.com/local/'
       notification_click_path: /backyard-yaml/backyard-back-yard
@@ -112,7 +112,7 @@
         Family Car and do not describe color/make/model. Otherwise describe the vehicle
         and include a plate only when clearly readable. Never invent plates.
       camera: camera.driveway
-      vision_model: gpt-4o-mini
+      vision_model: gemma4:26b
       target_width: 1280
       capture_settle_seconds: 0
       prefer_person_wait_seconds: 12
@@ -149,7 +149,7 @@
       car_sensor: ''
       people_only: true
       camera: camera.front_door
-      vision_model: gpt-4o-mini
+      vision_model: gemma4:26b
       target_width: 1280
       capture_settle_seconds: 3
       prefer_person_wait_seconds: 0

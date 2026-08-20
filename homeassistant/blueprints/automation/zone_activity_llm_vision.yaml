@@ -87,8 +87,8 @@ blueprint:
           domain: camera
     vision_model:
       name: Vision model hint
-      description: Soft model hint for Comstar Vision / ADA AO (e.g. gpt-4o-mini).
-      default: gpt-4o-mini
+      description: Soft model hint for Comstar Vision / ADA AO (e.g. gemma4:26b).
+      default: gemma4:26b
       selector:
         text:
     target_width:
