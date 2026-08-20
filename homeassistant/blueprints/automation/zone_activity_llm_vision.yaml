@@ -244,6 +244,20 @@ blueprint:
       default: "http://192.168.89.37:5000"
       selector:
         text:
+    property_zone_key:
+      name: Property zone key (visit graph)
+      description: >
+        Logical zone id from property_zone_graph.json for cross-camera visit
+        correlation (e.g. driveway, front_steps, east_gate). Leave empty to disable.
+      default: ""
+      selector:
+        text:
+    visit_tracking_enabled:
+      name: Cross-camera visit tracking
+      description: Correlate this event into a property visit_id and pass AO Reach priority.
+      default: true
+      selector:
+        boolean:
 
 mode: single
 max_exceeded: silent
@@ -266,6 +280,8 @@ variables:
   recognized_plate_sensor: !input recognized_plate_sensor
   lpr_wait_seconds: !input lpr_wait_seconds
   frigate_base_url: !input frigate_base_url
+  property_zone_key: !input property_zone_key
+  visit_tracking_enabled: !input visit_tracking_enabled
   notify_group: !input notify_group
   notify_channel: !input notify_channel
   snapshot_timestamp: '{{ now().strftime("%Y%m%d-%H%M%S") }}'
@@ -604,6 +620,77 @@ actions:
         {{ parts | join(', ') }}
       has_recognized_people: >-
         {{ 'yes' if (recognized_people_label | string | trim | length) > 0 else 'no' }}
+  - alias: Correlate into property visit (Tier 1)
+    if:
+    - condition: template
+      value_template: >-
+        {{ (visit_tracking_enabled is true or (visit_tracking_enabled | string | lower) in ['true', 'on', 'yes'])
+           and (property_zone_key | default('', true) | string | trim | length) > 0
+           and (frigate_camera | default('', true) | string | trim | length) > 0 }}
+    then:
+    - action: shell_command.visit_correlate
+      continue_on_error: true
+      response_variable: visit_correlate_cmd
+      data:
+        zone_key: '{{ property_zone_key }}'
+        camera: '{{ frigate_camera }}'
+        epoch: '{{ event_start_epoch }}'
+        faces: '{{ recognized_people_csv | default("", true) }}'
+        gate_open: 'no'
+    - action: script.property_visit_sync_from_shell
+      continue_on_error: true
+      data:
+        correlate_json: >-
+          {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
+            {{ visit_correlate_cmd.get('stdout', '{}') }}
+          {% else %}
+            {}
+          {% endif %}
+  - variables:
+      visit_id: >-
+        {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
+          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {{ j.visit_id | default(states('input_text.property_visit_id'), true) | default('', true) }}
+        {% else %}
+          {{ states('input_text.property_visit_id') | default('', true) }}
+        {% endif %}
+      visit_context: >-
+        {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
+          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {{ j.visit_context | default(states('input_text.property_visit_context'), true) | default('', true) }}
+        {% else %}
+          {{ states('input_text.property_visit_context') | default('', true) }}
+        {% endif %}
+      visit_priority: >-
+        {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
+          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {{ j.priority | default('realtime') }}
+        {% else %}
+          realtime
+        {% endif %}
+      visit_path_label: >-
+        {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
+          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {{ j.path_label | default(states('input_text.property_visit_path_label'), true) | default('', true) }}
+        {% else %}
+          {{ states('input_text.property_visit_path_label') | default('', true) }}
+        {% endif %}
+  - alias: Buffer stills for end-of-visit Tier 2 narrative
+    if:
+    - condition: template
+      value_template: >-
+        {{ (visit_id | default('', true) | string | trim | length) > 0
+           and (visit_tracking_enabled is true or (visit_tracking_enabled | string | lower) in ['true', 'on', 'yes']) }}
+    then:
+    - action: shell_command.visit_append_stills
+      continue_on_error: true
+      data:
+        visit_id: '{{ visit_id }}'
+        camera: '{{ frigate_camera }}'
+        zone_slug: '{{ zone_slug }}'
+        stamp: '{{ snapshot_timestamp }}'
+        count: '4'
+        start_index: '1'
   - action: comstar_vision.image_analyzer
     continue_on_error: true
     data:
@@ -617,8 +704,14 @@ actions:
       generate_title: false
       expose_images: false
       target_width: !input target_width
+      priority: '{{ visit_priority | default("realtime") }}'
+      visit_id: '{{ visit_id | default("", true) }}'
+      visit_context: '{{ visit_context | default("", true) }}'
       message: >-
         Security camera stills from {{ zone_name }}, in time order (~{{ capture_span_seconds }}s).
+        {% if (visit_context | default('', true) | string | trim | length) > 0 %}
+        Visit context: {{ visit_context }}
+        {% endif %}
         Same visit — describe only what is visibly present. Do not invent people, pets,
         objects, plates, dialogue, or actions.
         If early frames show a person/dog/vehicle and later frames are empty, they left —
@@ -895,7 +988,10 @@ actions:
         {% set label = llm_label | string | trim | upper %}
         {% set people = recognized_people_label | string | trim %}
         {% set plate = car_plate_hint | string | trim %}
-        {% if people | length > 0 %}
+        {% set vpath = visit_path_label | default('', true) | string | trim %}
+        {% if vpath | length > 0 and people | length > 0 and ' → ' in vpath %}
+          {{ (people ~ ' — ' ~ vpath.split(' → ')[-1]) | truncate(50, true, '…') }}
+        {% elif people | length > 0 %}
           {{ (zone_name ~ ' · ' ~ people) | truncate(50, true, '…') }}
         {% elif unusable %}
           {% if (frigate_person | string | trim) == 'yes' %}

@@ -89,6 +89,7 @@ homeassistant:
     perimeter_switch_aggregate: !include packages/perimeter_switch_aggregate.yaml
     www_tmp_cleanup_shell: !include packages/www_tmp_cleanup_shell.yaml
     gate_clip_media: !include packages/gate_clip_media.yaml
+    visit_correlation: !include packages/visit_correlation.yaml
     security_supervision: !include packages/security_supervision.yaml
     unban_local_networks: !include packages/unban_local_networks.yaml
 

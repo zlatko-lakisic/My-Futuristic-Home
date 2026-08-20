@@ -1,0 +1,272 @@
+# Cross-camera visit correlation — Tier 1 state, Tier 2 still buffer, idle narrative.
+# Zone graph: includes/property_zone_graph.json
+
+shell_command:
+  visit_correlate: >-
+    python3 /config/shell/visit_correlate.py
+    "{{ zone_key }}" "{{ camera }}" "{{ epoch }}" "{{ faces | default('') }}" "{{ gate_open | default('no') }}"
+  visit_append_stills: >-
+    python3 /config/shell/visit_append_stills.py
+    "{{ visit_id }}" "{{ camera }}" "{{ zone_slug }}" "{{ stamp }}" "{{ count | default(4) }}" "{{ start_index | default(1) }}"
+  frigate_visit_events: >-
+    python3 /config/shell/frigate_visit_events.py
+    "{{ since_epoch }}" "{{ cameras | default('') }}" "{{ base_url | default('http://192.168.89.37:5000') }}"
+  visit_get_stills: >-
+    python3 /config/shell/visit_get_stills.py
+  visit_clear_state: >-
+    python3 -c "import json,pathlib; p=pathlib.Path('/config/www/tmp/property_visit_state.json'); p.parent.mkdir(parents=True, exist_ok=True); p.write_text('{}', encoding='utf-8')"
+
+input_text:
+  property_visit_id:
+    name: Property visit ID
+    max: 64
+    icon: mdi:map-marker-path
+  property_visit_path:
+    name: Property visit path JSON
+    max: 255
+    icon: mdi:routes
+  property_visit_path_label:
+    name: Property visit path label
+    max: 255
+    icon: mdi:sign-direction
+  property_visit_faces:
+    name: Property visit faces
+    max: 255
+    icon: mdi:face-recognition
+  property_visit_cameras:
+    name: Property visit cameras
+    max: 255
+    icon: mdi:cctv
+  property_visit_last_zone:
+    name: Property visit last zone
+    max: 64
+    icon: mdi:map-marker
+  property_visit_link_reason:
+    name: Property visit link reason
+    max: 64
+    icon: mdi:link-variant
+  property_visit_priority:
+    name: Property visit AO priority
+    max: 32
+    initial: realtime
+    icon: mdi:priority-high
+  property_visit_context:
+    name: Property visit VLM context
+    max: 255
+    icon: mdi:text-box-outline
+  property_visit_still_buffer:
+    name: Property visit still buffer JSON
+    max: 255
+    icon: mdi:image-multiple
+
+input_datetime:
+  property_visit_started:
+    name: Property visit started
+    has_date: true
+    has_time: true
+    icon: mdi:clock-start
+
+input_boolean:
+  property_visit_active:
+    name: Property visit active
+    icon: mdi:walk
+
+template:
+  - sensor:
+      - name: Property visit summary
+        unique_id: property_visit_summary
+        icon: mdi:map-marker-path
+        state: >-
+          {% set path = states('input_text.property_visit_path_label') | trim %}
+          {% set faces = states('input_text.property_visit_faces') | trim %}
+          {% if path | length > 0 and faces | length > 0 %}
+            {{ faces.split(',')[0] | trim }} — {{ path }}
+          {% elif path | length > 0 %}
+            {{ path }}
+          {% elif is_state('input_boolean.property_visit_active', 'on') %}
+            Active visit
+          {% else %}
+            idle
+          {% endif %}
+        attributes:
+          visit_id: "{{ states('input_text.property_visit_id') }}"
+          path_json: "{{ states('input_text.property_visit_path') }}"
+          faces: "{{ states('input_text.property_visit_faces') }}"
+          cameras: "{{ states('input_text.property_visit_cameras') }}"
+          last_zone: "{{ states('input_text.property_visit_last_zone') }}"
+          priority: "{{ states('input_text.property_visit_priority') }}"
+          link_reason: "{{ states('input_text.property_visit_link_reason') }}"
+          started: "{{ states('input_datetime.property_visit_started') }}"
+
+script:
+  property_visit_sync_from_shell:
+    alias: Property visit — sync helpers from correlate JSON
+    mode: queued
+    fields:
+      correlate_json:
+        description: JSON stdout from visit_correlate.py
+        selector:
+          text:
+    sequence:
+      - variables:
+          corr: "{{ correlate_json | from_json }}"
+      - condition: template
+        value_template: "{{ corr.ok | default(false) }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.property_visit_id
+        data:
+          value: "{{ corr.visit_id | default('') }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.property_visit_path
+        data:
+          value: "{{ corr.path | default([]) | to_json }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.property_visit_path_label
+        data:
+          value: "{{ corr.path_label | default('') | truncate(255, true, '') }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.property_visit_faces
+        data:
+          value: "{{ corr.faces | default([]) | join(',') | truncate(255, true, '') }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.property_visit_cameras
+        data:
+          value: "{{ corr.cameras | default([]) | join(',') | truncate(255, true, '') }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.property_visit_last_zone
+        data:
+          value: "{{ corr.zone_key | default('') }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.property_visit_link_reason
+        data:
+          value: "{{ corr.link_reason | default('') }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.property_visit_priority
+        data:
+          value: "{{ corr.priority | default('realtime') }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.property_visit_context
+        data:
+          value: "{{ corr.visit_context | default('') | truncate(255, true, '') }}"
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.property_visit_active
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.property_visit_started
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+        enabled: "{{ corr.link_reason | default('') in ['new_visit', 'new', 'branch_split'] }}"
+
+  property_visit_finalize_narrative:
+    alias: Property visit — Tier 2 background narrative
+    description: >
+      End-of-visit multi-camera VLM call at background priority. Reads still buffer
+      from property_visit_state.json via helpers; notifies consolidated path.
+    mode: single
+    sequence:
+      - variables:
+          path_label: "{{ states('input_text.property_visit_path_label') | trim }}"
+          faces: "{{ states('input_text.property_visit_faces') | trim }}"
+          visit_id: "{{ states('input_text.property_visit_id') | trim }}"
+          visit_ctx: "{{ states('input_text.property_visit_context') | trim }}"
+      - condition: template
+        value_template: "{{ visit_id | length > 0 and path_label | length > 0 }}"
+      - action: shell_command.frigate_visit_events
+        continue_on_error: true
+        response_variable: visit_events_cmd
+        data:
+          since_epoch: "{{ as_timestamp(states('input_datetime.property_visit_started')) | default(as_timestamp(now()) - 600) }}"
+          cameras: "{{ states('input_text.property_visit_cameras') }}"
+          base_url: "http://192.168.89.37:5000"
+      - action: shell_command.visit_get_stills
+        continue_on_error: true
+        response_variable: visit_stills_cmd
+      - variables:
+          stills_json: >-
+            {% if visit_stills_cmd is defined and visit_stills_cmd is mapping %}
+              {{ visit_stills_cmd.get('stdout', '{}') | from_json }}
+            {% else %}
+              {}
+            {% endif %}
+          buffer: "{{ stills_json.buffer | default([]) if stills_json is mapping else [] }}"
+          image_lines: "{{ stills_json.paths | default([]) | join('\n') if stills_json is mapping else '' }}"
+          camera_labels: >-
+            {% set buf = stills_json.buffer | default([]) if stills_json is mapping else [] %}
+            {% set ns = namespace(parts=[]) %}
+            {% set idx = namespace(n=1) %}
+            {% for item in buf %}
+              {% if item is mapping and item.path is defined and item.camera is defined %}
+                {% set ns.parts = ns.parts + [item.camera ~ ':' ~ idx.n] %}
+                {% set idx.n = idx.n + 1 %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.parts | join(',') }}
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ image_lines | trim | length > 0 }}"
+            sequence:
+              - action: comstar_vision.image_analyzer
+                continue_on_error: true
+                data:
+                  image_file: "{{ image_lines }}"
+                  priority: background
+                  visit_id: "{{ visit_id }}"
+                  visit_context: "{{ visit_ctx }}"
+                  camera_labels: "{{ camera_labels }}"
+                  temperature: 0.1
+                  max_tokens: 400
+                  target_width: 1280
+                  message: >-
+                    Multi-camera property visit stills in chronological order.
+                    {{ visit_ctx }}
+
+                    Camera frame map: {{ camera_labels }}.
+
+                    Describe the journey across zones. Output exactly 3 plain-text lines:
+                    Line 1: PERSON or CAR or DOG or OTHER or CLEAR
+                    Line 2: Home log with full path ({{ path_label }}) ≤160 chars
+                    Line 3: Phone line with path arrows ≤100 chars
+                response_variable: visit_narrative
+      - action: persistent_notification.create
+        data:
+          notification_id: "property_visit_{{ visit_id }}"
+          title: >-
+            {% if faces | length > 0 %}{{ faces.split(',')[0] | trim }} — {{ path_label.split(' → ')[-1] }}{% else %}Visit — {{ path_label.split(' → ')[-1] }}{% endif %}
+          message: >-
+            {{ path_label }}
+            {% if visit_narrative is defined and visit_narrative.response_text is defined %}
+            {{ visit_narrative.response_text | truncate(200, true, '…') }}
+            {% endif %}
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.property_visit_active
+      - action: shell_command.visit_clear_state
+
+automation:
+  - id: property_visit_idle_finalize
+    alias: Property visit idle — background narrative
+    description: When visit stays active but no zone updates for 60s, run Tier 2 narrative.
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.property_visit_active
+        to: "on"
+        for:
+          minutes: 1
+    conditions:
+      - condition: state
+        entity_id: input_boolean.property_visit_active
+        state: "on"
+    actions:
+      - action: script.property_visit_finalize_narrative

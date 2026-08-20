@@ -1,0 +1,91 @@
+# Property zone graph — floor plan for cross-camera visit correlation.
+# Machine-readable copy: property_zone_graph.json (loaded by visit_correlate.py).
+#
+# Canonical journeys:
+#   Path A: driveway → east_gate → east_lawn
+#   Path B: driveway → front_steps → west_gate
+
+property_zone_graph:
+  version: 1
+  visit_timeout_seconds: 300
+  visit_idle_narrative_seconds: 60
+
+  zones:
+    driveway:
+      label: Driveway
+      cameras: [driveway]
+      frigate_zones: [driveway_zone]
+      adjacent:
+        front_steps: { min_s: 20, max_s: 90 }
+        east_gate: { min_s: 15, max_s: 60 }
+      link_priority: realtime
+
+    front_steps:
+      label: Front steps
+      cameras: [front_door]
+      frigate_zones: [near_front_door]
+      adjacent:
+        driveway: { min_s: 20, max_s: 90 }
+        front_yard: { min_s: 10, max_s: 120 }
+        west_gate: { min_s: 30, max_s: 120 }
+      link_priority: realtime
+
+    front_yard:
+      label: Front yard
+      cameras: [front_door]
+      frigate_zones: []
+      adjacent:
+        front_steps: { min_s: 10, max_s: 120 }
+        west_gate: { min_s: 20, max_s: 90 }
+
+    east_gate:
+      label: East gate
+      cameras: [east_side]
+      frigate_zones: [east_gate_approach]
+      gate_entity: binary_sensor.east_side_door_door
+      adjacent:
+        driveway: { min_s: 15, max_s: 60 }
+        east_lawn: { min_s: 5, max_s: 45 }
+      link_priority: realtime
+
+    east_lawn:
+      label: East lawn
+      cameras: [east_side]
+      frigate_zones: [east_lawn]
+      adjacent:
+        east_gate: { min_s: 5, max_s: 45 }
+        kitchen_lawn: { min_s: 15, max_s: 90 }
+
+    west_gate:
+      label: West gate
+      cameras: [west_side]
+      frigate_zones: [west_gate_approach]
+      gate_entity: binary_sensor.west_side_gate_door
+      adjacent:
+        front_steps: { min_s: 30, max_s: 120 }
+        front_yard: { min_s: 20, max_s: 90 }
+      link_priority: normal
+
+    kitchen_lawn:
+      label: Kitchen lawn
+      cameras: [back_yard]
+      frigate_zones: [kitchen_lawn]
+      adjacent:
+        east_lawn: { min_s: 15, max_s: 90 }
+        garden: { min_s: 10, max_s: 60 }
+        back_yard_gate: { min_s: 10, max_s: 60 }
+
+    garden:
+      label: Garden
+      cameras: [garden_north, garden_south]
+      frigate_zones: [garden_path]
+      adjacent:
+        kitchen_lawn: { min_s: 10, max_s: 60 }
+
+    back_yard_gate:
+      label: Back yard gate
+      cameras: [back_yard]
+      frigate_zones: [back_yard_gate_approach]
+      gate_entity: binary_sensor.fence_gate_door
+      adjacent:
+        kitchen_lawn: { min_s: 10, max_s: 60 }
