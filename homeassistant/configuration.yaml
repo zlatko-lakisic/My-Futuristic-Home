@@ -77,6 +77,8 @@ homeassistant:
     - "/media/public_share_4_ha_media"
   packages:
     nvr_top_processes: !include packages/nvr_top_processes.yaml
+    jetson_top_processes: !include packages/jetson_top_processes.yaml
+    jetson_ao: !include packages/jetson_ao.yaml
     infra_glances_hosts: !include packages/infra_glances_hosts.yaml
     qbittorrent_speed_k: !include packages/qbittorrent_speed_k.yaml
     arr_queue_art: !include packages/arr_queue_art.yaml
@@ -258,20 +260,8 @@ input_number:
     initial: 10
     icon: mdi:timer-outline
 
-input_text:
-  gate_ai_last_gate:
-    name: Gate AI Last Gate
-    max: 100
-  gate_ai_last_classification:
-    name: Gate AI Last Classification
-    max: 32
-  gate_ai_last_summary:
-    name: Gate AI Last Summary
-    max: 255
-  livingroom_climate_state:
-    name: Livingroom Climate State
-  livingroom_climate_target_temperature:
-    name: Livingroom Climate Target Temperature
+# input_text helpers: see input_text.yaml (single include below — do not define
+# a second input_text: block here; YAML would replace and drop gate_ai_*).
 
 input_datetime:
   gate_ai_last_analysis_time:

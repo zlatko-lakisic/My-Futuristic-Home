@@ -3,6 +3,19 @@ livingroom_climate_state:
 livingroom_climate_target_temperature:
   name: Livingroom Climate Target Temperature
 
+# Gate / zone AI last-run helpers (written by zone_activity + gate_open blueprints).
+# Must live here — configuration.yaml also has `input_text: !include input_text.yaml`,
+# which replaces any earlier inline input_text block.
+gate_ai_last_gate:
+  name: Gate AI Last Gate
+  max: 100
+gate_ai_last_classification:
+  name: Gate AI Last Classification
+  max: 32
+gate_ai_last_summary:
+  name: Gate AI Last Summary
+  max: 255
+
 # Infohash of the transfer whose Radarr/Sonarr detail sheet is open on the Torrents
 # dashboard; empty means closed. initial clears it so a restart never reopens the sheet.
 torrent_detail_hash:

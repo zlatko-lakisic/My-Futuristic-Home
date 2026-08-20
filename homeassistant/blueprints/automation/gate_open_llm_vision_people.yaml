@@ -281,29 +281,45 @@ actions:
           {% endif %}
   - variables:
       visit_id: >-
+        {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
-          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
+        {% endif %}
+        {% if raw | length > 1 and raw[:1] == '{' %}
+          {% set j = raw | from_json %}
           {{ j.visit_id | default('', true) }}
         {% else %}
           {{ states('input_text.property_visit_id') | default('', true) }}
         {% endif %}
       visit_context: >-
+        {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
-          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
+        {% endif %}
+        {% if raw | length > 1 and raw[:1] == '{' %}
+          {% set j = raw | from_json %}
           {{ j.visit_context | default('', true) }}
         {% else %}
           {{ states('input_text.property_visit_context') | default('', true) }}
         {% endif %}
       visit_priority: >-
+        {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
-          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
+        {% endif %}
+        {% if raw | length > 1 and raw[:1] == '{' %}
+          {% set j = raw | from_json %}
           {{ j.priority | default('realtime') }}
         {% else %}
           realtime
         {% endif %}
       visit_path_label: >-
+        {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
-          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
+        {% endif %}
+        {% if raw | length > 1 and raw[:1] == '{' %}
+          {% set j = raw | from_json %}
           {{ j.path_label | default('', true) }}
         {% else %}
           {{ states('input_text.property_visit_path_label') | default('', true) }}
@@ -605,22 +621,27 @@ actions:
           {{ gate_name }} opened
         {% endif %}
   - action: input_text.set_value
+    continue_on_error: true
     data:
       entity_id: input_text.gate_ai_last_gate
       value: '{{ gate_name }}'
   - action: input_text.set_value
+    continue_on_error: true
     data:
       entity_id: input_text.gate_ai_last_classification
       value: '{{ gate_classification }}'
   - action: input_text.set_value
+    continue_on_error: true
     data:
       entity_id: input_text.gate_ai_last_summary
       value: '{{ log_description | truncate(255, true, "") }}'
   - action: input_text.set_value
+    continue_on_error: true
     data:
       entity_id: input_text.gate_ai_last_media
       value: '{{ dashboard_media_rel }}'
   - action: input_datetime.set_datetime
+    continue_on_error: true
     data:
       entity_id: input_datetime.gate_ai_last_analysis_time
       datetime: '{{ now().strftime("%Y-%m-%d %H:%M:%S") }}'
