@@ -129,6 +129,23 @@ blueprint:
         entity:
           domain: person
           multiple: true
+    property_zone_key:
+      name: Property zone key (visit graph)
+      description: Logical zone id (e.g. east_gate, west_gate) for visit correlation.
+      default: ""
+      selector:
+        text:
+    frigate_camera:
+      name: Frigate camera name
+      description: Frigate camera id for visit correlation (e.g. east_side, west_side).
+      default: ""
+      selector:
+        text:
+    visit_tracking_enabled:
+      name: Cross-camera visit tracking
+      default: true
+      selector:
+        boolean:
 
 mode: single
 variables:
@@ -148,6 +165,10 @@ variables:
   public_mp4_url: '{{ public_base_url }}{{ clip_mp4_rel }}'
   frigate_person_sensor: !input frigate_person_sensor
   frigate_dog_sensor: !input frigate_dog_sensor
+  property_zone_key: !input property_zone_key
+  frigate_camera: !input frigate_camera
+  visit_tracking_enabled: !input visit_tracking_enabled
+  event_start_epoch: '{{ as_timestamp(now()) | int }}'
 triggers:
   - trigger: state
     entity_id: !input gate_sensor
@@ -232,6 +253,75 @@ actions:
       # Animated GIF for Companion (Android 14+) and dashboard; still used as fallback below.
       notify_media_image: '{{ public_gif_url }}'
       dashboard_media_rel: '{{ clip_gif_rel }}'
+  - alias: Correlate gate open into property visit
+    if:
+    - condition: template
+      value_template: >-
+        {{ (visit_tracking_enabled is true or (visit_tracking_enabled | string | lower) in ['true', 'on', 'yes'])
+           and (property_zone_key | default('', true) | string | trim | length) > 0
+           and (frigate_camera | default('', true) | string | trim | length) > 0 }}
+    then:
+    - action: shell_command.visit_correlate
+      continue_on_error: true
+      response_variable: visit_correlate_cmd
+      data:
+        zone_key: '{{ property_zone_key }}'
+        camera: '{{ frigate_camera }}'
+        epoch: '{{ event_start_epoch }}'
+        faces: ''
+        gate_open: 'yes'
+    - action: script.property_visit_sync_from_shell
+      continue_on_error: true
+      data:
+        correlate_json: >-
+          {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
+            {{ visit_correlate_cmd.get('stdout', '{}') }}
+          {% else %}
+            {}
+          {% endif %}
+  - variables:
+      visit_id: >-
+        {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
+          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {{ j.visit_id | default('', true) }}
+        {% else %}
+          {{ states('input_text.property_visit_id') | default('', true) }}
+        {% endif %}
+      visit_context: >-
+        {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
+          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {{ j.visit_context | default('', true) }}
+        {% else %}
+          {{ states('input_text.property_visit_context') | default('', true) }}
+        {% endif %}
+      visit_priority: >-
+        {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
+          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {{ j.priority | default('realtime') }}
+        {% else %}
+          realtime
+        {% endif %}
+      visit_path_label: >-
+        {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
+          {% set j = visit_correlate_cmd.get('stdout', '{}') | from_json %}
+          {{ j.path_label | default('', true) }}
+        {% else %}
+          {{ states('input_text.property_visit_path_label') | default('', true) }}
+        {% endif %}
+  - alias: Buffer gate stills for visit narrative
+    if:
+    - condition: template
+      value_template: "{{ (visit_id | default('', true) | string | trim | length) > 0 }}"
+    then:
+    - action: shell_command.visit_append_stills
+      continue_on_error: true
+      data:
+        visit_id: '{{ visit_id }}'
+        camera: '{{ frigate_camera }}'
+        zone_slug: '{{ gate_slug }}'
+        stamp: '{{ snapshot_timestamp }}'
+        count: '4'
+        start_index: '1'
   - action: comstar_vision.image_analyzer
     continue_on_error: true
     data:
@@ -245,10 +335,16 @@ actions:
       generate_title: false
       expose_images: false
       target_width: !input target_width
+      priority: '{{ visit_priority | default("realtime") }}'
+      visit_id: '{{ visit_id | default("", true) }}'
+      visit_context: '{{ visit_context | default("", true) }}'
       message: >-
         You are viewing multiple still frames from the {{ gate_name }} security camera,
         captured in order over a few seconds. Treat them as one short video clip of the
         SAME scene, not as separate events.
+        {% if (visit_context | default('', true) | string | trim | length) > 0 %}
+        Visit context: {{ visit_context }}
+        {% endif %}
 
         COUNTING RULES (critical — models often get this wrong):
         - Count UNIQUE people only. The same person appearing in different frames or
@@ -443,13 +539,18 @@ actions:
           FALLBACK
         {% endif %}
       notify_title: >-
+        {% set vpath = visit_path_label | default('', true) | string | trim %}
         {% if gate_classification == 'PEOPLE' %}
-          {% set s = log_description | string %}
-          {% set short = s | regex_findall('(?i)^((?:one|two|three|\\d+)\\s+people?[^.]*)') %}
-          {% if short | length > 0 %}
-            {{ gate_name }} · {{ short[0] | truncate(40, true, '…') }}
+          {% if vpath | length > 0 and ' → ' in vpath %}
+            {{ (gate_name ~ ' · ' ~ vpath) | truncate(50, true, '…') }}
           {% else %}
-            {{ gate_name }} · Person
+            {% set s = log_description | string %}
+            {% set short = s | regex_findall('(?i)^((?:one|two|three|\\d+)\\s+people?[^.]*)') %}
+            {% if short | length > 0 %}
+              {{ gate_name }} · {{ short[0] | truncate(40, true, '…') }}
+            {% else %}
+              {{ gate_name }} · Person
+            {% endif %}
           {% endif %}
         {% elif gate_classification == 'DOG' %}
           {{ gate_name }} · Dog
