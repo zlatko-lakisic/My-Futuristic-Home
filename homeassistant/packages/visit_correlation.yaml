@@ -160,12 +160,19 @@ script:
       - action: input_boolean.turn_on
         target:
           entity_id: input_boolean.property_visit_active
-      - action: input_datetime.set_datetime
-        target:
-          entity_id: input_datetime.property_visit_started
-        data:
-          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-        enabled: "{{ corr.link_reason | default('') in ['new_visit', 'new', 'branch_split'] }}"
+      # Do not use action `enabled:` with script vars — HA evaluates it without
+      # `corr` in scope (UndefinedError), which aborts the parent zone/gate automation
+      # before comstar_vision / notify.
+      - if:
+          - condition: template
+            value_template: >-
+              {{ corr.link_reason | default('') in ['new_visit', 'new', 'branch_split'] }}
+        then:
+          - action: input_datetime.set_datetime
+            target:
+              entity_id: input_datetime.property_visit_started
+            data:
+              datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
   property_visit_finalize_narrative:
     alias: Property visit — Tier 2 background narrative
@@ -220,6 +227,7 @@ script:
                 continue_on_error: true
                 data:
                   image_file: "{{ image_lines }}"
+                  model: gemma4:26b
                   priority: background
                   visit_id: "{{ visit_id }}"
                   visit_context: "{{ visit_ctx }}"
