@@ -66,6 +66,7 @@ foreach ($f in $rootYaml) {
 $dirs = @(
     @{ Src = 'automations'; Note = 'Automations (!include_dir_merge_list automations/)' },
     @{ Src = 'scripts'; Note = 'Script fragments (!include from scripts.yaml)' },
+    @{ Src = 'shell'; Note = 'Shell helpers (shell_command Python/bash under /config/shell)' },
     @{ Src = 'dashboards'; Note = 'Lovelace dashboard YAML' },
     @{ Src = 'packages'; Note = 'Packages (!include_dir_named packages)' },
     @{ Src = 'includes'; Note = 'Shared YAML fragments (!include from packages/automations)' },
