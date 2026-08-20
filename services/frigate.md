@@ -76,6 +76,15 @@ cameras:
           roles: [audio, detect, record]
     objects:
       track: [person, deer, dog, mouse, cat, face]
+    zones:
+      kitchen_lawn:
+        coordinates: 0.2,0.4,0.5,0.25,0.8,0.35,0.9,0.7,0.6,0.95,0.15,0.9
+        objects: [person, dog]
+        friendly_name: Kitchen lawn
+      back_yard_gate_approach:
+        coordinates: 0.35,0.75,0.45,0.55,0.55,0.55,0.65,0.75,0.55,0.98,0.35,0.98
+        objects: [person, dog]
+        friendly_name: Back yard gate
     birdseye:
       order: 1
 
@@ -134,6 +143,14 @@ cameras:
         - path: rtsp://127.0.0.1:8554/west_side
           input_args: preset-rtsp-restream
           roles: [audio, detect, record]
+    objects:
+      track: [person, dog, cat]
+    zones:
+      west_gate_approach:
+        # Normalized — tune on NVR after deploy (FOV covers west gate from house)
+        coordinates: 0.1,0.5,0.4,0.3,0.7,0.35,0.85,0.55,0.75,0.95,0.15,0.95
+        objects: [person, dog]
+        friendly_name: West gate
     birdseye:
       order: 4
 
@@ -143,6 +160,13 @@ cameras:
         - path: rtsp://127.0.0.1:8554/garden_north
           input_args: preset-rtsp-restream
           roles: [audio, detect, record]
+    objects:
+      track: [person, dog, cat]
+    zones:
+      garden_path:
+        coordinates: 0.2,0.5,0.5,0.35,0.85,0.5,0.9,0.95,0.15,0.95
+        objects: [person, dog]
+        friendly_name: Garden path
     birdseye:
       order: 5
 
@@ -152,7 +176,13 @@ cameras:
         - path: rtsp://127.0.0.1:8554/garden_south
           input_args: preset-rtsp-restream
           roles: [audio, detect, record]
+    objects:
+      track: [person, dog, cat]
     zones:
+      garden_path:
+        coordinates: 0.1,0.45,0.45,0.3,0.9,0.45,0.95,0.95,0.05,0.95
+        objects: [person, dog]
+        friendly_name: Garden path
       Peppers_and_Kale:
         coordinates: 0.293,0.998,0.292,0.67,0.221,0.635,0.194,0.849,0.082,0.992
       Tomatoes:
@@ -168,6 +198,17 @@ cameras:
         - path: rtsp://127.0.0.1:8554/east_side
           input_args: preset-rtsp-restream
           roles: [audio, detect, record]
+    objects:
+      track: [person, dog, cat]
+    zones:
+      east_gate_approach:
+        coordinates: 0.15,0.35,0.45,0.2,0.75,0.35,0.85,0.65,0.55,0.9,0.2,0.85
+        objects: [person, dog]
+        friendly_name: East gate
+      east_lawn:
+        coordinates: 0.25,0.55,0.55,0.45,0.8,0.6,0.75,0.95,0.3,0.95,0.15,0.75
+        objects: [person, dog]
+        friendly_name: East lawn
     birdseye:
       order: 7
 

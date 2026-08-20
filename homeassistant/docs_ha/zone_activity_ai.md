@@ -101,6 +101,7 @@ Removed: dusk-only driveway flood automation that fought camera day/night and st
 
 ## Related
 
+- [Cross-camera tracking](cross_camera_tracking.md)
 - [Frigate Setup](frigate_setup.md)
 - [Automations Catalog](automations_catalog.md)
 - [LoRa Perimeter](lorawan_perimeter.md) (gate-open AI path)
