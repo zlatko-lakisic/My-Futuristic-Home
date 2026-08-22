@@ -235,9 +235,39 @@ script:
 
                     Describe the journey across zones. Output exactly 3 plain-text lines:
                     Line 1: PERSON or CAR or DOG or OTHER or CLEAR
-                    Line 2: Home log with full path ({{ path_label }}) ≤160 chars
-                    Line 3: Phone line with path arrows ≤100 chars
+                    Line 2: journey summary including path {{ path_label }} (max 160 chars)
+                    Line 3: shorter push text with path arrows (max 100 chars). No labels or meta text.
                 response_variable: visit_narrative
+      - variables:
+          visit_notify_body: >-
+            {% set raw = visit_narrative.response_text | default('', true) | string | trim %}
+            {% if raw | length < 1 %}
+              {{ path_label }}
+            {% else %}
+              {% set sl = raw.split('\n') | map('trim') | reject('eq', '') | list %}
+              {% set phone_raw = sl[2] | default('', true) if sl | length > 2 else '' %}
+              {% set log_raw = sl[1] | default('', true) if sl | length > 1 else '' %}
+              {% set phone = phone_raw
+                | regex_replace('(?i)^(PERSON|CAR|DOG|OTHER|CLEAR)\\s*[.!:\\-—]*\\s*', '')
+                | regex_replace('(?i)^(?:Line\\s*[123]\\s*[—:\\-]\\s*)+', '')
+                | regex_replace('(?i)^(home\\s*log|phone\\s*(?:line|alert)?|journey\\s*summary)\\s*(?:ONLY)?\\s*[—:\\-]?\\s*', '')
+                | regex_replace('(?i)\\s*≤\\s*\\d+\\s*chars?\\.?\\s*$', '')
+                | regex_replace('\\s+', ' ')
+                | trim %}
+              {% set log = log_raw
+                | regex_replace('(?i)^(PERSON|CAR|DOG|OTHER|CLEAR)\\s*[.!:\\-—]*\\s*', '')
+                | regex_replace('(?i)^(?:Line\\s*[123]\\s*[—:\\-]\\s*)+', '')
+                | regex_replace('(?i)^(home\\s*log|phone\\s*(?:line|alert)?|journey\\s*summary)\\s*(?:ONLY)?\\s*[—:\\-]?\\s*', '')
+                | regex_replace('(?i)\\s*≤\\s*\\d+\\s*chars?\\.?\\s*$', '')
+                | regex_replace('\\s+', ' ')
+                | trim %}
+              {% set body = phone if phone | length > 8 and (phone | regex_findall('(?i)(line\\s*[123]|home\\s*log|phone\\s*line)') | length) == 0 else log %}
+              {% if body | length > 8 and (body | regex_findall('(?i)(line\\s*[123]|home\\s*log|phone\\s*line)') | length) == 0 %}
+                {{ body | truncate(160, true, '…') }}
+              {% else %}
+                {{ path_label }}
+              {% endif %}
+            {% endif %}
       - action: persistent_notification.create
         data:
           notification_id: "property_visit_{{ visit_id }}"
@@ -245,8 +275,8 @@ script:
             {% if faces | length > 0 %}{{ faces.split(',')[0] | trim }} — {{ path_label.split(' → ')[-1] }}{% else %}Visit — {{ path_label.split(' → ')[-1] }}{% endif %}
           message: >-
             {{ path_label }}
-            {% if visit_narrative is defined and visit_narrative.response_text is defined %}
-            {{ visit_narrative.response_text | truncate(200, true, '…') }}
+            {% if visit_notify_body | default('', true) | string | trim != path_label | trim %}
+            {{ visit_notify_body }}
             {% endif %}
       - action: input_boolean.turn_off
         target:
