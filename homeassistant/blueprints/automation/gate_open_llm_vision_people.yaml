@@ -387,11 +387,10 @@ actions:
         Line 1 — classification only: exactly PEOPLE or DOG or NOPEOPLE (nothing else on this line).
         PEOPLE if any human appears in any frame. DOG if the only moving subject is a dog/pet.
         Otherwise NOPEOPLE.
-        Line 2 — home log ONLY (no PEOPLE/DOG/NOPEOPLE words): concrete observation (who/where/what
-        they do). Start with the unique person count when PEOPLE (e.g. "One person…"). For DOG
-        say the dog is moving, not a person. Max 180 characters. One paragraph.
-        Line 3 — phone alert ONLY (no PEOPLE/DOG/NOPEOPLE words): shorter factual summary.
-        Max 100 characters. No meta text.
+        Line 2 — one factual observation sentence (who/where/what). No PEOPLE/DOG/NOPEOPLE words.
+        Start with the unique person count when PEOPLE (e.g. "One person…"). For DOG describe the
+        dog, not a person. Max 180 characters.
+        Line 3 — shorter push text with the same facts. Max 100 characters. No labels or meta text.
     response_variable: ai_response
   - variables:
       reply_raw: >-
@@ -450,6 +449,8 @@ actions:
           yes
         {% elif cleaned | regex_findall('(?i)(Describe local image files|For each frame analyzed|List the person/pet)') | length > 0 %}
           yes
+        {% elif cleaned | regex_findall('(?i)(home\\s*log|phone\\s*line|phone\\s*alert|line\\s*[23]\\s*[—:\\-])') | length > 0 %}
+          yes
         {% elif label not in ['PEOPLE', 'DOG', 'NOPEOPLE'] %}
           yes
         {% else %}
@@ -485,41 +486,54 @@ actions:
             no
           {% endif %}
         {% endif %}
-      # Clean human-readable summary — never include PEOPLE/NOPEOPLE tokens.
+      # Line 2 = HA log / persistent body; line 3 = phone push (never echo prompt labels).
       log_description: >-
         {% set unusable = (llm_unusable | string | trim) == 'yes' %}
         {% set label = llm_label | string | trim | upper %}
         {% if unusable %}
           {{ gate_name }} opened
         {% else %}
-          {% set text = reply | string %}
-          {% set sl = text.split('\n') %}
-          {% set ns = namespace(cand='') %}
-          {% for line in sl %}
-            {% if ns.cand | length < 1 %}
-              {% set t = line | trim %}
-              {% set t = t
-                | regex_replace('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE|DOG)\\s*[.!:\\-]*\\s*', '')
-                | regex_replace('(?i)^(Alert|Phone alert|Person alert|Home log|Line\\s*[123])\\s*:\\s*', '')
-                | regex_replace('(?i)\\b(NOPEOPLE|PEOPLE|DOG)\\b[.!:\\-]*\\s*', '')
-                | regex_replace('(?i)\\b(Phone alert|Person alert|Home log|Alert)\\s*:\\s*', '. ')
-                | regex_replace('\\s+', ' ')
-                | trim %}
-              {% if t | length > 12
-                 and (t | regex_findall('(?i)(List the person|For each frame|Describe local|tool-call)') | length) == 0 %}
-                {% set first = t.split('.')[0] | trim %}
-                {% set ns.cand = (first ~ '.') if first | length > 8 else t %}
-              {% endif %}
-            {% endif %}
-          {% endfor %}
-          {% if ns.cand | length > 0 %}
-            {{ ns.cand | truncate(140, true, '…') }}
+          {% set sl = (reply | string).split('\n') | map('trim') | reject('eq', '') | list %}
+          {% set raw = sl[1] | default('', true) if sl | length > 1 else '' %}
+          {% set t = raw
+            | regex_replace('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE|DOG)\\s*[.!:\\-—]*\\s*', '')
+            | regex_replace('(?i)^(?:Line\\s*[123]\\s*[—:\\-]\\s*)+', '')
+            | regex_replace('(?i)^(home\\s*log|phone\\s*(?:line|alert)?|person\\s*alert|factual\\s+(?:home\\s*log|phone\\s*line))\\s*(?:ONLY)?\\s*[—:\\-]?\\s*', '')
+            | regex_replace('(?i)\\b(NOPEOPLE|PEOPLE|DOG)\\b[.!:\\-—]*\\s*', '')
+            | regex_replace('(?i)\\s*≤\\s*\\d+\\s*chars?\\.?\\s*$', '')
+            | regex_replace('\\s+', ' ')
+            | trim %}
+          {% if t | length > 12
+             and (t | regex_findall('(?i)(line\\s*[123]|home\\s*log|phone\\s*line|for each frame|describe local|tool-call)') | length) == 0 %}
+            {{ t | truncate(140, true, '…') }}
           {% elif label == 'PEOPLE' or (frigate_people | string | trim) == 'yes' %}
             Person at {{ gate_name }}
           {% elif label == 'DOG' or (frigate_dog | string | trim) == 'yes' %}
             Dog at {{ gate_name }}
           {% else %}
             No people at {{ gate_name }}
+          {% endif %}
+        {% endif %}
+      phone_line: >-
+        {% set unusable = (llm_unusable | string | trim) == 'yes' %}
+        {% if unusable %}
+          {{ log_description }}
+        {% else %}
+          {% set sl = (reply | string).split('\n') | map('trim') | reject('eq', '') | list %}
+          {% set raw = sl[2] | default('', true) if sl | length > 2 else '' %}
+          {% set t = raw
+            | regex_replace('(?i)^(?:People\\s*:\\s*)?(NOPEOPLE|PEOPLE|DOG)\\s*[.!:\\-—]*\\s*', '')
+            | regex_replace('(?i)^(?:Line\\s*[123]\\s*[—:\\-]\\s*)+', '')
+            | regex_replace('(?i)^(home\\s*log|phone\\s*(?:line|alert)?|person\\s*alert|factual\\s+(?:home\\s*log|phone\\s*line))\\s*(?:ONLY)?\\s*[—:\\-]?\\s*', '')
+            | regex_replace('(?i)\\b(NOPEOPLE|PEOPLE|DOG)\\b[.!:\\-—]*\\s*', '')
+            | regex_replace('(?i)\\s*≤\\s*\\d+\\s*chars?\\.?\\s*$', '')
+            | regex_replace('\\s+', ' ')
+            | trim %}
+          {% if t | length > 8
+             and (t | regex_findall('(?i)(line\\s*[123]|home\\s*log|phone\\s*line|for each frame|describe local)') | length) == 0 %}
+            {{ t | truncate(100, true, '…') }}
+          {% else %}
+            {{ log_description | truncate(100, true, '…') }}
           {% endif %}
         {% endif %}
       # PEOPLE when model sees a person; DOG when the subject is a pet; FALLBACK on junk.
@@ -575,7 +589,9 @@ actions:
         {% endif %}
       mobile_short: >-
         {% if gate_classification in ['PEOPLE', 'DOG'] %}
-          {{ log_description | truncate(120, true, '…') }}
+          {% set phone = phone_line | string | trim %}
+          {% set body = phone if phone | length > 8 else (log_description | string) %}
+          {{ body | truncate(120, true, '…') }}
         {% else %}
           {{ gate_name }} opened
         {% endif %}
@@ -616,7 +632,9 @@ actions:
     variables:
       mobile_short: >-
         {% if gate_classification in ['PEOPLE', 'DOG'] %}
-          {{ log_description | truncate(120, true, '…') }}
+          {% set phone = phone_line | string | trim %}
+          {% set body = phone if phone | length > 8 else (log_description | string) %}
+          {{ body | truncate(120, true, '…') }}
         {% else %}
           {{ gate_name }} opened
         {% endif %}
