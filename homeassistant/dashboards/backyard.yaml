@@ -647,6 +647,60 @@ views:
                         cards:
                           - type: heading
                             heading_style: subtitle
+                            heading: AGENTIC WATERING — ZONE ENABLE
+                          - type: custom:layout-card
+                            layout_type: custom:grid-layout
+                            layout:
+                              grid-template-columns: repeat(3, minmax(0, 1fr))
+                              grid-gap: 8px
+                              justify-items: stretch
+                              place-items: stretch
+                              mediaquery:
+                                "(max-width: 900px)":
+                                  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
+                            cards:
+                              - type: tile
+                                entity: input_boolean.ai_watering_enable_east_lawn
+                                name: East lawn
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: input_boolean.ai_watering_enable_flower_bed
+                                name: East flower bed
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: input_boolean.ai_watering_enable_kitchen_lawn
+                                name: Back lawn
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: input_boolean.ai_watering_enable_slope_kitchen_left
+                                name: Slope kitchen left
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: input_boolean.ai_watering_enable_front_lawn
+                                name: Front yard
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: input_boolean.ai_watering_enable_peppers_kale
+                                name: Peppers & kale
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: input_boolean.ai_watering_enable_tomato
+                                name: Tomato
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: input_boolean.ai_watering_enable_zucchini
+                                name: Zucchini & eggplant
+                                vertical: false
+                                features_position: bottom
+                          - type: heading
+                            heading_style: subtitle
                             heading: FLOWER BEDS & LAWN
                           - type: custom:layout-card
                             layout_type: custom:grid-layout
