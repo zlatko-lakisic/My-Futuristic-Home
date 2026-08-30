@@ -87,8 +87,8 @@ blueprint:
           domain: camera
     vision_model:
       name: Vision model hint
-      description: Soft model hint for Comstar Vision / ADA AO (e.g. gpt-4o-mini).
-      default: gpt-4o-mini
+      description: Soft model hint for Comstar Vision / AO. Jetson VLM pin (gemma4:e4b is pulled and multimodal).
+      default: gemma4:e4b
       selector:
         text:
     target_width:
@@ -647,50 +647,35 @@ actions:
             {}
           {% endif %}
   - variables:
+      # Simple field scrape only — never from_json (invalid stdout must not abort notify).
       visit_id: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.visit_id | default(states('input_text.property_visit_id'), true) | default('', true) }}
-        {% else %}
-          {{ states('input_text.property_visit_id') | default('', true) }}
-        {% endif %}
+        {% set m = raw | regex_findall('"visit_id"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else (states('input_text.property_visit_id') | default('', true)) }}
       visit_context: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.visit_context | default(states('input_text.property_visit_context'), true) | default('', true) }}
-        {% else %}
-          {{ states('input_text.property_visit_context') | default('', true) }}
-        {% endif %}
+        {% set m = raw | regex_findall('"visit_context"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else (states('input_text.property_visit_context') | default('', true)) }}
       visit_priority: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.priority | default('realtime') }}
-        {% else %}
-          realtime
-        {% endif %}
+        {% set m = raw | regex_findall('"priority"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else 'realtime' }}
       visit_path_label: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.path_label | default(states('input_text.property_visit_path_label'), true) | default('', true) }}
-        {% else %}
-          {{ states('input_text.property_visit_path_label') | default('', true) }}
-        {% endif %}
+        {% set m = raw | regex_findall('"path_label"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else (states('input_text.property_visit_path_label') | default('', true)) }}
   - alias: Buffer stills for end-of-visit Tier 2 narrative
     if:
     - condition: template
@@ -864,6 +849,8 @@ actions:
         {% set label = llm_label | string | trim | upper %}
         {% set lines = cleaned.split('\n') | map('trim') | reject('eq', '') | list %}
         {% if ai_response is not defined or ai_response is none %}
+          yes
+        {% elif ai_response is mapping and (ai_response.get('error') | default('', true) | string | trim | length) > 0 %}
           yes
         {% elif raw | regex_findall('(?i)"name"\\s*:\\s*"(describe_image|python_m_mcp|media_understand)') | length > 0 %}
           yes

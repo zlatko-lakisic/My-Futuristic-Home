@@ -70,8 +70,8 @@ blueprint:
             - sensor
     vision_model:
       name: Vision model hint
-      description: Soft model hint for Comstar Vision / ADA AO (e.g. gpt-4o-mini).
-      default: gpt-4o-mini
+      description: Soft model hint for Comstar Vision / AO. Jetson VLM pin (gemma4:e4b is pulled and multimodal).
+      default: gemma4:e4b
       selector:
         text:
     target_width:
@@ -253,6 +253,18 @@ actions:
       # Animated GIF for Companion (Android 14+) and dashboard; still used as fallback below.
       notify_media_image: '{{ public_gif_url }}'
       dashboard_media_rel: '{{ clip_gif_rel }}'
+  - alias: Persist media path even if later LLM/visit steps abort
+    action: input_text.set_value
+    continue_on_error: true
+    data:
+      entity_id: input_text.gate_ai_last_media
+      value: '{{ dashboard_media_rel }}'
+  - alias: Persist gate name early
+    action: input_text.set_value
+    continue_on_error: true
+    data:
+      entity_id: input_text.gate_ai_last_gate
+      value: '{{ gate_name }}'
   - alias: Correlate gate open into property visit
     if:
     - condition: template
@@ -280,50 +292,35 @@ actions:
             {}
           {% endif %}
   - variables:
+      # Simple field scrape only — never from_json (invalid stdout must not abort notify).
       visit_id: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.visit_id | default('', true) }}
-        {% else %}
-          {{ states('input_text.property_visit_id') | default('', true) }}
-        {% endif %}
+        {% set m = raw | regex_findall('"visit_id"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else (states('input_text.property_visit_id') | default('', true)) }}
       visit_context: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.visit_context | default('', true) }}
-        {% else %}
-          {{ states('input_text.property_visit_context') | default('', true) }}
-        {% endif %}
+        {% set m = raw | regex_findall('"visit_context"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else (states('input_text.property_visit_context') | default('', true)) }}
       visit_priority: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.priority | default('realtime') }}
-        {% else %}
-          realtime
-        {% endif %}
+        {% set m = raw | regex_findall('"priority"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else 'realtime' }}
       visit_path_label: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.path_label | default('', true) }}
-        {% else %}
-          {{ states('input_text.property_visit_path_label') | default('', true) }}
-        {% endif %}
+        {% set m = raw | regex_findall('"path_label"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else (states('input_text.property_visit_path_label') | default('', true)) }}
   - alias: Buffer gate stills for visit narrative
     if:
     - condition: template
@@ -442,6 +439,8 @@ actions:
         {% set cleaned = reply | string | trim %}
         {% set label = llm_label | string | trim | upper %}
         {% if ai_response is not defined or ai_response is none %}
+          yes
+        {% elif ai_response is mapping and (ai_response.get('error') | default('', true) | string | trim | length) > 0 %}
           yes
         {% elif raw | regex_findall('(?i)"name"\\s*:\\s*"(describe_image|python_m_mcp|media_understand)') | length > 0 %}
           yes
@@ -676,6 +675,7 @@ actions:
 
           ![{{ gate_name }}](/local/{{ dashboard_media_rel }})
     - action: !input notify_service
+      continue_on_error: true
       data:
         title: '{{ notify_title }}'
         message: '{{ mobile_short }}'

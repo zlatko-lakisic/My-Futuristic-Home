@@ -108,55 +108,87 @@ script:
         selector:
           text:
     sequence:
+      # Avoid correlate_json | from_json — invalid/partial stdout aborts callers even with continue_on_error.
       - variables:
-          corr: "{{ correlate_json | from_json }}"
+          corr_ok: >-
+            {% set raw = correlate_json | default('', true) | string %}
+            {% set ok = raw | regex_findall('"ok"\s*:\s*(true|false)') %}
+            {% set vid = raw | regex_findall('"visit_id"\s*:\s*"([^"]*)"') %}
+            {{ (ok[0] | lower == 'true') if ok | length > 0 else (vid | length > 0) }}
+          corr_visit_id: >-
+            {% set m = (correlate_json | default('', true) | string) | regex_findall('"visit_id"\s*:\s*"([^"]*)"') %}
+            {{ m[0] if m | length > 0 else '' }}
+          corr_path_json: >-
+            {% set m = (correlate_json | default('', true) | string) | regex_findall('"path"\s*:\s*(\[[^\]]*\])') %}
+            {{ m[0] if m | length > 0 else '[]' }}
+          corr_path_label: >-
+            {% set m = (correlate_json | default('', true) | string) | regex_findall('"path_label"\s*:\s*"([^"]*)"') %}
+            {{ m[0] if m | length > 0 else '' }}
+          corr_faces: >-
+            {% set m = (correlate_json | default('', true) | string) | regex_findall('"faces"\s*:\s*\[([^\]]*)\]') %}
+            {% if m | length == 0 %}{% elif m[0] | trim | length == 0 %}{% else %}{{ m[0] | regex_replace('"', '') }}{% endif %}
+          corr_cameras: >-
+            {% set m = (correlate_json | default('', true) | string) | regex_findall('"cameras"\s*:\s*\[([^\]]*)\]') %}
+            {% if m | length == 0 %}{% elif m[0] | trim | length == 0 %}{% else %}{{ m[0] | regex_replace('"', '') }}{% endif %}
+          corr_zone: >-
+            {% set m = (correlate_json | default('', true) | string) | regex_findall('"zone_key"\s*:\s*"([^"]*)"') %}
+            {{ m[0] if m | length > 0 else '' }}
+          corr_link: >-
+            {% set m = (correlate_json | default('', true) | string) | regex_findall('"link_reason"\s*:\s*"([^"]*)"') %}
+            {{ m[0] if m | length > 0 else '' }}
+          corr_priority: >-
+            {% set m = (correlate_json | default('', true) | string) | regex_findall('"priority"\s*:\s*"([^"]*)"') %}
+            {{ m[0] if m | length > 0 else 'realtime' }}
+          corr_context: >-
+            {% set m = (correlate_json | default('', true) | string) | regex_findall('"visit_context"\s*:\s*"([^"]*)"') %}
+            {{ m[0] if m | length > 0 else '' }}
       - condition: template
-        value_template: "{{ corr.ok | default(false) }}"
+        value_template: "{{ corr_ok | string | lower in ['true', 'True', '1'] or (corr_visit_id | string | trim | length) > 0 }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.property_visit_id
         data:
-          value: "{{ corr.visit_id | default('') }}"
+          value: "{{ corr_visit_id }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.property_visit_path
         data:
-          value: "{{ corr.path | default([]) | to_json }}"
+          value: "{{ corr_path_json | truncate(255, true, '') }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.property_visit_path_label
         data:
-          value: "{{ corr.path_label | default('') | truncate(255, true, '') }}"
+          value: "{{ corr_path_label | truncate(255, true, '') }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.property_visit_faces
         data:
-          value: "{{ corr.faces | default([]) | join(',') | truncate(255, true, '') }}"
+          value: "{{ corr_faces | truncate(255, true, '') }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.property_visit_cameras
         data:
-          value: "{{ corr.cameras | default([]) | join(',') | truncate(255, true, '') }}"
+          value: "{{ corr_cameras | truncate(255, true, '') }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.property_visit_last_zone
         data:
-          value: "{{ corr.zone_key | default('') }}"
+          value: "{{ corr_zone }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.property_visit_link_reason
         data:
-          value: "{{ corr.link_reason | default('') }}"
+          value: "{{ corr_link }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.property_visit_priority
         data:
-          value: "{{ corr.priority | default('realtime') }}"
+          value: "{{ corr_priority }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.property_visit_context
         data:
-          value: "{{ corr.visit_context | default('') | truncate(255, true, '') }}"
+          value: "{{ corr_context | truncate(255, true, '') }}"
       - action: input_boolean.turn_on
         target:
           entity_id: input_boolean.property_visit_active
@@ -165,7 +197,7 @@ script:
           entity_id: input_datetime.property_visit_started
         data:
           datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-        enabled: "{{ corr.link_reason | default('') in ['new_visit', 'new', 'branch_split'] }}"
+        enabled: "{{ corr_link | default('') in ['new_visit', 'new', 'branch_split'] }}"
 
   property_visit_finalize_narrative:
     alias: Property visit — Tier 2 background narrative
