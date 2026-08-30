@@ -48,7 +48,6 @@
       notification_click_path: /backyard-yaml/backyard-east-side
       notify_people:
       - person.zlatko_lakisic
-      notify_service: notify.zlatko_galaxy
 - id: gate_open_llm_west
   alias: West Gate Open AI Analysis
   description: Blueprint gate_open_llm_vision_people — west gate.
@@ -71,7 +70,6 @@
       notification_click_path: /backyard-yaml/backyard-west-side
       notify_people:
       - person.zlatko_lakisic
-      notify_service: notify.zlatko_galaxy
 - id: gate_open_llm_back_yard_gate
   alias: Back Yard Gate Open AI Analysis
   description: Blueprint gate_open_llm_vision_people — fence / back yard gate.
@@ -91,7 +89,6 @@
       notification_click_path: /backyard-yaml/backyard-back-yard
       notify_people:
       - person.zlatko_lakisic
-      notify_service: notify.zlatko_galaxy
 - id: zone_activity_llm_near_driveway
   alias: Near Driveway Zone AI Analysis
   description: Blueprint zone_activity_llm_vision — driveway_zone person/car only; one notify per visit.
@@ -134,7 +131,6 @@
       notify_channel: HA Driveway
       notify_people:
       - person.zlatko_lakisic
-      notify_service: notify.zlatko_galaxy
 - id: zone_activity_llm_near_front_door
   alias: Near Front Door Zone AI Analysis
   description: Blueprint zone_activity_llm_vision — near_front_door people only; one notify per visit.
@@ -170,7 +166,6 @@
       notify_channel: HA Front Door
       notify_people:
       - person.zlatko_lakisic
-      notify_service: notify.zlatko_galaxy
 - id: '1773361989097'
   alias: East Side Motion
   description: ''
