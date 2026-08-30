@@ -62,7 +62,9 @@
       entity_id: person.zlatko_lakisic
       state: not_home
     then:
-    - action: notify.zlatko_galaxy
+    - action: notify.send_message
+      target:
+        entity_id: notify.zlatko_galaxy
       data:
         message: Front door open!
         title: Home Alert
@@ -126,7 +128,9 @@
       entity_id: person.zlatko_lakisic
       state: not_home
     then:
-    - action: notify.zlatko_galaxy
+    - action: notify.send_message
+      target:
+        entity_id: notify.zlatko_galaxy
       data:
         message: Alert back door open!
         title: Home Alert
@@ -172,7 +176,9 @@
       entity_id: person.zlatko_lakisic
       state: not_home
     then:
-    - action: notify.zlatko_galaxy
+    - action: notify.send_message
+      target:
+        entity_id: notify.zlatko_galaxy
       data:
         message: Office door open!
         title: Home Alert
@@ -201,7 +207,9 @@
       entity_id: person.zlatko_lakisic
       state: not_home
     then:
-    - action: notify.zlatko_galaxy
+    - action: notify.send_message
+      target:
+        entity_id: notify.zlatko_galaxy
       data:
         message: Office door closed!
         title: Home Alert
