@@ -87,8 +87,8 @@ blueprint:
           domain: camera
     vision_model:
       name: Vision model hint
-      description: Soft model hint for Comstar Vision / ADA AO (e.g. gpt-4o-mini).
-      default: gpt-4o-mini
+      description: Soft model hint for Comstar Vision / AO. Jetson VLM pin (gemma4:e4b is pulled and multimodal).
+      default: gemma4:e4b
       selector:
         text:
     target_width:
@@ -647,50 +647,35 @@ actions:
             {}
           {% endif %}
   - variables:
+      # Simple field scrape only — never from_json (invalid stdout must not abort notify).
       visit_id: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.visit_id | default(states('input_text.property_visit_id'), true) | default('', true) }}
-        {% else %}
-          {{ states('input_text.property_visit_id') | default('', true) }}
-        {% endif %}
+        {% set m = raw | regex_findall('"visit_id"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else (states('input_text.property_visit_id') | default('', true)) }}
       visit_context: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.visit_context | default(states('input_text.property_visit_context'), true) | default('', true) }}
-        {% else %}
-          {{ states('input_text.property_visit_context') | default('', true) }}
-        {% endif %}
+        {% set m = raw | regex_findall('"visit_context"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else (states('input_text.property_visit_context') | default('', true)) }}
       visit_priority: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.priority | default('realtime') }}
-        {% else %}
-          realtime
-        {% endif %}
+        {% set m = raw | regex_findall('"priority"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else 'realtime' }}
       visit_path_label: >-
         {% set raw = '' %}
         {% if visit_correlate_cmd is defined and visit_correlate_cmd is mapping %}
           {% set raw = visit_correlate_cmd.get('stdout', '') | string | trim %}
         {% endif %}
-        {% if raw | length > 1 and raw[:1] == '{' %}
-          {% set j = raw | from_json %}
-          {{ j.path_label | default(states('input_text.property_visit_path_label'), true) | default('', true) }}
-        {% else %}
-          {{ states('input_text.property_visit_path_label') | default('', true) }}
-        {% endif %}
+        {% set m = raw | regex_findall('"path_label"\s*:\s*"([^"]*)"') %}
+        {{ (m[0] | trim) if m | length > 0 and (m[0] | trim | length) > 0 else (states('input_text.property_visit_path_label') | default('', true)) }}
   - alias: Buffer stills for end-of-visit Tier 2 narrative
     if:
     - condition: template
@@ -771,13 +756,13 @@ actions:
         Output exactly 3 plain-text lines (no JSON, no tools, no lists of labels):
         Line 1: one word only — PERSON or CAR or DOG or OTHER or CLEAR
         (PERSON if any human; CAR if vehicle and no person; DOG if pet only; CLEAR if nothing.)
-        Line 2: factual home log ≤160 chars (who/what/where).
+        Line 2: one factual observation sentence (who/what/where, max 160 chars).
         {% if (is_family_car | string | lower) in ['true', 'yes', 'on'] %}
         Say Family Car; no color/make/model; no plate digits.
         {% else %}
         Car color/make OK. Include a plate only if LPR provided one or it is clearly readable.
         {% endif %}
-        Line 3: factual phone line ≤100 chars. Same facts, shorter.
+        Line 3: shorter push text with the same facts (max 100 chars). No labels or meta text.
     response_variable: ai_response
   - alias: Refresh Frigate-recognized people before notify
     if:
@@ -865,11 +850,15 @@ actions:
         {% set lines = cleaned.split('\n') | map('trim') | reject('eq', '') | list %}
         {% if ai_response is not defined or ai_response is none %}
           yes
+        {% elif ai_response is mapping and (ai_response.get('error') | default('', true) | string | trim | length) > 0 %}
+          yes
         {% elif raw | regex_findall('(?i)"name"\\s*:\\s*"(describe_image|python_m_mcp|media_understand)') | length > 0 %}
           yes
         {% elif cleaned in ['', '}', '{', "Couldn't generate content. Check logs for details.", 'None', 'none'] %}
           yes
         {% elif cleaned | regex_findall('(?i)(Describe local image files|For each frame analyzed|List the person/pet|PERSON,\\s*CAR,\\s*DOG)') | length > 0 %}
+          yes
+        {% elif cleaned | regex_findall('(?i)(home\\s*log|phone\\s*line|phone\\s*alert|line\\s*[23]\\s*[—:\\-])') | length > 0 %}
           yes
         {% elif cleaned | regex_findall('(?i)(PERSON|CAR|DOG|OTHER|CLEAR).{0,20}(PERSON|CAR|DOG|OTHER|CLEAR).{0,20}(PERSON|CAR|DOG|OTHER|CLEAR)') | length > 0 %}
           yes
@@ -939,27 +928,19 @@ actions:
             {{ (zone_name ~ ' activity') | truncate(160, true, '…') }}
           {% endif %}
         {% else %}
-          {% set text = reply | string %}
-          {% set sl = text.split('\n') %}
-          {% set ns = namespace(cand='') %}
-          {% for line in sl %}
-            {% if ns.cand | length < 1 %}
-              {% set t = line | trim %}
-              {% set t = t
-                | regex_replace('(?i)^(PERSON|CAR|DOG|OTHER|CLEAR)\\s*[.!:\\-]*\\s*', '')
-                | regex_replace('(?i)^(Alert|Phone alert|Home log|Line\\s*[123])\\s*:\\s*', '')
-                | regex_replace('(?i)\\b(PERSON|CAR|DOG|OTHER|CLEAR)\\b[.!:\\-]*\\s*', '')
-                | regex_replace('\\s+', ' ')
-                | trim %}
-              {% if t | length > 8
-                 and (t | regex_findall('(?i)(List the person|For each frame|Describe local|tool-call)') | length) == 0 %}
-                {% set first = t.split('.')[0] | trim %}
-                {% set ns.cand = (first ~ '.') if first | length > 8 else t %}
-              {% endif %}
-            {% endif %}
-          {% endfor %}
-          {% if ns.cand | length > 0 %}
-            {{ ns.cand | truncate(160, true, '…') }}
+          {% set sl = (reply | string).split('\n') | map('trim') | reject('eq', '') | list %}
+          {% set raw = sl[1] | default('', true) if sl | length > 1 else '' %}
+          {% set t = raw
+            | regex_replace('(?i)^(PERSON|CAR|DOG|OTHER|CLEAR)\\s*[.!:\\-—]*\\s*', '')
+            | regex_replace('(?i)^(?:Line\\s*[123]\\s*[—:\\-]\\s*)+', '')
+            | regex_replace('(?i)^(home\\s*log|phone\\s*(?:line|alert)?|person\\s*alert|factual\\s+(?:home\\s*log|phone\\s*line))\\s*(?:ONLY)?\\s*[—:\\-]?\\s*', '')
+            | regex_replace('(?i)\\b(PERSON|CAR|DOG|OTHER|CLEAR)\\b[.!:\\-—]*\\s*', '')
+            | regex_replace('(?i)\\s*≤\\s*\\d+\\s*chars?\\.?\\s*$', '')
+            | regex_replace('\\s+', ' ')
+            | trim %}
+          {% if t | length > 8
+             and (t | regex_findall('(?i)(line\\s*[123]|home\\s*log|phone\\s*line|for each frame|describe local|tool-call)') | length) == 0 %}
+            {{ t | truncate(160, true, '…') }}
           {% elif people | length > 0 %}
             {{ (people ~ ' at ' ~ zone_name) | truncate(160, true, '…') }}
           {% elif label == 'PERSON' %}
@@ -975,14 +956,22 @@ actions:
         {% if unusable %}
           {{ log_description }}
         {% else %}
-          {% set sl = (reply | string).split('\n') %}
-          {% set t = (sl[2] | default('', true) | trim) if sl | length > 2 else '' %}
-          {% set t = t
-            | regex_replace('(?i)^(PERSON|CAR|DOG|OTHER|CLEAR)\\s*[.!:\\-]*\\s*', '')
-            | regex_replace('(?i)^(Alert|Phone alert|Home log|Line\\s*[123])\\s*:\\s*', '')
+          {% set sl = (reply | string).split('\n') | map('trim') | reject('eq', '') | list %}
+          {% set raw = sl[2] | default('', true) if sl | length > 2 else '' %}
+          {% set t = raw
+            | regex_replace('(?i)^(PERSON|CAR|DOG|OTHER|CLEAR)\\s*[.!:\\-—]*\\s*', '')
+            | regex_replace('(?i)^(?:Line\\s*[123]\\s*[—:\\-]\\s*)+', '')
+            | regex_replace('(?i)^(home\\s*log|phone\\s*(?:line|alert)?|person\\s*alert|factual\\s+(?:home\\s*log|phone\\s*line))\\s*(?:ONLY)?\\s*[—:\\-]?\\s*', '')
+            | regex_replace('(?i)\\b(PERSON|CAR|DOG|OTHER|CLEAR)\\b[.!:\\-—]*\\s*', '')
+            | regex_replace('(?i)\\s*≤\\s*\\d+\\s*chars?\\.?\\s*$', '')
             | regex_replace('\\s+', ' ')
             | trim %}
-          {{ t if t | length > 8 else log_description }}
+          {% if t | length > 8
+             and (t | regex_findall('(?i)(line\\s*[123]|home\\s*log|phone\\s*line|for each frame|describe local)') | length) == 0 %}
+            {{ t | truncate(100, true, '…') }}
+          {% else %}
+            {{ log_description | truncate(100, true, '…') }}
+          {% endif %}
         {% endif %}
       car_plate_hint: >-
         {% set existing = lpr_plate | default('', true) | string | trim %}
