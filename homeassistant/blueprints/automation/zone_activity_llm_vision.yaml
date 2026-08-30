@@ -187,13 +187,12 @@ blueprint:
       default: HA Zones
       selector:
         text:
-    notify_service:
-      name: Notify service
-      default: notify.notify
-      selector:
-        text:
     notify_people:
       name: Notify people
+      description: >
+        People whose linked Companion phones receive the alert. Devices are resolved
+        from each person's device_trackers → notify.<tracker> entities (fallback
+        location trackers are skipped). No hardcoded notify service names.
       selector:
         entity:
           domain: person
@@ -284,6 +283,7 @@ variables:
   visit_tracking_enabled: !input visit_tracking_enabled
   notify_group: !input notify_group
   notify_channel: !input notify_channel
+  notify_people: !input notify_people
   snapshot_timestamp: '{{ now().strftime("%Y%m%d-%H%M%S") }}'
   event_start_epoch: '{{ as_timestamp(now()) | int }}'
   snapshot_frame_count: !input stream_max_frames
@@ -912,6 +912,21 @@ actions:
             no
           {% endif %}
         {% endif %}
+      notify_targets: >-
+        {% set ns = namespace(ents=[]) %}
+        {% for p in (notify_people | default([], true)) %}
+          {% for dt in state_attr(p, 'device_trackers') | default([], true) %}
+            {% if dt is string and dt.startswith('device_tracker.')
+                 and not dt.endswith('_fallback_location') %}
+              {% set slug = dt | replace('device_tracker.', '') %}
+              {% set ent = 'notify.' ~ slug %}
+              {% if states(ent) not in ['unknown', 'unavailable', 'none', ''] and ent not in ns.ents %}
+                {% set ns.ents = ns.ents + [ent] %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+        {{ ns.ents }}
       log_description: >-
         {% set unusable = (llm_unusable | string | trim) == 'yes' %}
         {% set label = llm_label | string | trim | upper %}
@@ -1130,33 +1145,22 @@ actions:
           {% endif %}
 
           ![{{ zone_name }}](/local/{{ dashboard_media_rel }})
-    - action: !input notify_service
-      data:
-        title: '{{ notify_title }}'
-        message: '{{ mobile_short }}'
-        data:
-          image: '{{ notify_media_image }}'
-          url: !input notification_click_path
-          clickAction: !input notification_click_path
-          ttl: 0
-          priority: high
-          importance: high
-          group: '{{ notify_group }}'
-          channel: '{{ notify_channel }}'
-          tag: '{{ zone_slug }}-{{ snapshot_timestamp }}'
-          subject: >-
-            {% if (has_recognized_people | string | trim) == 'yes' %}
-              {{ recognized_people_label | truncate(40, true, '…') }}
-            {% elif (car_plate_hint | string | trim | length) > 0 %}
-              {{ car_plate_hint | truncate(40, true, '…') }}
-            {% else %}
-              {{ zone_name | truncate(40, true, '…') }}
-            {% endif %}
-          push:
-            sound:
-              name: default
-              critical: 1
-              volume: 1
+    - alias: Notify each Companion device linked to selected people
+      repeat:
+        for_each: '{{ notify_targets }}'
+        sequence:
+        - action: notify.send_message
+          continue_on_error: true
+          target:
+            entity_id: '{{ repeat.item }}'
+          data:
+            title: '{{ notify_title }}'
+            message: >-
+              {{ mobile_short }}
+              {% if (notify_media_image | default('', true) | string | trim | length) > 0 %}
+
+              {{ notify_media_image }}
+              {% endif %}
   - alias: Hold until trigger sensors stay clear
     repeat:
       while:

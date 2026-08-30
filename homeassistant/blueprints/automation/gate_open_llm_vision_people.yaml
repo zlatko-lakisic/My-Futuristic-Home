@@ -116,15 +116,12 @@ blueprint:
       default: /backyard-yaml/backyard
       selector:
         text:
-    notify_service:
-      name: Notify service
-      description: Home Assistant notify service for the phone (e.g. notify.mobile_app_my_phone).
-      default: notify.notify
-      selector:
-        text:
     notify_people:
       name: Notify people
-      description: Send to all mobile-app devices registered to selected people.
+      description: >
+        People whose linked Companion phones receive the alert. Devices are resolved
+        from each person's device_trackers → notify.<tracker> entities (fallback
+        location trackers are skipped). No hardcoded notify service names.
       selector:
         entity:
           domain: person
@@ -168,6 +165,7 @@ variables:
   property_zone_key: !input property_zone_key
   frigate_camera: !input frigate_camera
   visit_tracking_enabled: !input visit_tracking_enabled
+  notify_people: !input notify_people
   event_start_epoch: '{{ as_timestamp(now()) | int }}'
 triggers:
   - trigger: state
@@ -596,20 +594,22 @@ actions:
         {% endif %}
       should_notify: >-
         {{ 'yes' if gate_classification in ['PEOPLE', 'DOG', 'FALLBACK'] else 'no' }}
-      notify_services: >-
-        {% set ns = namespace(services=[]) %}
+      # Companion notify entities linked to selected people (stable across phone renames).
+      notify_targets: >-
+        {% set ns = namespace(ents=[]) %}
         {% for p in (notify_people | default([], true)) %}
           {% for dt in state_attr(p, 'device_trackers') | default([], true) %}
-            {% if dt is string and dt.startswith('device_tracker.') %}
+            {% if dt is string and dt.startswith('device_tracker.')
+                 and not dt.endswith('_fallback_location') %}
               {% set slug = dt | replace('device_tracker.', '') %}
               {% set ent = 'notify.' ~ slug %}
-              {% if states(ent) not in ['unknown', 'unavailable'] and ent not in ns.services %}
-                {% set ns.services = ns.services + [ent] %}
+              {% if states(ent) not in ['unknown', 'unavailable', 'none', ''] and ent not in ns.ents %}
+                {% set ns.ents = ns.ents + [ent] %}
               {% endif %}
             {% endif %}
           {% endfor %}
         {% endfor %}
-        {{ ns.services | to_json }}
+        {{ ns.ents }}
   - alias: Drop person wording when this visit is a dog
     variables:
       log_description: >-
@@ -674,22 +674,19 @@ actions:
           {{ log_description }}
 
           ![{{ gate_name }}](/local/{{ dashboard_media_rel }})
-    - action: !input notify_service
-      continue_on_error: true
-      data:
-        title: '{{ notify_title }}'
-        message: '{{ mobile_short }}'
-        data:
-          image: '{{ notify_media_image }}'
-          url: !input notification_click_path
-          clickAction: !input notification_click_path
-          ttl: 0
-          priority: high
-          importance: high
-          group: ha-gates
-          channel: HA Gates
-          push:
-            sound:
-              name: default
-              critical: 1
-              volume: 1
+    - alias: Notify each Companion device linked to selected people
+      repeat:
+        for_each: '{{ notify_targets }}'
+        sequence:
+        - action: notify.send_message
+          continue_on_error: true
+          target:
+            entity_id: '{{ repeat.item }}'
+          data:
+            title: '{{ notify_title }}'
+            message: >-
+              {{ mobile_short }}
+              {% if (notify_media_image | default('', true) | string | trim | length) > 0 %}
+
+              {{ notify_media_image }}
+              {% endif %}
