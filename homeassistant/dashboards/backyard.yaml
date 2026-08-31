@@ -965,168 +965,6 @@ views:
                                     <div style="flex-shrink:0;font-size:1.85rem;font-weight:600;color:var(--primary-text-color);line-height:1;margin-left:12px;">${n}</div>
                                   </div>`;
                                 ]]]
-                          - type: custom:button-card
-                            entity: sensor.garden_speaker_health
-                            show_icon: false
-                            show_name: false
-                            show_state: false
-                            show_label: false
-                            triggers_update:
-                              - binary_sensor.garden_speaker_speaker_connected
-                              - binary_sensor.garden_speaker_owntone_output_selected
-                              - sensor.infra_garden_speaker_cpu_usage
-                              - sensor.infra_garden_speaker_memory_usage
-                              - media_player.owntone_server
-                            tap_action:
-                              action: more-info
-                            styles:
-                              card:
-                                - padding: 14px 16px
-                                - border-radius: 12px
-                              grid:
-                                - grid-template-areas: '"gs_body"'
-                                - grid-template-columns: 1fr
-                              custom_fields:
-                                gs_body:
-                                  - width: 100%
-                                  - max-width: 100%
-                                  - justify-self: stretch
-                            custom_fields:
-                              gs_body: |
-                                [[[
-                                  const health = (entity.state || 'unknown').toLowerCase();
-                                  const attrs = entity.attributes || {};
-                                  const issues = Array.isArray(attrs.issues) ? attrs.issues : [];
-                                  const issueMsg = issues.length
-                                    ? (issues[0].message || issues[0].code || '')
-                                    : '';
-                                  const connected = hass.states['binary_sensor.garden_speaker_speaker_connected']?.state === 'on';
-                                  const owntoneOut = hass.states['binary_sensor.garden_speaker_owntone_output_selected']?.state === 'on';
-                                  const cpu = hass.states['sensor.infra_garden_speaker_cpu_usage']?.state;
-                                  const mem = hass.states['sensor.infra_garden_speaker_memory_usage']?.state;
-                                  const mp = hass.states['media_player.owntone_server'];
-                                  const playing = mp && ['playing', 'paused', 'idle', 'on'].includes(mp.state);
-                                  const healthColor = health === 'ok' ? '#66bb6a'
-                                    : (health === 'warn' || health === 'warning') ? '#ffb74d'
-                                    : health === 'error' ? '#ef5350'
-                                    : '#90a4ae';
-                                  const healthLabel = health === 'ok' ? 'Healthy'
-                                    : (health === 'warn' || health === 'warning') ? 'Warning'
-                                    : health === 'error' ? 'Needs attention'
-                                    : health;
-                                  const pill = (label, on, onColor) => {
-                                    const bg = on ? onColor : 'rgba(255,255,255,0.08)';
-                                    const fg = on ? '#0d1117' : 'var(--secondary-text-color)';
-                                    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:0.7rem;font-weight:600;background:${bg};color:${fg};">${label}</span>`;
-                                  };
-                                  const fmtPct = (v) => {
-                                    const n = parseFloat(v);
-                                    return Number.isFinite(n) ? `${Math.round(n)}%` : '—';
-                                  };
-                                  return `<div style="display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);">
-                                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-                                      <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-                                        <ha-icon icon="mdi:speaker-wireless" style="--mdc-icon-size:36px;color:${healthColor};flex-shrink:0;"></ha-icon>
-                                        <div style="min-width:0;line-height:1.25;">
-                                          <div style="font-size:1rem;font-weight:600;color:var(--primary-text-color);">Garden Speaker</div>
-                                          <div style="font-size:0.8rem;color:${healthColor};margin-top:3px;font-weight:600;">${healthLabel}</div>
-                                        </div>
-                                      </div>
-                                      <div style="text-align:right;flex-shrink:0;font-size:0.72rem;color:var(--secondary-text-color);line-height:1.35;">
-                                        <div>CPU ${fmtPct(cpu)}</div>
-                                        <div>Mem ${fmtPct(mem)}</div>
-                                      </div>
-                                    </div>
-                                    ${issueMsg ? `<div style="font-size:0.78rem;color:var(--secondary-text-color);line-height:1.35;">${issueMsg}</div>` : ''}
-                                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                                      ${pill(connected ? 'BT connected' : 'BT disconnected', connected, '#66bb6a')}
-                                      ${pill(owntoneOut ? 'OwnTone selected' : 'OwnTone idle', owntoneOut, '#4fc3f7')}
-                                      ${pill(playing ? `Playback · ${mp.state}` : 'Playback off', playing, '#ce93d8')}
-                                    </div>
-                                  </div>`;
-                                ]]]
-                          - type: media-control
-                            entity: media_player.owntone_server
-                          - type: custom:layout-card
-                            layout_type: custom:grid-layout
-                            layout:
-                              grid-template-columns: 1fr 1fr
-                              grid-gap: 8px
-                              mediaquery:
-                                "(max-width: 900px)":
-                                  grid-template-columns: 1fr 1fr
-                            cards:
-                              - type: custom:button-card
-                                name: Check health
-                                icon: mdi:stethoscope
-                                show_state: false
-                                tap_action:
-                                  action: call-service
-                                  service: garden_speaker.health_check
-                                styles:
-                                  card:
-                                    - padding: 10px 8px
-                                    - border-radius: 10px
-                                  name:
-                                    - font-size: 0.78rem
-                                    - font-weight: 600
-                                  icon:
-                                    - color: '#4fc3f7'
-                              - type: custom:button-card
-                                name: Auto repair
-                                icon: mdi:wrench
-                                show_state: false
-                                confirmation: Safe repairs only — Bluetooth pairing is kept. Continue?
-                                tap_action:
-                                  action: call-service
-                                  service: garden_speaker.repair
-                                styles:
-                                  card:
-                                    - padding: 10px 8px
-                                    - border-radius: 10px
-                                  name:
-                                    - font-size: 0.78rem
-                                    - font-weight: 600
-                                  icon:
-                                    - color: '#ffb74d'
-                              - type: custom:button-card
-                                name: Restart stack
-                                icon: mdi:restart
-                                show_state: false
-                                confirmation: Restart Garden Speaker containers in dependency order?
-                                tap_action:
-                                  action: call-service
-                                  service: garden_speaker.restart_stack
-                                styles:
-                                  card:
-                                    - padding: 10px 8px
-                                    - border-radius: 10px
-                                  name:
-                                    - font-size: 0.78rem
-                                    - font-weight: 600
-                                  icon:
-                                    - color: '#90caf9'
-                              - type: custom:button-card
-                                name: Re-pair BT
-                                icon: mdi:bluetooth-connect
-                                show_state: false
-                                confirmation: >-
-                                  Put the PartyBox in pairing mode (Bluetooth LED blinking fast),
-                                  turn phone Bluetooth off, then confirm. Re-pair can take up to 3 minutes.
-                                tap_action:
-                                  action: call-service
-                                  service: garden_speaker.repair_pairing
-                                  service_data:
-                                    confirm_pairing_mode: true
-                                styles:
-                                  card:
-                                    - padding: 10px 8px
-                                    - border-radius: 10px
-                                  name:
-                                    - font-size: 0.78rem
-                                    - font-weight: 600
-                                  icon:
-                                    - color: '#ef5350'
                           - type: heading
                             heading_style: subtitle
                             heading: CPU/Memory Usage
@@ -1323,6 +1161,171 @@ views:
                                     tap_action: null
                                 annotations: []
                                 state_map: null
+                          - type: heading
+                            heading_style: subtitle
+                            heading: GARDEN SPEAKER
+                          - type: custom:button-card
+                            entity: sensor.garden_speaker_health
+                            show_icon: false
+                            show_name: false
+                            show_state: false
+                            show_label: false
+                            triggers_update:
+                              - binary_sensor.garden_speaker_speaker_connected
+                              - binary_sensor.garden_speaker_owntone_output_selected
+                              - sensor.infra_garden_speaker_cpu_usage
+                              - sensor.infra_garden_speaker_memory_usage
+                              - media_player.owntone_server
+                            tap_action:
+                              action: more-info
+                            styles:
+                              card:
+                                - padding: 14px 16px
+                                - border-radius: 12px
+                              grid:
+                                - grid-template-areas: '"gs_body"'
+                                - grid-template-columns: 1fr
+                              custom_fields:
+                                gs_body:
+                                  - width: 100%
+                                  - max-width: 100%
+                                  - justify-self: stretch
+                            custom_fields:
+                              gs_body: |
+                                [[[
+                                  const health = (entity.state || 'unknown').toLowerCase();
+                                  const attrs = entity.attributes || {};
+                                  const issues = Array.isArray(attrs.issues) ? attrs.issues : [];
+                                  const issueMsg = issues.length
+                                    ? (issues[0].message || issues[0].code || '')
+                                    : '';
+                                  const connected = hass.states['binary_sensor.garden_speaker_speaker_connected']?.state === 'on';
+                                  const owntoneOut = hass.states['binary_sensor.garden_speaker_owntone_output_selected']?.state === 'on';
+                                  const cpu = hass.states['sensor.infra_garden_speaker_cpu_usage']?.state;
+                                  const mem = hass.states['sensor.infra_garden_speaker_memory_usage']?.state;
+                                  const mp = hass.states['media_player.owntone_server'];
+                                  const playing = mp && ['playing', 'paused', 'idle', 'on'].includes(mp.state);
+                                  const healthColor = health === 'ok' ? '#66bb6a'
+                                    : (health === 'warn' || health === 'warning') ? '#ffb74d'
+                                    : health === 'error' ? '#ef5350'
+                                    : '#90a4ae';
+                                  const healthLabel = health === 'ok' ? 'Healthy'
+                                    : (health === 'warn' || health === 'warning') ? 'Warning'
+                                    : health === 'error' ? 'Needs attention'
+                                    : health;
+                                  const pill = (label, on, onColor) => {
+                                    const bg = on ? onColor : 'rgba(255,255,255,0.08)';
+                                    const fg = on ? '#0d1117' : 'var(--secondary-text-color)';
+                                    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:0.7rem;font-weight:600;background:${bg};color:${fg};">${label}</span>`;
+                                  };
+                                  const fmtPct = (v) => {
+                                    const n = parseFloat(v);
+                                    return Number.isFinite(n) ? `${Math.round(n)}%` : '—';
+                                  };
+                                  return `<div style="display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);">
+                                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                                      <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+                                        <ha-icon icon="mdi:speaker-wireless" style="--mdc-icon-size:36px;color:${healthColor};flex-shrink:0;"></ha-icon>
+                                        <div style="min-width:0;line-height:1.25;">
+                                          <div style="font-size:1rem;font-weight:600;color:var(--primary-text-color);">PartyBox</div>
+                                          <div style="font-size:0.8rem;color:${healthColor};margin-top:3px;font-weight:600;">${healthLabel}</div>
+                                        </div>
+                                      </div>
+                                      <div style="text-align:right;flex-shrink:0;font-size:0.72rem;color:var(--secondary-text-color);line-height:1.35;">
+                                        <div>CPU ${fmtPct(cpu)}</div>
+                                        <div>Mem ${fmtPct(mem)}</div>
+                                      </div>
+                                    </div>
+                                    ${issueMsg ? `<div style="font-size:0.78rem;color:var(--secondary-text-color);line-height:1.35;">${issueMsg}</div>` : ''}
+                                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                                      ${pill(connected ? 'BT connected' : 'BT disconnected', connected, '#66bb6a')}
+                                      ${pill(owntoneOut ? 'OwnTone selected' : 'OwnTone idle', owntoneOut, '#4fc3f7')}
+                                      ${pill(playing ? `Playback · ${mp.state}` : 'Playback off', playing, '#ce93d8')}
+                                    </div>
+                                  </div>`;
+                                ]]]
+                          - type: media-control
+                            entity: media_player.owntone_server
+                          - type: custom:layout-card
+                            layout_type: custom:grid-layout
+                            layout:
+                              grid-template-columns: 1fr 1fr
+                              grid-gap: 8px
+                              mediaquery:
+                                "(max-width: 900px)":
+                                  grid-template-columns: 1fr 1fr
+                            cards:
+                              - type: custom:button-card
+                                name: Check health
+                                icon: mdi:stethoscope
+                                show_state: false
+                                tap_action:
+                                  action: call-service
+                                  service: garden_speaker.health_check
+                                styles:
+                                  card:
+                                    - padding: 10px 8px
+                                    - border-radius: 10px
+                                  name:
+                                    - font-size: 0.78rem
+                                    - font-weight: 600
+                                  icon:
+                                    - color: '#4fc3f7'
+                              - type: custom:button-card
+                                name: Auto repair
+                                icon: mdi:wrench
+                                show_state: false
+                                confirmation: Safe repairs only — Bluetooth pairing is kept. Continue?
+                                tap_action:
+                                  action: call-service
+                                  service: garden_speaker.repair
+                                styles:
+                                  card:
+                                    - padding: 10px 8px
+                                    - border-radius: 10px
+                                  name:
+                                    - font-size: 0.78rem
+                                    - font-weight: 600
+                                  icon:
+                                    - color: '#ffb74d'
+                              - type: custom:button-card
+                                name: Restart stack
+                                icon: mdi:restart
+                                show_state: false
+                                confirmation: Restart Garden Speaker containers in dependency order?
+                                tap_action:
+                                  action: call-service
+                                  service: garden_speaker.restart_stack
+                                styles:
+                                  card:
+                                    - padding: 10px 8px
+                                    - border-radius: 10px
+                                  name:
+                                    - font-size: 0.78rem
+                                    - font-weight: 600
+                                  icon:
+                                    - color: '#90caf9'
+                              - type: custom:button-card
+                                name: Re-pair BT
+                                icon: mdi:bluetooth-connect
+                                show_state: false
+                                confirmation: >-
+                                  Put the PartyBox in pairing mode (Bluetooth LED blinking fast),
+                                  turn phone Bluetooth off, then confirm. Re-pair can take up to 3 minutes.
+                                tap_action:
+                                  action: call-service
+                                  service: garden_speaker.repair_pairing
+                                  service_data:
+                                    confirm_pairing_mode: true
+                                styles:
+                                  card:
+                                    - padding: 10px 8px
+                                    - border-radius: 10px
+                                  name:
+                                    - font-size: 0.78rem
+                                    - font-weight: 600
+                                  icon:
+                                    - color: '#ef5350'
                         title: INFRASTRUCTURE
         column_span: 4
 
