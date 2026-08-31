@@ -18,7 +18,8 @@
     { id: "sensor.irrigation_7d_front_yard", name: "Front yard", color: "#27ae60" },
     { id: "sensor.irrigation_7d_peppers_kale", name: "Peppers & kale", color: "#e67e22" },
     { id: "sensor.irrigation_7d_tomato", name: "Tomato", color: "#d35400" },
-    { id: "sensor.irrigation_7d_zucchini_eggplant", name: "Zucchini & eggplant", color: "#f39c12" }
+    { id: "sensor.irrigation_7d_zucchini_eggplant", name: "Zucchini & eggplant", color: "#f39c12" },
+    { id: "sensor.irrigation_7d_corn", name: "Corn", color: "#e8c547" }
   ];
 
   var ENTITIES = [
@@ -45,10 +46,11 @@
     "switch.porch_light",
     "switch.flood_lights_2",
     "switch.light_switch_4",
-    "valve.east_lawn_timer_east_lawn_zone_zone",
-    "valve.east_lawn_timer_flower_bed_zone_zone",
+    "valve.back_yard_east_lawn_timer_east_lawn_zone_zone",
+    "valve.back_yard_east_lawn_timer_flower_bed_zone_zone",
     "valve.flower_garden_back_lawn_time_back_lawn_zone_zone",
     "valve.flower_garden_back_lawn_time_slope_kitchen_left_zone",
+    "valve.flower_garden_back_lawn_time_zone_4_zone",
     "valve.front_yard_controller_front_yard_zone",
     "valve.vegitable_garden_timer_peppers_kale_zone_zone",
     "valve.vegitable_garden_timer_tomato_zone_zone",
@@ -448,8 +450,8 @@
       toggleTile("switch.light_switch_4", "Light switch");
 
     $("card-by-valves-lawn").innerHTML =
-      toggleTile("valve.east_lawn_timer_east_lawn_zone_zone", "East lawn") +
-      toggleTile("valve.east_lawn_timer_flower_bed_zone_zone", "East flower bed") +
+      toggleTile("valve.back_yard_east_lawn_timer_east_lawn_zone_zone", "East lawn") +
+      toggleTile("valve.back_yard_east_lawn_timer_flower_bed_zone_zone", "East flower bed") +
       toggleTile("valve.flower_garden_back_lawn_time_back_lawn_zone_zone", "Back lawn") +
       toggleTile("valve.flower_garden_back_lawn_time_slope_kitchen_left_zone", "Slope / kitchen") +
       toggleTile("valve.front_yard_controller_front_yard_zone", "Front yard");
@@ -457,7 +459,8 @@
     $("card-by-valves-veg").innerHTML =
       toggleTile("valve.vegitable_garden_timer_peppers_kale_zone_zone", "Peppers / kale") +
       toggleTile("valve.vegitable_garden_timer_tomato_zone_zone", "Tomato") +
-      toggleTile("valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone", "Zucchini / eggplant");
+      toggleTile("valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone", "Zucchini / eggplant") +
+      toggleTile("valve.flower_garden_back_lawn_time_zone_4_zone", "Corn");
 
     if (H.getToken()) loadIrrChart(false);
   }
