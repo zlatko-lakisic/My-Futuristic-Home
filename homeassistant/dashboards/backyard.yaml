@@ -699,6 +699,11 @@ views:
                                 name: Zucchini & eggplant
                                 vertical: false
                                 features_position: bottom
+                              - type: tile
+                                entity: input_boolean.ai_watering_enable_corn
+                                name: Corn
+                                vertical: false
+                                features_position: bottom
                           - type: heading
                             heading_style: subtitle
                             heading: FLOWER BEDS & LAWN
@@ -714,12 +719,12 @@ views:
                                   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
                             cards:
                               - type: tile
-                                entity: valve.east_lawn_timer_east_lawn_zone_zone
+                                entity: valve.back_yard_east_lawn_timer_east_lawn_zone_zone
                                 name: East lawn
                                 vertical: false
                                 features_position: bottom
                               - type: tile
-                                entity: valve.east_lawn_timer_flower_bed_zone_zone
+                                entity: valve.back_yard_east_lawn_timer_flower_bed_zone_zone
                                 name: East flower bed
                                 vertical: false
                                 features_position: bottom
@@ -765,6 +770,11 @@ views:
                               - type: tile
                                 entity: valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone
                                 name: Zucchini & eggplant
+                                vertical: false
+                                features_position: bottom
+                              - type: tile
+                                entity: valve.flower_garden_back_lawn_time_zone_4_zone
+                                name: Corn
                                 vertical: false
                                 features_position: bottom
                           - type: heading
@@ -889,6 +899,18 @@ views:
                               - entity: sensor.irrigation_7d_zucchini_eggplant
                                 name: Zucchini & eggplant
                                 color: "#f39c12"
+                                graph_type: line
+                                line_width: 2
+                                show_fill: false
+                                smooth: false
+                                decimals: 0
+                                unit: min
+                                value_transform: "return x * 60;"
+                                aggregate_func: max
+                                show_state: false
+                              - entity: sensor.irrigation_7d_corn
+                                name: Corn
+                                color: "#e8c547"
                                 graph_type: line
                                 line_width: 2
                                 show_fill: false

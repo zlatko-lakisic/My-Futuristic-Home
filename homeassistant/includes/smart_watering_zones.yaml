@@ -3,8 +3,8 @@
 # Pattern: sensor.<device_slug>_<zone_slug>_history (see entity registry translation_key zone_history).
 # enabled_entity: input_boolean.ai_watering_enable_* — off skips zone in agentic watering.
 - label: East Lawn
-  entity_id: valve.east_lawn_timer_east_lawn_zone_zone
-  zone_history_sensor: sensor.east_lawn_timer_east_lawn_zone_zone_history
+  entity_id: valve.back_yard_east_lawn_timer_east_lawn_zone_zone
+  zone_history_sensor: sensor.back_yard_east_lawn_timer_east_lawn_zone_zone_history
   enabled_entity: input_boolean.ai_watering_enable_east_lawn
   area_sqm: 60
   sun_exposure: 35 percent shade / partial sun, 65 percent sun
@@ -14,8 +14,8 @@
   notes: Adjustable 25-360 degree arc, typical operating pressure 15-65 psi
   soil_sensor: ''
 - label: Flower Bed
-  entity_id: valve.east_lawn_timer_flower_bed_zone_zone
-  zone_history_sensor: sensor.east_lawn_timer_flower_bed_zone_zone_history
+  entity_id: valve.back_yard_east_lawn_timer_flower_bed_zone_zone
+  zone_history_sensor: sensor.back_yard_east_lawn_timer_flower_bed_zone_zone_history
   enabled_entity: input_boolean.ai_watering_enable_flower_bed
   area_sqm: 6
   sun_exposure: Partial sun morning, near full sun evening
