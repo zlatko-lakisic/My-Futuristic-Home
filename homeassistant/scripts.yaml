@@ -412,11 +412,11 @@ garden_speaker_restart_stack:
     data:
       value: '{{ summary[:255] }}'
 
-garden_speaker_repair_pairing:
+garden_speaker_re_pair_bluetooth:
   alias: Garden Speaker Re-pair Bluetooth
   description: Re-pair the PartyBox and surface the outcome on the backyard dashboard.
-  mode: queued
-  max: 1
+  # queued requires max >= 2; single keeps only one re-pair in flight.
+  mode: single
   icon: mdi:bluetooth-connect
   sequence:
   - action: input_text.set_value
