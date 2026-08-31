@@ -32,7 +32,9 @@ $rootYaml = @(
     'automations.yaml',
     'templates.yaml',
     'scenes.yaml',
-    'mqtt.yaml'
+    'mqtt.yaml',
+    'input_select.yaml',
+    'input_text.yaml'
 )
 
 $neverPullFromLive = @(
