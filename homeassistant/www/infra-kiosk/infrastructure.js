@@ -126,6 +126,8 @@ var ENTITIES = [
     "binary_sensor.nas1_services_nfs_service",
     "sensor.nas2_filesystem",
     "sensor.nas2_filesystem_2",
+    "sensor.nas2_system_cpu_load",
+    "sensor.nas2_system_memory",
     "sensor.nas2_disk",
     "sensor.nas2_disk_2",
     "sensor.nas2_disk_3",
@@ -1064,8 +1066,8 @@ function setHtml(id, html) {
         "md0 + OS volume",
         "sensor.nas2_filesystem",
         "sensor.nas2_filesystem_2",
-        null,
-        null,
+        "sensor.nas2_system_cpu_load",
+        "sensor.nas2_system_memory",
         ["sensor.nas2_disk", "sensor.nas2_disk_2", "sensor.nas2_disk_3", "sensor.nas2_disk_4", "sensor.nas2_disk_5"],
         []
       );
