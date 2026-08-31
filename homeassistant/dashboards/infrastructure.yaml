@@ -4030,6 +4030,9 @@ views:
                           - sensor.nas2_disk_3
                           - sensor.nas2_disk_4
                           - sensor.nas2_disk_5
+                          - binary_sensor.nas2_services_smb_cifs_service
+                          - binary_sensor.nas2_services_ssh_service
+                          - binary_sensor.nas2_services_nfs_service
                         styles:
                           card:
                             - background-color: '#1c1c1c'
@@ -4074,6 +4077,8 @@ views:
                               const t = maxT !== null ? `${maxT}°C max` : '—';
                               const smTxt = offline ? 'OMV: offline' : (smartBad ? 'SMART: Check' : 'SMART: OK');
                               const smCol = offline ? '#e57373' : (smartBad ? '#e57373' : '#81c784');
+                              const svc = (id) => hass.states[id]?.state === 'on';
+                              const pill = (on, label) => `<span style="font-size:0.68rem;font-weight:600;padding:3px 8px;border-radius:6px;background:${on ? 'rgba(76,175,80,0.2)' : 'rgba(244,67,54,0.15)'};color:${on ? '#81c784' : '#e57373'};">${label}</span>`;
                               const bars = (a !== null || b !== null) ? `<div style="display:flex;height:12px;border-radius:6px;overflow:hidden;margin-bottom:8px;">
                                   <div style="width:${a ?? 0}%;background:#29b6f6;" title="md0 ${a ?? '—'}%"></div>
                                   <div style="width:${b ?? 0}%;background:#26a69a;" title="OS ${b ?? '—'}%"></div>
@@ -4091,6 +4096,7 @@ views:
                                 ${bars}
                                 ${meta}
                                 ${load}
+                                <div style="display:flex;flex-wrap:wrap;gap:6px;">${pill(svc('binary_sensor.nas2_services_smb_cifs_service'), 'SMB')}${pill(svc('binary_sensor.nas2_services_nfs_service'), 'NFS')}${pill(svc('binary_sensor.nas2_services_ssh_service'), 'SSH')}</div>
                               </div>`;
                             ]]]
               - type: vertical-stack
