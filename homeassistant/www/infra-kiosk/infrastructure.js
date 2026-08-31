@@ -122,8 +122,18 @@ var ENTITIES = [
     "sensor.nas1_disk_nvme2n1",
     "sensor.nas1_disk_nvme3n1",
     "binary_sensor.nas1_services_smb_cifs_service",
-    "binary_sensor.nas1_services_ssh_service",
+    "binary_sensor.nas1_services_smb_cifs_service_2",
     "binary_sensor.nas1_services_nfs_service",
+    "binary_sensor.nas1_services_nfs_service_2",
+    "binary_sensor.nas1_services_ssh_service",
+    "binary_sensor.nas1_services_ssh_service_2",
+    "binary_sensor.nas1_services_rsync_server_service",
+    "binary_sensor.nas1_services_rsync_server_service_2",
+    "binary_sensor.nas1_services_docker_service",
+    "binary_sensor.nas1_services_docker_service_2",
+    "binary_sensor.nas1_services_cterm_service",
+    "binary_sensor.nas1_services_file_browser_service",
+    "binary_sensor.nas1_services_wetty_service",
     "sensor.nas2_filesystem",
     "sensor.nas2_filesystem_2",
     "sensor.nas2_system_cpu_load",
@@ -135,7 +145,12 @@ var ENTITIES = [
     "sensor.nas2_disk_5",
     "binary_sensor.nas2_services_smb_cifs_service",
     "binary_sensor.nas2_services_nfs_service",
-    "binary_sensor.nas2_services_ssh_service"
+    "binary_sensor.nas2_services_ssh_service",
+    "binary_sensor.nas2_services_rsync_server_service",
+    "binary_sensor.nas2_services_docker_service",
+    "binary_sensor.nas2_services_cterm_service",
+    "binary_sensor.nas2_services_file_browser_service",
+    "binary_sensor.nas2_services_wetty_service"
   ];
 
   function $(id) { return document.getElementById(id); }
@@ -1001,7 +1016,29 @@ function setHtml(id, html) {
       cam("Garden South", "sensor.garden_south_frigate_fps", "sensor.garden_south_pipeline_cpu");
   }
 
-  function nasCard(title, sub, md0Id, osId, cpuId, memId, diskIds, services) {
+  function nasServiceLabel(entityId, prefix) {
+    var labelMap = {
+      smb_cifs: "SMB", nfs: "NFS", ssh: "SSH", rsync_server: "Rsync",
+      docker: "Docker", file_browser: "Files", cterm: "CTerm", wetty: "Wetty"
+    };
+    var raw = entityId.replace("binary_sensor." + prefix + "_services_", "").replace(/_service$/, "");
+    if (raw.slice(-2) === "_2") raw = raw.slice(0, -2);
+    return labelMap[raw] || raw.replace(/_/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+
+  function nasServices(prefix) {
+    var out = [];
+    ENTITIES.forEach(function (id) {
+      if (id.indexOf("binary_sensor." + prefix + "_services_") !== 0 || id.slice(-8) !== "_service") return;
+      var s = st(id);
+      if (!s || bad(s.state)) return;
+      out.push({ id: id, label: nasServiceLabel(id, prefix) });
+    });
+    out.sort(function (a, b) { return a.label.localeCompare(b.label); });
+    return out;
+  }
+
+  function nasCard(title, sub, md0Id, osId, cpuId, memId, diskIds, nasPrefix) {
     var a = num(md0Id);
     var b = osId ? num(osId) : null;
     var cpu = cpuId ? num(cpuId) : null;
@@ -1024,7 +1061,7 @@ function setHtml(id, html) {
     var offline = a == null && b == null && disksOk === 0;
     var smTxt = offline ? "OMV: offline" : (smartBad ? "SMART: Check" : "SMART: OK");
     var smCol = offline || smartBad ? "#e57373" : "#81c784";
-    var pills = (services || []).map(function (svc) {
+    var pills = nasServices(nasPrefix).map(function (svc) {
       var on = st(svc.id) && st(svc.id).state === "on";
       return '<span class="svc ' + (on ? "svc-on" : "svc-off") + '">' + svc.label + "</span>";
     }).join("");
@@ -1058,11 +1095,7 @@ function setHtml(id, html) {
         "sensor.nas1_system_cpu_load",
         "sensor.nas1_system_memory",
         ["sensor.nas1_disk_nvme0n1", "sensor.nas1_disk_nvme1n1", "sensor.nas1_disk_nvme2n1", "sensor.nas1_disk_nvme3n1"],
-        [
-          { id: "binary_sensor.nas1_services_smb_cifs_service", label: "SMB" },
-          { id: "binary_sensor.nas1_services_nfs_service", label: "NFS" },
-          { id: "binary_sensor.nas1_services_ssh_service", label: "SSH" }
-        ]
+        "nas1"
       ) +
       nasCard(
         "NAS2 (OMV)",
@@ -1072,11 +1105,7 @@ function setHtml(id, html) {
         "sensor.nas2_system_cpu_load",
         "sensor.nas2_system_memory",
         ["sensor.nas2_disk", "sensor.nas2_disk_2", "sensor.nas2_disk_3", "sensor.nas2_disk_4", "sensor.nas2_disk_5"],
-        [
-          { id: "binary_sensor.nas2_services_smb_cifs_service", label: "SMB" },
-          { id: "binary_sensor.nas2_services_nfs_service", label: "NFS" },
-          { id: "binary_sensor.nas2_services_ssh_service", label: "SSH" }
-        ]
+        "nas2"
       );
   }
 
