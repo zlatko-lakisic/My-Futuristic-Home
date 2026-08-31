@@ -181,6 +181,10 @@
       notify: true
       notify_device:
       - 3cab96ade88a859c680543da3cbc807e
+      condition_notify:
+      - condition: state
+        entity_id: person.zlatko_lakisic
+        state: not_home
       file_path: /config/www/snapshots/{{ camera_file_path }}/last_motion.jpg
       notification_channel: '{{ camera }} snapshot'
       run_conditions:
@@ -202,6 +206,10 @@
       provider: 01KR1YDS2H88N44EA4MJHW0PP8
       notify_device:
       - 3cab96ade88a859c680543da3cbc807e
+      condition_notify:
+      - condition: state
+        entity_id: person.zlatko_lakisic
+        state: not_home
       file_path: /media/local/snapshots/{{ camera_file_path }}/last_motion.jpg
       notification_channel: '{{ camera }} snapshot'
       model: gpt-4o-mini
