@@ -1,7 +1,7 @@
-# Map — track GPS people and their associated companion devices
+# Map — one marker per person (GPS from linked phone / geocode fallback)
 #
-# Only person entities with device_trackers, plus those associated GPS trackers.
-# Router/Unifi presence trackers are excluded (no coordinates).
+# Device trackers are not plotted separately; each person is linked to one
+# companion device (plus optional geocode fallback) in the Person settings.
 views:
   - title: Live Map
     path: map
@@ -54,12 +54,6 @@ views:
                         name: Adna
                       - entity: person.ibrica_lakisic
                         name: Ibrica
-                      - entity: device_tracker.zlatko_galaxy
-                        name: Zlatko Galaxy
-                      - entity: device_tracker.adna_s24_ultra
-                        name: Adna S24 Ultra
-                      - entity: device_tracker.ibrica_samsung
-                        name: Ibrica Samsung
 
               - type: vertical-stack
                 view_layout:
@@ -92,7 +86,7 @@ views:
                     vertical: false
 
           - type: heading
-            heading: Associated devices
+            heading: Linked phones
             heading_style: title
             icon: mdi:cellphone-marker
 
@@ -113,19 +107,19 @@ views:
             cards:
               - type: tile
                 entity: device_tracker.zlatko_galaxy
-                name: Zlatko Galaxy
+                name: Zlatko · Galaxy
                 icon: mdi:cellphone
                 vertical: true
                 color: green
               - type: tile
                 entity: device_tracker.adna_s24_ultra
-                name: Adna S24 Ultra
+                name: Adna · S24 Ultra
                 icon: mdi:cellphone
                 vertical: true
                 color: green
               - type: tile
                 entity: device_tracker.ibrica_samsung
-                name: Ibrica Samsung
+                name: Ibrica · Samsung
                 icon: mdi:cellphone
                 vertical: true
                 color: green
