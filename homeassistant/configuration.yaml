@@ -94,6 +94,7 @@ homeassistant:
     visit_correlation: !include packages/visit_correlation.yaml
     security_supervision: !include packages/security_supervision.yaml
     unban_local_networks: !include packages/unban_local_networks.yaml
+    person_geocode_fallback: !include packages/person_geocode_fallback.yaml
 
 influxdb:
   api_version: "1"
