@@ -22,3 +22,9 @@ torrent_detail_hash:
   name: Torrent detail hash
   max: 64
   initial: ""
+
+# Last Garden Speaker dashboard action result (written by garden_speaker_* scripts).
+garden_speaker_action_status:
+  name: Garden Speaker action status
+  max: 255
+  initial: ""
