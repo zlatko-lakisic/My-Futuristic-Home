@@ -1314,7 +1314,7 @@ views:
                                   turn phone Bluetooth off, then confirm. Re-pair can take up to 3 minutes.
                                 tap_action:
                                   action: call-service
-                                  service: script.garden_speaker_repair_pairing
+                                  service: script.garden_speaker_re_pair_bluetooth
                                 styles:
                                   card:
                                     - padding: 10px 8px
