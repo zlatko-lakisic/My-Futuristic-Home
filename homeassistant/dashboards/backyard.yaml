@@ -1261,7 +1261,7 @@ views:
                                 show_state: false
                                 tap_action:
                                   action: call-service
-                                  service: garden_speaker.health_check
+                                  service: script.garden_speaker_check_health
                                 styles:
                                   card:
                                     - padding: 10px 8px
@@ -1278,7 +1278,7 @@ views:
                                 confirmation: Safe repairs only — Bluetooth pairing is kept. Continue?
                                 tap_action:
                                   action: call-service
-                                  service: garden_speaker.repair
+                                  service: script.garden_speaker_repair
                                 styles:
                                   card:
                                     - padding: 10px 8px
@@ -1295,7 +1295,7 @@ views:
                                 confirmation: Restart Garden Speaker containers in dependency order?
                                 tap_action:
                                   action: call-service
-                                  service: garden_speaker.restart_stack
+                                  service: script.garden_speaker_restart_stack
                                 styles:
                                   card:
                                     - padding: 10px 8px
@@ -1314,9 +1314,7 @@ views:
                                   turn phone Bluetooth off, then confirm. Re-pair can take up to 3 minutes.
                                 tap_action:
                                   action: call-service
-                                  service: garden_speaker.repair_pairing
-                                  service_data:
-                                    confirm_pairing_mode: true
+                                  service: script.garden_speaker_repair_pairing
                                 styles:
                                   card:
                                     - padding: 10px 8px
@@ -1326,6 +1324,57 @@ views:
                                     - font-weight: 600
                                   icon:
                                     - color: '#ef5350'
+                          - type: custom:button-card
+                            entity: input_text.garden_speaker_action_status
+                            show_icon: true
+                            icon: |
+                              [[[
+                                const t = (entity.state || '').toLowerCase();
+                                if (!t) return 'mdi:information-outline';
+                                if (t.includes('running') || t.includes('restarting') || t.includes('re-pairing')) return 'mdi:progress-clock';
+                                if (t.includes('failed')) return 'mdi:alert-circle';
+                                return 'mdi:check-circle';
+                              ]]]
+                            show_name: false
+                            show_state: true
+                            show_label: false
+                            tap_action:
+                              action: none
+                            styles:
+                              card:
+                                - padding: 10px 12px
+                                - border-radius: 10px
+                                - background-color: |
+                                    [[[
+                                      const t = (entity.state || '').toLowerCase();
+                                      if (!t) return 'rgba(255,255,255,0.04)';
+                                      if (t.includes('failed')) return 'rgba(239,83,80,0.18)';
+                                      if (t.includes('running') || t.includes('restarting') || t.includes('re-pairing')) return 'rgba(79,195,247,0.14)';
+                                      return 'rgba(102,187,106,0.14)';
+                                    ]]]
+                              grid:
+                                - grid-template-areas: '"i s"'
+                                - grid-template-columns: min-content 1fr
+                                - align-items: start
+                              icon:
+                                - color: |
+                                    [[[
+                                      const t = (entity.state || '').toLowerCase();
+                                      if (t.includes('failed')) return '#ef5350';
+                                      if (t.includes('running') || t.includes('restarting') || t.includes('re-pairing')) return '#4fc3f7';
+                                      if (!t) return 'var(--secondary-text-color)';
+                                      return '#66bb6a';
+                                    ]]]
+                                - width: 22px
+                                - margin-top: 2px
+                              state:
+                                - font-size: 0.8rem
+                                - font-weight: 600
+                                - justify-self: start
+                                - text-align: left
+                                - white-space: normal
+                                - line-height: 1.35
+                                - color: var(--primary-text-color)
                         title: INFRASTRUCTURE
         column_span: 4
 

@@ -325,3 +325,121 @@ bhyve_toggle_selected_zone:
         entity_id: '{{ zone_entity }}'
         minutes: '{{ duration_minutes | int(10) }}'
 
+garden_speaker_check_health:
+  alias: Garden Speaker Check Health
+  description: Run Garden Speaker health check and surface the outcome on the backyard dashboard.
+  mode: queued
+  max: 2
+  icon: mdi:stethoscope
+  sequence:
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.garden_speaker_action_status
+    data:
+      value: Running check health…
+  - action: garden_speaker.health_check
+    continue_on_error: true
+    response_variable: gs_result
+  - variables:
+      ok: '{{ gs_result is defined and gs_result.success | default(false) }}'
+      summary: >-
+        {% if ok %}
+          Check health — {{ gs_result.summary }}{% if gs_result.issues %} · {{ gs_result.issues[0] }}{% endif %}
+        {% else %}
+          Check health failed — open the notification bell for details
+        {% endif %}
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.garden_speaker_action_status
+    data:
+      value: '{{ summary[:255] }}'
+
+garden_speaker_repair:
+  alias: Garden Speaker Auto Repair
+  description: Run safe Garden Speaker repairs and surface the outcome on the backyard dashboard.
+  mode: queued
+  max: 2
+  icon: mdi:wrench
+  sequence:
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.garden_speaker_action_status
+    data:
+      value: Running auto repair…
+  - action: garden_speaker.repair
+    continue_on_error: true
+    response_variable: gs_result
+  - variables:
+      ok: '{{ gs_result is defined and gs_result.success | default(false) }}'
+      summary: >-
+        {% if ok %}
+          Auto repair — {{ gs_result.summary }}{% if gs_result.issues %} · {{ gs_result.issues[0] }}{% endif %}
+        {% else %}
+          Auto repair failed — open the notification bell for details
+        {% endif %}
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.garden_speaker_action_status
+    data:
+      value: '{{ summary[:255] }}'
+
+garden_speaker_restart_stack:
+  alias: Garden Speaker Restart Stack
+  description: Restart the Garden Speaker audio stack and surface the outcome on the backyard dashboard.
+  mode: queued
+  max: 2
+  icon: mdi:restart
+  sequence:
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.garden_speaker_action_status
+    data:
+      value: Restarting audio stack…
+  - action: garden_speaker.restart_stack
+    continue_on_error: true
+    response_variable: gs_result
+  - variables:
+      ok: '{{ gs_result is defined and gs_result.success | default(false) }}'
+      summary: >-
+        {% if ok %}
+          Restart stack — {{ gs_result.summary }}{% if gs_result.issues %} · {{ gs_result.issues[0] }}{% endif %}
+        {% else %}
+          Restart stack failed — open the notification bell for details
+        {% endif %}
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.garden_speaker_action_status
+    data:
+      value: '{{ summary[:255] }}'
+
+garden_speaker_repair_pairing:
+  alias: Garden Speaker Re-pair Bluetooth
+  description: Re-pair the PartyBox and surface the outcome on the backyard dashboard.
+  mode: queued
+  max: 1
+  icon: mdi:bluetooth-connect
+  sequence:
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.garden_speaker_action_status
+    data:
+      value: Re-pairing Bluetooth (up to ~3 min)…
+  - action: garden_speaker.repair_pairing
+    continue_on_error: true
+    data:
+      confirm_pairing_mode: true
+    response_variable: gs_result
+  - variables:
+      ok: '{{ gs_result is defined and gs_result.success | default(false) }}'
+      summary: >-
+        {% if ok %}
+          Re-pair BT — {{ gs_result.summary }}{% if gs_result.issues %} · {{ gs_result.issues[0] }}{% endif %}
+        {% else %}
+          Re-pair BT failed — open the notification bell for details
+        {% endif %}
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.garden_speaker_action_status
+    data:
+      value: '{{ summary[:255] }}'
+
