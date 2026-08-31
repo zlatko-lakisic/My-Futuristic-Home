@@ -97,6 +97,19 @@ process_ai_analysis_and_notification:
           {% endfor %}
         {% endfor %}
         {{ ns.services | to_json }}
+      should_push_mobile: >-
+        {% set people = notify_people | default([], true) %}
+        {% if people | length == 0 %}
+          yes
+        {% else %}
+          {% set ns = namespace(away=false) %}
+          {% for p in people %}
+            {% if states(p) == 'not_home' %}
+              {% set ns.away = true %}
+            {% endif %}
+          {% endfor %}
+          {{ 'yes' if ns.away else 'no' }}
+        {% endif %}
       ai_text_final: "{% if ai_text_clean %}\n  {{ ai_text_clean }}\n{% else %}\n  Empty LLM response. key_frame: {{ ai_response.key_frame | default('n/a', true) }}\n{% endif %}"
   - if:
     - condition: template
@@ -109,24 +122,28 @@ process_ai_analysis_and_notification:
 
           ![image](/api/camera_proxy/{{ camera_id }})'
   # Always use ALL_DEVICES (or configured group) — legacy notify.<device> service calls return 400.
-  - action: notify.notify
-    metadata: {}
-    data:
-      message: '{{ ai_text_final }} '
-      title: '{{ notification_title_final }}'
+  - if:
+    - condition: template
+      value_template: "{{ (should_push_mobile | string | trim) == 'yes' }}"
+    then:
+    - action: notify.notify
+      metadata: {}
       data:
-        image: /api/camera_proxy/{{ camera_id }}
-        url: '{{ notification_click_url }}'
-        clickAction: '{{ notification_click_url }}'
-        ttl: 0
-        priority: high
-        importance: high
-        group: ha-cameras
-        channel: HA Cameras
-        push:
-          sound:
-            name: default
-            critical: 1
-            volume: 1
+        message: '{{ ai_text_final }} '
+        title: '{{ notification_title_final }}'
+        data:
+          image: /api/camera_proxy/{{ camera_id }}
+          url: '{{ notification_click_url }}'
+          clickAction: '{{ notification_click_url }}'
+          ttl: 0
+          priority: high
+          importance: high
+          group: ha-cameras
+          channel: HA Cameras
+          push:
+            sound:
+              name: default
+              critical: 1
+              volume: 1
   alias: Process AI Analysis and Notification
   description: ''

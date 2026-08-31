@@ -190,13 +190,21 @@ blueprint:
     notify_people:
       name: Notify people
       description: >
-        People whose linked Companion phones receive the alert. Devices are resolved
-        from each person's device_trackers → notify.<tracker> entities (fallback
-        location trackers are skipped). No hardcoded notify service names.
+        People whose linked Companion phones receive the alert when away (not_home).
+        Devices are resolved from each person's device_trackers → notify.<tracker>
+        entities (fallback location trackers are skipped). No hardcoded notify service names.
       selector:
         entity:
           domain: person
           multiple: true
+    notify_only_when_away:
+      name: Push only when away
+      description: >
+        When enabled, mobile push is sent only to people whose state is not_home.
+        Helpers and persistent notifications still update while you are home.
+      default: true
+      selector:
+        boolean: {}
     frigate_camera:
       name: Frigate camera name
       description: Exact Frigate camera id used in the API (e.g. driveway, front_door).
@@ -284,6 +292,7 @@ variables:
   notify_group: !input notify_group
   notify_channel: !input notify_channel
   notify_people: !input notify_people
+  notify_only_when_away: !input notify_only_when_away
   snapshot_timestamp: '{{ now().strftime("%Y%m%d-%H%M%S") }}'
   event_start_epoch: '{{ as_timestamp(now()) | int }}'
   snapshot_frame_count: !input stream_max_frames
@@ -914,7 +923,9 @@ actions:
         {% endif %}
       notify_targets: >-
         {% set ns = namespace(ents=[]) %}
+        {% set away_only = notify_only_when_away is true or (notify_only_when_away | string | lower) in ['true', 'on', 'yes', '1'] %}
         {% for p in (notify_people | default([], true)) %}
+          {% if not away_only or states(p) == 'not_home' %}
           {% for dt in state_attr(p, 'device_trackers') | default([], true) %}
             {% if dt is string and dt.startswith('device_tracker.')
                  and not dt.endswith('_fallback_location') %}
@@ -925,6 +936,7 @@ actions:
               {% endif %}
             {% endif %}
           {% endfor %}
+          {% endif %}
         {% endfor %}
         {{ ns.ents }}
       log_description: >-
@@ -1145,22 +1157,26 @@ actions:
           {% endif %}
 
           ![{{ zone_name }}](/local/{{ dashboard_media_rel }})
-    - alias: Notify each Companion device linked to selected people
-      repeat:
-        for_each: '{{ notify_targets }}'
-        sequence:
-        - action: notify.send_message
-          continue_on_error: true
-          target:
-            entity_id: '{{ repeat.item }}'
-          data:
-            title: '{{ notify_title }}'
-            message: >-
-              {{ mobile_short }}
-              {% if (notify_media_image | default('', true) | string | trim | length) > 0 %}
+    - if:
+      - condition: template
+        value_template: "{{ (notify_targets | default([], true) | length) > 0 }}"
+      then:
+      - alias: Notify each away Companion device linked to selected people
+        repeat:
+          for_each: '{{ notify_targets }}'
+          sequence:
+          - action: notify.send_message
+            continue_on_error: true
+            target:
+              entity_id: '{{ repeat.item }}'
+            data:
+              title: '{{ notify_title }}'
+              message: >-
+                {{ mobile_short }}
+                {% if (notify_media_image | default('', true) | string | trim | length) > 0 %}
 
-              {{ notify_media_image }}
-              {% endif %}
+                {{ notify_media_image }}
+                {% endif %}
   - alias: Hold until trigger sensors stay clear
     repeat:
       while:
