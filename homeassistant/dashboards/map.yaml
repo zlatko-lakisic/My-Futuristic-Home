@@ -41,13 +41,19 @@ views:
                     heading_style: title
                     icon: mdi:map
                   - type: map
-                    auto_fit: true
-                    fit_zones: true
-                    default_zoom: 14
+                    # Keep initial view on HA home (viewer location). Auto-fit would
+                    # zoom out to NY + Bosnia when Blagaj/Mostar zones are included.
+                    auto_fit: false
+                    fit_zones: false
+                    default_zoom: 15
                     aspect_ratio: "16:9"
                     hours_to_show: 24
                     entities:
                       - entity: zone.home
+                      - entity: zone.blagaj_home
+                        name: Blagaj Ibrica
+                      - entity: zone.mostar_vahida
+                        name: Mostar Vahida
                       - entity: person.zlatko_lakisic
                         name: Zlatko
                       - entity: person.adna_zujo_lakisic
@@ -76,13 +82,23 @@ views:
                         name: Ibrica
                         secondary_info: last-changed
                   - type: heading
-                    heading: Home zone
+                    heading: Zones
                     heading_style: title
-                    icon: mdi:home-map-marker
+                    icon: mdi:map-marker-radius
                   - type: tile
                     entity: zone.home
                     name: Home
                     icon: mdi:home
+                    vertical: false
+                  - type: tile
+                    entity: zone.blagaj_home
+                    name: Blagaj Ibrica
+                    icon: mdi:home-map-marker
+                    vertical: false
+                  - type: tile
+                    entity: zone.mostar_vahida
+                    name: Mostar Vahida
+                    icon: mdi:home-map-marker
                     vertical: false
 
           - type: heading
