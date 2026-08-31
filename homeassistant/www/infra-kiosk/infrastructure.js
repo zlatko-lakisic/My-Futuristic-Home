@@ -132,7 +132,10 @@ var ENTITIES = [
     "sensor.nas2_disk_2",
     "sensor.nas2_disk_3",
     "sensor.nas2_disk_4",
-    "sensor.nas2_disk_5"
+    "sensor.nas2_disk_5",
+    "binary_sensor.nas2_services_smb_cifs_service",
+    "binary_sensor.nas2_services_nfs_service",
+    "binary_sensor.nas2_services_ssh_service"
   ];
 
   function $(id) { return document.getElementById(id); }
@@ -1069,7 +1072,11 @@ function setHtml(id, html) {
         "sensor.nas2_system_cpu_load",
         "sensor.nas2_system_memory",
         ["sensor.nas2_disk", "sensor.nas2_disk_2", "sensor.nas2_disk_3", "sensor.nas2_disk_4", "sensor.nas2_disk_5"],
-        []
+        [
+          { id: "binary_sensor.nas2_services_smb_cifs_service", label: "SMB" },
+          { id: "binary_sensor.nas2_services_nfs_service", label: "NFS" },
+          { id: "binary_sensor.nas2_services_ssh_service", label: "SSH" }
+        ]
       );
   }
 
