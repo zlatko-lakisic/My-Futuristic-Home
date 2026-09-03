@@ -1,7 +1,7 @@
-# Map — track GPS people and their associated companion devices
+# Map — one marker per person (GPS from linked phone / geocode fallback)
 #
-# Only person entities with device_trackers, plus those associated GPS trackers.
-# Router/Unifi presence trackers are excluded (no coordinates).
+# Device trackers are not plotted separately; each person is linked to one
+# companion device (plus optional geocode fallback) in the Person settings.
 views:
   - title: Live Map
     path: map
@@ -41,25 +41,25 @@ views:
                     heading_style: title
                     icon: mdi:map
                   - type: map
-                    auto_fit: true
-                    fit_zones: true
-                    default_zoom: 14
+                    # Keep initial view on HA home (viewer location). Auto-fit would
+                    # zoom out to NY + Bosnia when Blagaj/Mostar zones are included.
+                    auto_fit: false
+                    fit_zones: false
+                    default_zoom: 15
                     aspect_ratio: "16:9"
                     hours_to_show: 24
                     entities:
                       - entity: zone.home
+                      - entity: zone.blagaj_home
+                        name: Blagaj Ibrica
+                      - entity: zone.mostar_vahida
+                        name: Mostar Vahida
                       - entity: person.zlatko_lakisic
                         name: Zlatko
                       - entity: person.adna_zujo_lakisic
                         name: Adna
                       - entity: person.ibrica_lakisic
                         name: Ibrica
-                      - entity: device_tracker.zlatko_galaxy
-                        name: Zlatko Galaxy
-                      - entity: device_tracker.adna_s24_ultra
-                        name: Adna S24 Ultra
-                      - entity: device_tracker.ibrica_samsung
-                        name: Ibrica Samsung
 
               - type: vertical-stack
                 view_layout:
@@ -82,17 +82,27 @@ views:
                         name: Ibrica
                         secondary_info: last-changed
                   - type: heading
-                    heading: Home zone
+                    heading: Zones
                     heading_style: title
-                    icon: mdi:home-map-marker
+                    icon: mdi:map-marker-radius
                   - type: tile
                     entity: zone.home
                     name: Home
                     icon: mdi:home
                     vertical: false
+                  - type: tile
+                    entity: zone.blagaj_home
+                    name: Blagaj Ibrica
+                    icon: mdi:home-map-marker
+                    vertical: false
+                  - type: tile
+                    entity: zone.mostar_vahida
+                    name: Mostar Vahida
+                    icon: mdi:home-map-marker
+                    vertical: false
 
           - type: heading
-            heading: Associated devices
+            heading: Linked phones
             heading_style: title
             icon: mdi:cellphone-marker
 
@@ -113,19 +123,19 @@ views:
             cards:
               - type: tile
                 entity: device_tracker.zlatko_galaxy
-                name: Zlatko Galaxy
+                name: Zlatko · Galaxy
                 icon: mdi:cellphone
                 vertical: true
                 color: green
               - type: tile
                 entity: device_tracker.adna_s24_ultra
-                name: Adna S24 Ultra
+                name: Adna · S24 Ultra
                 icon: mdi:cellphone
                 vertical: true
                 color: green
               - type: tile
                 entity: device_tracker.ibrica_samsung
-                name: Ibrica Samsung
+                name: Ibrica · Samsung
                 icon: mdi:cellphone
                 vertical: true
                 color: green
