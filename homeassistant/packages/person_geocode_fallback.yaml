@@ -1,0 +1,37 @@
+# Fallback GPS device_trackers from Companion App "Geocoded location" sensors.
+#
+# Some phones report reverse-geocoded address + lat/lon on
+# sensor.<phone>_geocoded_location (attributes.location = [lat, lon]) even when
+# device_tracker.<phone> has no GPS fix. Person entities already list these
+# *_fallback_location trackers; this package creates them.
+#
+# homeassistant.packages:
+#   person_geocode_fallback: !include packages/person_geocode_fallback.yaml
+
+template:
+  - device_tracker:
+      - name: Ibrica Samsung Fallback Location
+        unique_id: ibrica_samsung_fallback_location
+        latitude: >
+          {% set loc = state_attr('sensor.ibrica_samsung_geocoded_location', 'location') %}
+          {% if loc is sequence and loc | length >= 2 %}
+            {{ loc[0] }}
+          {% endif %}
+        longitude: >
+          {% set loc = state_attr('sensor.ibrica_samsung_geocoded_location', 'location') %}
+          {% if loc is sequence and loc | length >= 2 %}
+            {{ loc[1] }}
+          {% endif %}
+
+      - name: Zlatko Galaxy Fallback Location
+        unique_id: zlatko_galaxy_fallback_location
+        latitude: >
+          {% set loc = state_attr('sensor.zlatko_galaxy_geocoded_location', 'location') %}
+          {% if loc is sequence and loc | length >= 2 %}
+            {{ loc[0] }}
+          {% endif %}
+        longitude: >
+          {% set loc = state_attr('sensor.zlatko_galaxy_geocoded_location', 'location') %}
+          {% if loc is sequence and loc | length >= 2 %}
+            {{ loc[1] }}
+          {% endif %}
