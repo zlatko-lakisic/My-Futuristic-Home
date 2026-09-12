@@ -28,3 +28,9 @@ garden_speaker_action_status:
   name: Garden Speaker action status
   max: 255
   initial: ""
+
+# Last NVR compose stack action result (written by nvr_stack_* scripts).
+nvr_stack_action_status:
+  name: NVR stack action status
+  max: 255
+  initial: ""
