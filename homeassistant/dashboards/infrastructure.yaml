@@ -1592,6 +1592,218 @@ views:
                         heading: NVR & GPU Acceleration
                         heading_style: subtitle
                       - type: custom:button-card
+                        entity: sensor.nvr_stack_state
+                        name: NVR COMPOSE STACK
+                        show_icon: true
+                        show_state: true
+                        show_label: true
+                        triggers_update:
+                          - sensor.nvr_stack_state
+                          - input_boolean.nvr_stack_busy
+                          - input_text.nvr_stack_action_status
+                        icon: |
+                          [[[
+                            const busy = states['input_boolean.nvr_stack_busy']?.state === 'on';
+                            const s = (entity?.state || 'unknown').toLowerCase();
+                            if (busy || s === 'busy') return 'mdi:progress-clock';
+                            if (s === 'running') return 'mdi:check-circle';
+                            if (s === 'stopped') return 'mdi:pause-circle';
+                            if (s === 'down') return 'mdi:power-off';
+                            return 'mdi:help-circle';
+                          ]]]
+                        state_display: |
+                          [[[
+                            const busy = states['input_boolean.nvr_stack_busy']?.state === 'on';
+                            const s = (entity?.state || 'unknown').toUpperCase();
+                            return busy ? 'BUSY' : s;
+                          ]]]
+                        label: |
+                          [[[
+                            const detail = entity?.attributes?.detail || '';
+                            const action = states['input_text.nvr_stack_action_status']?.state || '';
+                            if (action) return action;
+                            const run = entity?.attributes?.running;
+                            const tot = entity?.attributes?.total;
+                            if (detail) return detail;
+                            if (run != null && tot != null) return `${run}/${tot} containers running`;
+                            return 'Waiting for control API…';
+                          ]]]
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background-color: '#1c1c1c'
+                            - border: 1px solid rgba(255, 255, 255, 0.1)
+                            - border-radius: 14px
+                            - padding: 12px 14px
+                            - box-shadow: none
+                          grid:
+                            - grid-template-areas: '"i n" "i s" "l l"'
+                            - grid-template-columns: 42px 1fr
+                            - grid-template-rows: min-content min-content min-content
+                          icon:
+                            - width: 28px
+                            - color: |
+                                [[[
+                                  const busy = states['input_boolean.nvr_stack_busy']?.state === 'on';
+                                  const s = (entity?.state || '').toLowerCase();
+                                  if (busy || s === 'busy') return '#ffb74d';
+                                  if (s === 'running') return '#66bb6a';
+                                  if (s === 'stopped') return '#ffb74d';
+                                  if (s === 'down') return '#ef5350';
+                                  return '#90a4ae';
+                                ]]]
+                          name:
+                            - justify-self: start
+                            - font-size: 0.72rem
+                            - letter-spacing: 0.06em
+                            - color: rgba(255,255,255,0.55)
+                            - font-weight: 700
+                          state:
+                            - justify-self: start
+                            - font-size: 1.15rem
+                            - font-weight: 700
+                            - color: '#eceff1'
+                          label:
+                            - justify-self: start
+                            - font-size: 0.78rem
+                            - color: rgba(255,255,255,0.65)
+                            - padding-top: 4px
+                      - type: custom:layout-card
+                        layout_type: custom:grid-layout
+                        layout:
+                          grid-template-columns: repeat(4, 1fr)
+                          grid-gap: 8px
+                          mediaquery:
+                            "(max-width: 900px)":
+                              grid-template-columns: 1fr 1fr
+                        cards:
+                          - type: custom:button-card
+                            name: Start
+                            icon: mdi:play
+                            show_state: false
+                            triggers_update:
+                              - sensor.nvr_stack_state
+                              - input_boolean.nvr_stack_busy
+                            variables:
+                              can_run: |
+                                [[[
+                                  const busy = states['input_boolean.nvr_stack_busy']?.state === 'on';
+                                  const s = (states['sensor.nvr_stack_state']?.state || 'unknown').toLowerCase();
+                                  return !busy && (s === 'stopped' || s === 'down');
+                                ]]]
+                            tap_action:
+                              action: call-service
+                              service: script.nvr_stack_start
+                            styles:
+                              card:
+                                - padding: 10px 8px
+                                - border-radius: 10px
+                                - background-color: '#1c1c1c'
+                                - border: 1px solid rgba(255,255,255,0.1)
+                                - opacity: '[[[ return variables.can_run ? "1" : "0.35" ]]]'
+                                - pointer-events: '[[[ return variables.can_run ? "auto" : "none" ]]]'
+                              name:
+                                - font-size: 0.78rem
+                                - font-weight: 600
+                              icon:
+                                - color: '#66bb6a'
+                          - type: custom:button-card
+                            name: Stop
+                            icon: mdi:stop
+                            show_state: false
+                            confirmation: Stop all NVR compose containers? (networks/volumes kept)
+                            triggers_update:
+                              - sensor.nvr_stack_state
+                              - input_boolean.nvr_stack_busy
+                            variables:
+                              can_run: |
+                                [[[
+                                  const busy = states['input_boolean.nvr_stack_busy']?.state === 'on';
+                                  const s = (states['sensor.nvr_stack_state']?.state || 'unknown').toLowerCase();
+                                  return !busy && s === 'running';
+                                ]]]
+                            tap_action:
+                              action: call-service
+                              service: script.nvr_stack_stop
+                            styles:
+                              card:
+                                - padding: 10px 8px
+                                - border-radius: 10px
+                                - background-color: '#1c1c1c'
+                                - border: 1px solid rgba(255,255,255,0.1)
+                                - opacity: '[[[ return variables.can_run ? "1" : "0.35" ]]]'
+                                - pointer-events: '[[[ return variables.can_run ? "auto" : "none" ]]]'
+                              name:
+                                - font-size: 0.78rem
+                                - font-weight: 600
+                              icon:
+                                - color: '#ffb74d'
+                          - type: custom:button-card
+                            name: Down
+                            icon: mdi:delete-outline
+                            show_state: false
+                            confirmation: >-
+                              Remove NVR project containers and networks (compose down)?
+                              Named volumes are kept. This is more destructive than Stop.
+                            triggers_update:
+                              - sensor.nvr_stack_state
+                              - input_boolean.nvr_stack_busy
+                            variables:
+                              can_run: |
+                                [[[
+                                  const busy = states['input_boolean.nvr_stack_busy']?.state === 'on';
+                                  const s = (states['sensor.nvr_stack_state']?.state || 'unknown').toLowerCase();
+                                  return !busy && (s === 'running' || s === 'stopped');
+                                ]]]
+                            tap_action:
+                              action: call-service
+                              service: script.nvr_stack_down
+                            styles:
+                              card:
+                                - padding: 10px 8px
+                                - border-radius: 10px
+                                - background-color: '#1c1c1c'
+                                - border: 1px solid rgba(255,255,255,0.1)
+                                - opacity: '[[[ return variables.can_run ? "1" : "0.35" ]]]'
+                                - pointer-events: '[[[ return variables.can_run ? "auto" : "none" ]]]'
+                              name:
+                                - font-size: 0.78rem
+                                - font-weight: 600
+                              icon:
+                                - color: '#ef5350'
+                          - type: custom:button-card
+                            name: Restart
+                            icon: mdi:restart
+                            show_state: false
+                            confirmation: Restart all running NVR compose containers?
+                            triggers_update:
+                              - sensor.nvr_stack_state
+                              - input_boolean.nvr_stack_busy
+                            variables:
+                              can_run: |
+                                [[[
+                                  const busy = states['input_boolean.nvr_stack_busy']?.state === 'on';
+                                  const s = (states['sensor.nvr_stack_state']?.state || 'unknown').toLowerCase();
+                                  return !busy && s === 'running';
+                                ]]]
+                            tap_action:
+                              action: call-service
+                              service: script.nvr_stack_restart
+                            styles:
+                              card:
+                                - padding: 10px 8px
+                                - border-radius: 10px
+                                - background-color: '#1c1c1c'
+                                - border: 1px solid rgba(255,255,255,0.1)
+                                - opacity: '[[[ return variables.can_run ? "1" : "0.35" ]]]'
+                                - pointer-events: '[[[ return variables.can_run ? "auto" : "none" ]]]'
+                              name:
+                                - font-size: 0.78rem
+                                - font-weight: 600
+                              icon:
+                                - color: '#90caf9'
+                      - type: custom:button-card
                         entity: sensor.nvr_mostardesigns_com_cpu_usage
                         show_icon: false
                         show_name: false
