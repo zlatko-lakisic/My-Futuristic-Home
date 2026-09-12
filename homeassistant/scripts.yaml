@@ -443,3 +443,199 @@ garden_speaker_re_pair_bluetooth:
     data:
       value: '{{ summary[:255] }}'
 
+nvr_stack_start:
+  alias: NVR Stack Start
+  description: Start the NVR docker compose stack (up -d) and refresh status.
+  mode: single
+  icon: mdi:play-circle
+  sequence:
+  - action: input_boolean.turn_on
+    target:
+      entity_id: input_boolean.nvr_stack_busy
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.nvr_stack_action_status
+    data:
+      value: Starting NVR stack…
+  - action: rest_command.nvr_stack_start
+    continue_on_error: true
+    response_variable: nvr_result
+  - action: homeassistant.update_entity
+    data:
+      entity_id: sensor.nvr_stack_state
+  - variables:
+      http_ok: '{{ nvr_result is defined and (nvr_result.status | default(0) | int) < 400 }}'
+      api_ok: >-
+        {% set c = nvr_result.content if nvr_result is defined else none %}
+        {% if c is mapping %}{{ c.ok | default(false) }}
+        {% elif c is string %}{{ (c | from_json).ok | default(false) }}
+        {% else %}false{% endif %}
+      detail: >-
+        {% set c = nvr_result.content if nvr_result is defined else none %}
+        {% if c is mapping %}
+          {{ c.status.detail | default(c.message | default('')) }}
+        {% elif c is string %}
+          {{ (c | from_json).status.detail | default((c | from_json).message | default('')) }}
+        {% else %}{% endif %}
+      summary: >-
+        {% if http_ok and api_ok %}
+          Start — {{ detail if detail else states('sensor.nvr_stack_state') }}
+        {% else %}
+          Start failed — {{ detail if detail else 'control API unreachable or error' }}
+        {% endif %}
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.nvr_stack_action_status
+    data:
+      value: '{{ summary[:255] }}'
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.nvr_stack_busy
+
+nvr_stack_stop:
+  alias: NVR Stack Stop
+  description: Stop the NVR docker compose stack and refresh status.
+  mode: single
+  icon: mdi:stop-circle
+  sequence:
+  - action: input_boolean.turn_on
+    target:
+      entity_id: input_boolean.nvr_stack_busy
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.nvr_stack_action_status
+    data:
+      value: Stopping NVR stack…
+  - action: rest_command.nvr_stack_stop
+    continue_on_error: true
+    response_variable: nvr_result
+  - action: homeassistant.update_entity
+    data:
+      entity_id: sensor.nvr_stack_state
+  - variables:
+      http_ok: '{{ nvr_result is defined and (nvr_result.status | default(0) | int) < 400 }}'
+      api_ok: >-
+        {% set c = nvr_result.content if nvr_result is defined else none %}
+        {% if c is mapping %}{{ c.ok | default(false) }}
+        {% elif c is string %}{{ (c | from_json).ok | default(false) }}
+        {% else %}false{% endif %}
+      detail: >-
+        {% set c = nvr_result.content if nvr_result is defined else none %}
+        {% if c is mapping %}
+          {{ c.status.detail | default(c.message | default('')) }}
+        {% elif c is string %}
+          {{ (c | from_json).status.detail | default((c | from_json).message | default('')) }}
+        {% else %}{% endif %}
+      summary: >-
+        {% if http_ok and api_ok %}
+          Stop — {{ detail if detail else states('sensor.nvr_stack_state') }}
+        {% else %}
+          Stop failed — {{ detail if detail else 'control API unreachable or error' }}
+        {% endif %}
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.nvr_stack_action_status
+    data:
+      value: '{{ summary[:255] }}'
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.nvr_stack_busy
+
+nvr_stack_down:
+  alias: NVR Stack Down
+  description: Tear down the NVR docker compose stack (compose down, no -v) and refresh status.
+  mode: single
+  icon: mdi:delete-circle
+  sequence:
+  - action: input_boolean.turn_on
+    target:
+      entity_id: input_boolean.nvr_stack_busy
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.nvr_stack_action_status
+    data:
+      value: Bringing NVR stack down…
+  - action: rest_command.nvr_stack_down
+    continue_on_error: true
+    response_variable: nvr_result
+  - action: homeassistant.update_entity
+    data:
+      entity_id: sensor.nvr_stack_state
+  - variables:
+      http_ok: '{{ nvr_result is defined and (nvr_result.status | default(0) | int) < 400 }}'
+      api_ok: >-
+        {% set c = nvr_result.content if nvr_result is defined else none %}
+        {% if c is mapping %}{{ c.ok | default(false) }}
+        {% elif c is string %}{{ (c | from_json).ok | default(false) }}
+        {% else %}false{% endif %}
+      detail: >-
+        {% set c = nvr_result.content if nvr_result is defined else none %}
+        {% if c is mapping %}
+          {{ c.status.detail | default(c.message | default('')) }}
+        {% elif c is string %}
+          {{ (c | from_json).status.detail | default((c | from_json).message | default('')) }}
+        {% else %}{% endif %}
+      summary: >-
+        {% if http_ok and api_ok %}
+          Down — {{ detail if detail else states('sensor.nvr_stack_state') }}
+        {% else %}
+          Down failed — {{ detail if detail else 'control API unreachable or error' }}
+        {% endif %}
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.nvr_stack_action_status
+    data:
+      value: '{{ summary[:255] }}'
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.nvr_stack_busy
+
+nvr_stack_restart:
+  alias: NVR Stack Restart
+  description: Restart the NVR docker compose stack and refresh status.
+  mode: single
+  icon: mdi:restart
+  sequence:
+  - action: input_boolean.turn_on
+    target:
+      entity_id: input_boolean.nvr_stack_busy
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.nvr_stack_action_status
+    data:
+      value: Restarting NVR stack…
+  - action: rest_command.nvr_stack_restart
+    continue_on_error: true
+    response_variable: nvr_result
+  - action: homeassistant.update_entity
+    data:
+      entity_id: sensor.nvr_stack_state
+  - variables:
+      http_ok: '{{ nvr_result is defined and (nvr_result.status | default(0) | int) < 400 }}'
+      api_ok: >-
+        {% set c = nvr_result.content if nvr_result is defined else none %}
+        {% if c is mapping %}{{ c.ok | default(false) }}
+        {% elif c is string %}{{ (c | from_json).ok | default(false) }}
+        {% else %}false{% endif %}
+      detail: >-
+        {% set c = nvr_result.content if nvr_result is defined else none %}
+        {% if c is mapping %}
+          {{ c.status.detail | default(c.message | default('')) }}
+        {% elif c is string %}
+          {{ (c | from_json).status.detail | default((c | from_json).message | default('')) }}
+        {% else %}{% endif %}
+      summary: >-
+        {% if http_ok and api_ok %}
+          Restart — {{ detail if detail else states('sensor.nvr_stack_state') }}
+        {% else %}
+          Restart failed — {{ detail if detail else 'control API unreachable or error' }}
+        {% endif %}
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.nvr_stack_action_status
+    data:
+      value: '{{ summary[:255] }}'
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.nvr_stack_busy
+
