@@ -2,11 +2,11 @@
 
 ## Architecture overview
 
-Security-first segmentation on the NYC MikroTik (`Kuca`), plus a remote Mostar site (`Kuca-Mostar`) linked by L2TP/IPsec. High-bandwidth storage and media paths use direct-attach / macvlan links so they do not overload inter-VLAN routing.
+Security-first segmentation on the NYC MikroTik (`Kuca`), plus a remote Mostar site (`Kuca-Mostar`) linked by L2TP/IPsec. A travel router (`Kuca-Roaming`) uses the same VPN pool when it is away from home. High-bandwidth storage and media paths use direct-attach / macvlan links so they do not overload inter-VLAN routing.
 
 Multi-homed management hosts (Beelink, NAS2, NVR) sit on more than one subnet to keep UniFi, Traefik, NFS, and media stacks off the house LAN where possible.
 
-Canonical diagrams: [`networking.md`](networking.md). RouterOS detail: [`mikrotik_config.md`](mikrotik_config.md), [`mikrotik_mostar_config.md`](mikrotik_mostar_config.md).
+Canonical diagrams: [`networking.md`](networking.md). RouterOS detail: [`mikrotik_config.md`](mikrotik_config.md), [`mikrotik_mostar_config.md`](mikrotik_mostar_config.md), [`mikrotik_roaming_config.md`](mikrotik_roaming_config.md).
 
 ---
 
@@ -36,6 +36,20 @@ WAN: DHCP on `ether1 - WAN` (live public IPv4 is dynamic; not documented as a fi
 | `172.16.91.2/30` | `wg-nyc` | Standby WireGuard address (peer disabled) |
 
 Public-facing IPv4 is on the **ISP CPE**, not on Mostar ether1. Discovered every 5 minutes into `:global PublicIP` for Home Assistant.
+
+---
+
+## Roaming subnets
+
+| Subnet | Interface | Purpose |
+| :--- | :--- | :--- |
+| DHCP on `ether1 - wan` | preferred WAN, distance 2 | Home when the lease is in `192.168.89.0/24`, `10.0.10.0/24`, or `172.16.90.0/24` |
+| DHCP on `wlan_uplink` | fallback WAN, distance 3 | Same home check, used only when ether1 is down |
+| `192.168.86.0/24` | `nyc_bridge` | Travel LAN. SSID `Kuca-Roaming-NYC` and ether2–5. Egress via NYC when away |
+| `172.16.91.25/32` | `mikrotik-kuca-l2tp` | L2TP address toward NYC. Enabled only while away |
+| `172.16.91.24/32` | `mikrotik-kuca-ovpn-client` | Reserved OpenVPN address. Client stays disabled |
+
+`roaming lan bridge` has no subnet of its own. It only carries SSID `Kuca-Roaming`.
 
 ---
 
@@ -106,6 +120,12 @@ Public-facing IPv4 is on the **ISP CPE**, not on Mostar ether1. Discovered every
 
 - Behind ISP CPE NAT; L2TP client to `nyc.mostardesigns.com`
 - Dual WLAN: `Kuca-Mostar` (local) / `Kuca-NYC` (via NYC)
+
+### Roaming: MikroTik RB951Ui-2HnD (`Kuca-Roaming`)
+
+- Travel router, not rack-mounted. Serial `628105BB1449`
+- LAN `192.168.86.0/24` on `nyc_bridge`. L2TP `172.16.91.25` only when the uplink is outside the home ranges
+- Radios: hidden 2.4 GHz master, `Kuca-Roaming-NYC` on `nyc_bridge`, `Kuca-Roaming` on `roaming lan bridge`, `wlan_uplink` as the Wi-Fi WAN
 
 ---
 
