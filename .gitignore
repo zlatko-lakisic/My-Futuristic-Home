@@ -17,8 +17,12 @@ homeassistant/.storage/
 homeassistant/*.db
 homeassistant/*.log
 
-# Ignore MikroTik private backups
+# Ignore MikroTik private backups and unsanitized clone bundles
 infrastructure/configs/*.backup
 infrastructure/configs/*.rsc
+infrastructure/configs/clone/
+
+# Login files in .cursor/secrets/ (names start with a dot)
+.cursor/secrets/.*
 .DS_Store
 homeassistant/www/infra-kiosk/config.js
