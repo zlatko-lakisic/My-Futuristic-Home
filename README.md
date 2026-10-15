@@ -10,6 +10,7 @@ Welcome to the central documentation for my smart home ecosystem. This repositor
 * [**Networking**](infrastructure/networking.md): VLANs, subnets, and the specialized NAS2 bridge.
 * [**MikroTik NYC / Home (`Kuca`)**](infrastructure/mikrotik_config.md): Primary gateway docs + scrubbed export ([`.rsc`](infrastructure/mikrotik_home_config.rsc)).
 * [**MikroTik Mostar (`Kuca-Mostar`)**](infrastructure/mikrotik_mostar_config.md): Remote site docs + scrubbed export ([`.rsc`](infrastructure/mikrotik_mostar_config.rsc)).
+* [**MikroTik Roaming (`Kuca-Roaming`)**](infrastructure/mikrotik_roaming_config.md): Travel router. LAN `192.168.86.0/24`, L2TP `172.16.91.25` when away from home.
 * [**Hardware Inventory**](infrastructure/hardware.md): Beelink EQ14 and Proxmox Cluster specs.
 * [**Security Cameras**](infrastructure/cameras.md): IP camera inventory and stream paths.
 * [**NVR & AI Stack**](infrastructure/nvr.md): Frigate, TensorRT, and NVIDIA RTX A4000 logic.
@@ -69,7 +70,7 @@ All core equipment is housed in a **Tecmojo 9U Wall Mount Server Cabinet** featu
 
 ## 🌐 Network Architecture
 
-Two sites: **NYC (`Kuca`)** is the primary gateway; **Mostar (`Kuca-Mostar`)** dials back over L2TP/IPsec and provides torrent egress via its ISP public IP.
+Two sites: **NYC (`Kuca`)** is the primary gateway; **Mostar (`Kuca-Mostar`)** dials back over L2TP/IPsec and provides torrent egress via its ISP public IP. **Kuca-Roaming** is a travel router on `192.168.86.0/24` and uses the same L2TP server (`172.16.91.25`) when its uplink is not already a home LAN.
 
 ```mermaid
 flowchart LR
@@ -96,7 +97,8 @@ flowchart LR
 | House WLAN | `192.168.90.0/24` | Trusted Wi‑Fi (VLAN 2) |
 | IoT VLAN | `172.16.90.0/24` | Isolated IoT / Jetson (VLAN 4) |
 | Torrent VLAN | `172.16.55.0/29` | qBittorrent → Mostar public IP |
-| VPN / Mostar tunnel | `172.16.91.0/27` | L2TP/OVPN endpoints (`172.16.91.30` = Mostar) |
+| VPN / remote tunnels | `172.16.91.0/27` | L2TP/OVPN endpoints (`172.16.91.30` = Mostar, `172.16.91.25` = Roaming) |
+| Roaming LAN | `192.168.86.0/24` | Travel clients on `Kuca-Roaming` |
 | Storage backplane | `172.16.100.0/24` | NAS2 ↔ NVR direct NFS |
 | Mostar CPE LAN | `192.168.100.0/24` | Mostar WAN behind ISP CPE |
 | Mostar NYC-bridge | `192.168.88.0/24` | Local clients egress via NYC |
@@ -116,7 +118,7 @@ Full diagrams: [Networking](infrastructure/networking.md).
 | **LoRa perimeter** | YoLink DoorSensors (LoRa-family radio) via YoLink hub/cloud |
 | **Smart entry** | Yale locks via August HA integration + HA NFC tags |
 | **Climate** | Nest heat + Midea AC LAN unified via `climate_template` |
-| **Routing** | RouterOS (NYC hAP ac + Mostar RB951G, L2TP) |
+| **Routing** | RouterOS (NYC hAP ac, Mostar RB951G, roaming RB951Ui, L2TP) |
 | **Switching** | SwOS (CSS326) + Unmanaged (TP-Link) |
 | **Messaging** | Mosquitto MQTT (Pine64) |
 | **Controller** | UniFi Network Application (Docker on Beelink) |
