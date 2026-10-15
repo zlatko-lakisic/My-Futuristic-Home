@@ -66,3 +66,16 @@ The Beelink EQ14 is the backbone for management services.
 - **Storage:** SanDisk Industrial MMC
 - **OS:** Armbian 23.11.1
 - **IP:** 192.168.89.26
+
+---
+
+## **Roaming devices**
+
+These boards are not mounted in the 9U cabinet.
+
+### **MikroTik RB951Ui-2HnD (`Kuca-Roaming`)**
+- **Serial:** 628105BB1449
+- **OS:** RouterOS 7.24.5
+- **Role:** Travel router. LAN `192.168.86.1/24` on `nyc_bridge`. L2TP to NYC (`172.16.91.25`) only when the uplink is outside the NYC home ranges.
+- **Radios:** Hidden 2.4 GHz master, SSID `Kuca-Roaming-NYC` (via NYC), SSID `Kuca-Roaming` (local), `wlan_uplink` as the Wi-Fi WAN.
+- **Notes:** [`mikrotik_roaming_config.md`](mikrotik_roaming_config.md)

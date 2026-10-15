@@ -6,7 +6,7 @@
 **Serial / software id:** redacted  
 **Sanitized export:** [`mikrotik_home_config.rsc`](mikrotik_home_config.rsc)
 
-Primary NYC gateway. Mostar (`Kuca-Mostar`) dials back over **L2TP/IPsec** (primary). WireGuard / OpenVPN remain configured as standby. Diagrams: [`networking.md`](networking.md).
+Primary NYC gateway. Mostar (`Kuca-Mostar`) dials back over **L2TP/IPsec** (primary). The travel router (`Kuca-Roaming`) dials the same server at `172.16.91.25` when it is away from home. WireGuard / OpenVPN remain configured as standby. Diagrams: [`networking.md`](networking.md).
 
 ---
 
@@ -119,6 +119,23 @@ Related files:
 
 - [`mikrotik_mostar_config.rsc`](mikrotik_mostar_config.rsc) / [`mikrotik_mostar_config.md`](mikrotik_mostar_config.md)  
 - [`mikrotik_mostar_public_wan_ip.rsc`](mikrotik_mostar_public_wan_ip.rsc)
+
+### Roaming travel router
+
+| Path | Status | Notes |
+| --- | --- | --- |
+| **L2TP/IPsec** | Secret `l2tp-roaming-kuca` | Remote `172.16.91.25`. Client enables itself only when the roaming uplink is not a home LAN |
+| **OpenVPN** | Secret `ovpn-roaming-kuca` | Reserved `172.16.91.24`. Roaming client stays disabled |
+| **WireGuard** | Not used for roaming | Roaming still has a disabled Mostar-clone peer. Leave it disabled |
+
+```routeros
+/ip route
+add dst-address=192.168.86.0/24 gateway=172.16.91.25
+```
+
+`192.168.86.0/24` is on the `support` and `Local` address lists, and on `www` / `api` / `api-ssl` `available-from`. It is not on SSH `available-from`. NYC masquerades that subnet when those clients break out through the NYC WAN. Torrent policy routing stays on Mostar `172.16.91.30`.
+
+Detail: [`mikrotik_roaming_config.md`](mikrotik_roaming_config.md).
 
 ---
 
