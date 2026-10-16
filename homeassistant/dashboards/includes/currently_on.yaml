@@ -1,0 +1,69 @@
+# Self-contained "currently on" list. Indoor lights and their switch controls only.
+type: custom:button-card
+entity: light.basement_light
+name: Currently on
+show_icon: false
+show_state: false
+triggers_update: all
+tap_action:
+  action: none
+hold_action:
+  action: none
+styles:
+  card:
+    - border-radius: 16px
+    - background: "#1e293b"
+    - padding: 10px 12px
+    - border: 1px solid rgba(255,255,255,0.08)
+  name:
+    - justify-self: start
+    - font-size: 13px
+    - font-weight: 700
+    - color: "#e2e8f0"
+  grid:
+    - grid-template-areas: '"n" "l"'
+    - grid-template-columns: 1fr
+    - grid-template-rows: auto auto
+  custom_fields:
+    l:
+      - justify-self: stretch
+custom_fields:
+  l: |
+    [[[
+      const ids = ['switch.light_switch','light.kitchen_countertop_lights_light','switch.light_switch_3','switch.spotlight_switch','switch.living_room_livingroom_lamp_1','switch.living_room_livingroom_lamp_2','light.light_switch_2','light.light_switch','switch.master_bedroom_light_switch','light.master_bedroom_closet_lights_top_light','light.master_bedroom_closet_light_bottom_light','switch.vanity','switch.light_switch_2','light.closet_light','switch.light_switch_5','light.in_wall_paddle_dimmer_no_ntrl_700s','light.kitchenette_light','light.kitchenette_counter_light_light','light.garage_hallway_light_switch','light.steps_light_switch','switch.light_switch_4','light.garage_light','light.garage_door_light','light.basement_light'];
+      const names = {
+        'switch.light_switch': 'Kitchen',
+        'light.kitchen_countertop_lights_light': 'Kitchen counter',
+        'switch.light_switch_3': 'Dining',
+        'switch.spotlight_switch': 'Living spots',
+        'switch.living_room_livingroom_lamp_1': 'Lamp 1',
+        'switch.living_room_livingroom_lamp_2': 'Lamp 2',
+        'light.light_switch_2': 'Hallway',
+        'light.light_switch': 'Bedroom hall',
+        'switch.master_bedroom_light_switch': 'Master',
+        'light.master_bedroom_closet_lights_top_light': 'Closet top',
+        'light.master_bedroom_closet_light_bottom_light': 'Closet bottom',
+        'switch.vanity': 'Vanity',
+        'switch.light_switch_2': 'Guest bedroom',
+        'light.closet_light': 'Guest closet',
+        'switch.light_switch_5': 'Guest bath',
+        'light.in_wall_paddle_dimmer_no_ntrl_700s': 'Middle',
+        'light.kitchenette_light': 'Kitchenette',
+        'light.kitchenette_counter_light_light': 'Kitchenette counter',
+        'light.garage_hallway_light_switch': 'Garage hall',
+        'light.steps_light_switch': 'Office',
+        'switch.light_switch_4': 'Steps',
+        'light.garage_light': 'Garage',
+        'light.garage_door_light': 'Garage door light',
+        'light.basement_light': 'Basement'
+      };
+      const on = ids.filter(id => hass.states[id]?.state === 'on');
+      if (!on.length) {
+        return '<div style="color:#86efac;font-weight:700;font-size:14px;">Nothing on</div>';
+      }
+      const chips = on.map(id => {
+        const label = names[id] || id;
+        return `<span style="display:inline-flex;align-items:center;margin:3px 4px 0 0;padding:6px 10px;border-radius:999px;background:rgba(245,158,11,0.22);color:#fde68a;font-size:13px;font-weight:700;">${label}</span>`;
+      }).join('');
+      return `<div>${chips}</div>`;
+    ]]]

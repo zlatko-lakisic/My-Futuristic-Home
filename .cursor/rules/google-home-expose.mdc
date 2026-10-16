@@ -1,0 +1,20 @@
+---
+description: Ask before exposing a new device to Google Home
+alwaysApply: true
+---
+
+# Ask before Google Home expose
+
+When a new controllable device or entity is added, **stop and ask** whether it should be published to Google Home. Do not expose it, and do not leave an auto-exposed domain to publish on its own, until the user answers.
+
+Ask for household controls: lights, lamp plugs, fans, covers, locks, climate, valves, and door/gate contacts. Skip diagnostic, config, and infrastructure entities (MSN, torrents, k8s, Docker, MikroTik, Frigate, Nest options, BHyve programs, UniFi AP LEDs, camera IR).
+
+## How publish actually works
+
+Manual Google Assistant YAML is the only path: `homeassistant/includes/google_assistant.yaml` (project `home-assistant-1142`). Policy: `homeassistant/docs_ha/google_assistant_expose.md`.
+
+- `light`, `cover`, `lock`, `climate`, and `valve` publish automatically. If the user says no, add `expose: false` for that entity.
+- `switch` and `binary_sensor` do **not** publish automatically. If the user says yes, add `expose: true` (and a `name` when the entity id is a poor voice name).
+- The entity-registry toggle `cloud.google_assistant` does nothing here. Nabu Casa is unused. Never treat that toggle as exposure.
+
+After an allowlist edit: sync live config, restart Home Assistant (this YAML is not reloadable), then `google_assistant.request_sync`.

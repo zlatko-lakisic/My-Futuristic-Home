@@ -16,6 +16,27 @@ scene: !include scenes.yaml
 
 lovelace:
   dashboards:
+    home-yaml:
+      mode: yaml
+      title: Home
+      icon: mdi:home
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/home.yaml
+    climate-yaml:
+      mode: yaml
+      title: Climate
+      icon: mdi:thermostat
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/climate.yaml
+    security-yaml:
+      mode: yaml
+      title: Security
+      icon: mdi:shield-home
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/security.yaml
     infrastructure-yaml:
       mode: yaml
       title: Infrastructure

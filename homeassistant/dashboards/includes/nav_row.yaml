@@ -1,0 +1,240 @@
+# Shared dashboard navigation. One full-width row.
+# Wraps only on a very narrow screen (under 420px).
+type: custom:layout-card
+layout_type: custom:grid-layout
+grid_options:
+  columns: full
+layout:
+  width: 100%
+  max-width: 100%
+  margin: 0
+  padding: 0
+  grid-gap: 8px
+  grid-template-columns: repeat(5, minmax(0, 1fr))
+  justify-items: stretch
+  align-items: stretch
+  place-items: stretch
+  mediaquery:
+    "(max-width: 420px)":
+      grid-template-columns: repeat(3, minmax(0, 1fr))
+cards:
+  - type: custom:button-card
+    name: Home
+    icon: mdi:home
+    tap_action:
+      action: navigate
+      navigation_path: /home-yaml/overview
+    hold_action:
+      action: none
+    view_layout:
+      place-self: stretch
+    extra_styles: |
+      :host { width: 100%; max-width: none !important; }
+      #aspect-ratio { display: block !important; width: 100% !important; }
+      ha-card { width: 100% !important; box-sizing: border-box !important; }
+    styles:
+      card:
+        - border-radius: 14px
+        - padding: 8px 2px
+        - background: "#1e293b"
+        - height: 64px
+        - min-width: 0
+        - box-sizing: border-box
+        - border: 1px solid rgba(255,255,255,0.08)
+      grid:
+        - grid-template-areas: '"i" "n"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: auto auto
+        - justify-items: center
+        - align-content: center
+        - width: 100%
+        - height: 100%
+      name:
+        - justify-self: center
+        - text-align: center
+        - font-size: 11px
+        - font-weight: 700
+        - white-space: nowrap
+        - overflow: hidden
+        - text-overflow: ellipsis
+        - max-width: 100%
+      icon:
+        - justify-self: center
+        - width: 22px
+        - color: "#38bdf8"
+  - type: custom:button-card
+    name: Climate
+    icon: mdi:thermostat
+    tap_action:
+      action: navigate
+      navigation_path: /climate-yaml/climate
+    hold_action:
+      action: none
+    view_layout:
+      place-self: stretch
+    extra_styles: |
+      :host { width: 100%; max-width: none !important; }
+      #aspect-ratio { display: block !important; width: 100% !important; }
+      ha-card { width: 100% !important; box-sizing: border-box !important; }
+    styles:
+      card:
+        - border-radius: 14px
+        - padding: 8px 2px
+        - background: "#1e293b"
+        - height: 64px
+        - min-width: 0
+        - box-sizing: border-box
+        - border: 1px solid rgba(255,255,255,0.08)
+      grid:
+        - grid-template-areas: '"i" "n"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: auto auto
+        - justify-items: center
+        - align-content: center
+        - width: 100%
+        - height: 100%
+      name:
+        - justify-self: center
+        - text-align: center
+        - font-size: 11px
+        - font-weight: 700
+        - white-space: nowrap
+        - overflow: hidden
+        - text-overflow: ellipsis
+        - max-width: 100%
+      icon:
+        - justify-self: center
+        - width: 22px
+        - color: "#38bdf8"
+  - type: custom:button-card
+    name: Security
+    icon: mdi:shield-home
+    tap_action:
+      action: navigate
+      navigation_path: /security-yaml/security
+    hold_action:
+      action: none
+    view_layout:
+      place-self: stretch
+    extra_styles: |
+      :host { width: 100%; max-width: none !important; }
+      #aspect-ratio { display: block !important; width: 100% !important; }
+      ha-card { width: 100% !important; box-sizing: border-box !important; }
+    styles:
+      card:
+        - border-radius: 14px
+        - padding: 8px 2px
+        - background: "#1e293b"
+        - height: 64px
+        - min-width: 0
+        - box-sizing: border-box
+        - border: 1px solid rgba(255,255,255,0.08)
+      grid:
+        - grid-template-areas: '"i" "n"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: auto auto
+        - justify-items: center
+        - align-content: center
+        - width: 100%
+        - height: 100%
+      name:
+        - justify-self: center
+        - text-align: center
+        - font-size: 11px
+        - font-weight: 700
+        - white-space: nowrap
+        - overflow: hidden
+        - text-overflow: ellipsis
+        - max-width: 100%
+      icon:
+        - justify-self: center
+        - width: 22px
+        - color: "#38bdf8"
+  - type: custom:button-card
+    name: Backyard
+    icon: mdi:grass
+    tap_action:
+      action: navigate
+      navigation_path: /backyard-yaml/backyard
+    hold_action:
+      action: none
+    view_layout:
+      place-self: stretch
+    extra_styles: |
+      :host { width: 100%; max-width: none !important; }
+      #aspect-ratio { display: block !important; width: 100% !important; }
+      ha-card { width: 100% !important; box-sizing: border-box !important; }
+    styles:
+      card:
+        - border-radius: 14px
+        - padding: 8px 2px
+        - background: "#1e293b"
+        - height: 64px
+        - min-width: 0
+        - box-sizing: border-box
+        - border: 1px solid rgba(255,255,255,0.08)
+      grid:
+        - grid-template-areas: '"i" "n"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: auto auto
+        - justify-items: center
+        - align-content: center
+        - width: 100%
+        - height: 100%
+      name:
+        - justify-self: center
+        - text-align: center
+        - font-size: 11px
+        - font-weight: 700
+        - white-space: nowrap
+        - overflow: hidden
+        - text-overflow: ellipsis
+        - max-width: 100%
+      icon:
+        - justify-self: center
+        - width: 22px
+        - color: "#38bdf8"
+  - type: custom:button-card
+    name: Infrastructure
+    icon: mdi:server-network
+    tap_action:
+      action: navigate
+      navigation_path: /infrastructure-yaml/infrastructure
+    hold_action:
+      action: none
+    view_layout:
+      place-self: stretch
+    extra_styles: |
+      :host { width: 100%; max-width: none !important; }
+      #aspect-ratio { display: block !important; width: 100% !important; }
+      ha-card { width: 100% !important; box-sizing: border-box !important; }
+    styles:
+      card:
+        - border-radius: 14px
+        - padding: 8px 2px
+        - background: "#1e293b"
+        - height: 64px
+        - min-width: 0
+        - box-sizing: border-box
+        - border: 1px solid rgba(255,255,255,0.08)
+      grid:
+        - grid-template-areas: '"i" "n"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: auto auto
+        - justify-items: center
+        - align-content: center
+        - width: 100%
+        - height: 100%
+      name:
+        - justify-self: center
+        - text-align: center
+        - font-size: 11px
+        - font-weight: 700
+        - white-space: nowrap
+        - overflow: hidden
+        - text-overflow: ellipsis
+        - max-width: 100%
+      icon:
+        - justify-self: center
+        - width: 22px
+        - color: "#38bdf8"

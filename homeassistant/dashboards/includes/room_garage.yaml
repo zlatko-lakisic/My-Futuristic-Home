@@ -1,0 +1,77 @@
+- type: custom:button-card
+  name: Garage
+  show_icon: false
+  show_state: false
+  triggers_update: all
+  tap_action:
+    action: none
+  hold_action:
+    action: none
+  label: |
+    [[[
+      const ids = ['light.garage_light','light.garage_door_light'];
+      const on = ids.filter(id => hass.states[id]?.state === 'on').length;
+      return on + (on === 1 ? ' light on' : ' lights on');
+    ]]]
+  show_label: true
+  styles:
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - padding: 0
+      - height: 40px
+    grid:
+      - grid-template-areas: '"n l"'
+      - grid-template-columns: 1fr auto
+    name:
+      - font-size: 18px
+      - font-weight: 800
+      - justify-self: start
+    label:
+      - font-size: 12px
+      - font-weight: 700
+      - color: "#7dd3fc"
+      - background: rgba(56,189,248,0.16)
+      - border-radius: 999px
+      - padding: 4px 8px
+- type: grid
+  columns: 2
+  square: false
+  cards:
+    - type: tile
+      entity: light.garage_light
+      name: Garage
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      features:
+        - type: toggle
+    - type: tile
+      entity: light.garage_door_light
+      name: Door light
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      features:
+        - type: toggle
+- type: custom:button-card
+  name: Open garage dashboard
+  icon: mdi:garage
+  tap_action:
+    action: navigate
+    navigation_path: /dashboard-garage
+  hold_action:
+    action: none
+  styles:
+    card:
+      - border-radius: 16px
+      - background: "#1e3a5f"
+      - height: 64px
+    name:
+      - font-size: 14px
+      - font-weight: 700
+    icon:
+      - color: "#7dd3fc"

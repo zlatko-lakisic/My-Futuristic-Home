@@ -1,0 +1,128 @@
+views:
+  - title: Climate
+    path: climate
+    icon: mdi:thermostat
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - !include includes/nav_row.yaml
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Living room
+            heading_style: title
+          - type: thermostat
+            entity: climate.new_livingroom_climate
+            name: Living room
+            features:
+              - type: climate-hvac-modes
+                style: icons
+                hvac_modes:
+                  - "off"
+                  - cool
+                  - heat
+              - type: climate-fan-modes
+                style: icons
+          - type: markdown
+            content: >
+              {% set nest = states('climate.living_room') %}
+              {% set nest_action = state_attr('climate.living_room', 'hvac_action') %}
+              {% set ac = states('climate.150633094697190_climate') %}
+              {% set ac_action = state_attr('climate.150633094697190_climate', 'hvac_action') %}
+              {% if nest in ['unknown', 'unavailable', 'none'] %}
+              Nest thermostat is not connected.
+              {% elif nest_action in ['heating', 'preheating'] %}
+              Nest is heating.
+              {% else %}
+              Nest is {{ nest_action or nest }}.
+              {% endif %}
+              {% if ac_action in ['cooling', 'drying'] %}
+              AC is cooling.
+              {% elif ac in ['unknown', 'unavailable'] %}
+              AC is unavailable.
+              {% else %}
+              AC is {{ ac_action or ac }}.
+              {% endif %}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Room temperatures
+            heading_style: title
+          - type: tile
+            entity: sensor.nest_temperature_sensor_living_room_temperature
+            name: Living room sensor
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: sensor.nest_temperature_sensor_master_bedroom_temperature
+            name: Master bedroom
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: sensor.150633094697190_indoor_temperature
+            name: AC indoor
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+      - type: grid
+        cards:
+          - type: heading
+            heading: Equipment
+            heading_style: title
+          - type: tile
+            entity: switch.house_fan
+            name: House fan
+            icon: mdi:fan
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+            features:
+              - type: toggle
+          - type: tile
+            entity: remote.heater
+            name: Office heater
+            icon: mdi:radiator
+            tap_action:
+              action: call-service
+              service: remote.toggle
+              target:
+                entity_id: remote.heater
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: switch.150633094697190_power
+            name: AC power
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+            features:
+              - type: toggle
+          - type: tile
+            entity: switch.150633094697190_boost_mode
+            name: AC boost
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+            features:
+              - type: toggle
+          - type: tile
+            entity: switch.150633094697190_swing_vertical
+            name: AC swing
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+            features:
+              - type: toggle
