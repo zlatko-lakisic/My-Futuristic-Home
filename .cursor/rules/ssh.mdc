@@ -1,0 +1,58 @@
+---
+description: Rules for running remote commands over SSH. Credentials and connection details live in the secrets folder and must never be printed, echoed, or committed. Apply whenever a task involves ssh, scp, rsync over ssh, remote shells, or any command targeting a host that is not this machine.
+globs:
+alwaysApply: false
+---
+
+# SSH and remote command rules
+
+## Where credentials come from
+
+- All hosts, users, ports, key paths, and passwords live in the `secrets` folder at the repo root. Read them from there. Never hardcode a host, user, or key path in a script, config, or command you generate.
+- Never print, echo, `cat`, or log the contents of anything under `secrets`. If you need to confirm a value exists, test for it (`test -f`, `-n "$VAR"`) and report only pass or fail.
+- Never paste a private key, password, or passphrase into a chat response, a commit message, a comment, or a file outside `secrets`.
+- Confirm `secrets/` is in `.gitignore` before writing anything into it. If it is not, add it first and say so.
+- Reference values by variable, not by literal. Source them:
+  ```bash
+  set -a; . ./.cursor/secrets/.env; set +a
+  ssh -F ./.cursor/secrets/ssh_config "$TARGET_HOST" '...'
+  ```
+- If a needed credential is missing from `secrets`, stop and ask. Do not guess a hostname, do not fall back to `localhost`, and do not invent a key path.
+
+## Running remote commands
+
+- Always non-interactive. Use `ssh -o BatchMode=yes -o ConnectTimeout=10`. Never run a command that opens an editor, a pager, a REPL, or a prompt. Append `| cat` to anything that may page.
+- Quote the remote command as a single argument and prefer single quotes so local shell expansion does not leak values into the remote side.
+- One command per invocation. Do not chain unrelated work behind `&&` where a partial failure leaves the host in a half-changed state.
+- Set a timeout on anything that could hang. Do not start long-running or backgrounded processes over SSH unless the task explicitly asks for it, and if you do, use `nohup`/`systemd-run` and report the pid or unit name.
+- Prefer read-only commands when investigating. Look before you change.
+- Use key auth. Do not generate commands that pass a password on the command line, and do not install `sshpass`.
+- Do not enable agent forwarding (`-A`) unless the task requires it and you say why.
+- Do not modify `~/.ssh/config`, `authorized_keys`, `known_hosts`, or sshd config on a remote host without asking first.
+- Do not disable host key checking. If a host key is unknown, stop and ask rather than passing `StrictHostKeyChecking=no`.
+
+## Destructive operations
+
+Ask for explicit confirmation before any of these, and show the exact command you intend to run:
+
+- `rm -rf`, `mv` over an existing path, truncation, or anything touching data outside the working directory
+- `systemctl stop|restart|disable`, reboots, shutdowns
+- package installs, upgrades, or removals
+- firewall, network, user, or permission changes
+- database drops, migrations, or writes to production data
+- `kubectl delete`, `helm uninstall`, or anything that removes running workloads
+
+Treat any host tagged as production in `secrets` as confirm-first for every write, not just the list above.
+
+## Output handling
+
+- Redact anything that looks like a secret, token, or key from command output before including it in a response.
+- Do not put hostnames, internal IPs, or usernames in files that get committed, in commit messages, or in documentation. Use placeholders like `$TARGET_HOST`.
+- When a command fails, report the exit code and the stderr tail. Do not retry the same command more than once, and do not escalate to `sudo` on your own.
+
+## Scripts you write
+
+- Start with `set -euo pipefail`.
+- Take host and credential values from environment or `secrets`, never as defaults baked into the script.
+- Make them idempotent and safe to rerun.
+- Add a `--dry-run` flag to any script that changes remote state, and default to it when the target is production.
