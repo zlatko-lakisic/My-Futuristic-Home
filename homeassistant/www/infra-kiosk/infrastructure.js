@@ -27,6 +27,7 @@ var ENTITIES = [
     "sensor.mikrotik_mostar_ether1_rx",
     "sensor.mikrotik_mostar_ether1_tx",
     "sensor.mikrotik_mostar_environment_publicip",
+    "sensor.mikrotik_home_wan_geo",
     "sensor.perimiter_switch_cpu_temperature",
     "sensor.perimeter_switch_total_rx",
     "sensor.perimeter_switch_total_tx",
@@ -1085,6 +1086,53 @@ function setHtml(id, html) {
     );
   }
 
+  var wanCard = null;
+  var wanStamp = "";
+
+  function renderWanMap() {
+    var host = $("card-wan-map");
+    if (!host || !window.customElements || !customElements.get("wan-connections-map")) return;
+    if (!wanCard) {
+      wanCard = document.createElement("wan-connections-map");
+      wanCard.setConfig({ entity: "sensor.mikrotik_home_wan_geo", flow: false });
+      host.appendChild(wanCard);
+    }
+    var entity = H.st("sensor.mikrotik_home_wan_geo");
+    if (!entity) return;
+    var points = (entity.attributes && entity.attributes.points) || [];
+    var tracked = 0;
+    for (var i = 0; i < points.length; i++) tracked += Number(points[i].count) || 0;
+    var countEl = $("wan-count");
+    if (countEl) countEl.textContent = String(tracked);
+    var attrs = entity.attributes || {};
+    var stamp = (attrs.stale ? "1" : "0") + ":" + (attrs.collected_utc || "") + "|" + points.map(function (point) {
+      var flows = (point.flows || []).map(function (flow) {
+        return [flow.protocol, flow.local_address, flow.local_port, flow.local_name, flow.hostname, flow.rate_bps, flow.inbound, flow.seed_bps, flow.leech_bps].join(",");
+      }).join(";");
+      var resources = (point.resources || []).map(function (item) {
+        return [item.method, item.host, item.path, item.bytes, item.open ? 1 : 0].join(",");
+      }).join(";");
+      return [
+        point.ip,
+        point.kind,
+        point.rate_bps,
+        point.seed_bps || 0,
+        point.leech_bps || 0,
+        point.count,
+        (point.hostnames || []).join(","),
+        point.bot || "",
+        point.operator || "",
+        point.ppp_name || "",
+        (point.torrents || []).join(","),
+        flows,
+        resources
+      ].join(":");
+    }).join("|");
+    if (stamp === wanStamp) return;
+    wanStamp = stamp;
+    wanCard.hass = { states: { "sensor.mikrotik_home_wan_geo": entity } };
+  }
+
   function renderStorage() {
     $("card-storage").innerHTML =
       nasCard(
@@ -1113,6 +1161,7 @@ function setHtml(id, html) {
     renderGateway();
     renderNetworkDevices();
     renderGaugesAndTraffic();
+    renderWanMap();
     renderWatchdogs();
     renderServers();
     renderCameras();
@@ -1131,4 +1180,10 @@ function setHtml(id, html) {
     entities: ENTITIES,
     paint: paint
   });
+
+  if (window.customElements && customElements.whenDefined) {
+    customElements.whenDefined("wan-connections-map").then(function () {
+      renderWanMap();
+    });
+  }
 })();

@@ -7,6 +7,10 @@ views:
     icon: mdi:server-network
     sections:
       - type: grid
+        column_span: 4
+        cards:
+          - !include includes/nav_row.yaml
+      - type: grid
         cards:
           - type: heading
             heading_style: title
@@ -373,7 +377,7 @@ views:
                               var cCpu = parsePct(cpu);
                               var cMem = parsePct(mem);
                               var cCli = parseClients(cliRaw);
-                              var iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-M.png';
+                              var iconUrl = '/local/unifi-ap-mesh.png';
                               return '<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">' +
                                 '<div style="display:flex;align-items:flex-start;gap:8px;">' +
                                 '<img src="' + iconUrl + '" width="34" height="34" alt="" style="object-fit:contain;flex-shrink:0;" />' +
@@ -445,7 +449,7 @@ views:
                               var cCpu = parsePct(cpu);
                               var cMem = parsePct(mem);
                               var cCli = parseClients(cliRaw);
-                              var iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
+                              var iconUrl = '/local/unifi-ap-ceiling.png';
                               return '<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">' +
                                 '<div style="display:flex;align-items:flex-start;gap:8px;">' +
                                 '<img src="' + iconUrl + '" width="34" height="34" alt="" style="object-fit:contain;flex-shrink:0;" />' +
@@ -517,7 +521,7 @@ views:
                               var cCpu = parsePct(cpu);
                               var cMem = parsePct(mem);
                               var cCli = parseClients(cliRaw);
-                              var iconUrl = 'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
+                              var iconUrl = '/local/unifi-ap-ceiling.png';
                               return '<div style="width:100%;box-sizing:border-box;font-family:var(--ha-font-family,sans-serif);color:#fff;">' +
                                 '<div style="display:flex;align-items:flex-start;gap:8px;">' +
                                 '<img src="' + iconUrl + '" width="34" height="34" alt="" style="object-fit:contain;flex-shrink:0;" />' +
@@ -902,6 +906,23 @@ views:
                     tap_action:
                       action: more-info
         column_span: 4
+      - type: grid
+        column_span: 4
+        cards:
+          - type: heading
+            heading_style: title
+            heading: WAN CONNECTIONS
+            badges:
+              - type: entity
+                entity: sensor.mikrotik_home_wan_geo
+                show_name: false
+                show_icon: false
+            grid_options:
+              columns: full
+          - type: custom:wan-connections-map
+            entity: sensor.mikrotik_home_wan_geo
+            grid_options:
+              columns: full
       - type: grid
         column_span: 4
         cards:

@@ -1,0 +1,23 @@
+---
+description: Keep overlapping Lovelace and kiosk dashboard changes in sync
+alwaysApply: true
+---
+
+# Lovelace and kiosk stay in sync
+
+Two dashboards show the same house. A change to a shared section goes to both in the same change, then both are deployed.
+
+| | Regular (Lovelace) | Lightweight (kiosk) |
+|---|---|---|
+| Infrastructure | `homeassistant/dashboards/infrastructure.yaml` | `homeassistant/www/infra-kiosk/index.html` and `infrastructure.js` |
+| Backyard | `homeassistant/dashboards/backyard.yaml` | `homeassistant/www/infra-kiosk/backyard.html` and `backyard.js` |
+
+Shared sections today: core network, WAN map, power watchdogs, servers / NVR / GPU, camera health, storage, backyard surveillance, environment and soil, lighting, irrigation. A section that exists on only one dashboard stays there.
+
+Shared cards (the WAN map is `custom:wan-connections-map`, loaded from `/wan_connections_map/wan-connections-map.js`) are one implementation. After a card change:
+
+1. Bump `CARD_URL` in the card integration and the kiosk `<script src>` to the same `?v=` value.
+2. Put the new bundle on the HA host and sync `homeassistant/www/`.
+3. Confirm the Lovelace resource the regular dashboard loads is that same URL. The kiosk picking up a new file while Lovelace is still on the previous `?v=` is an unfinished change.
+
+Canonical kiosk files are the ones listed above. Leave `homeassistant/www/infra-kiosk/infra-kiosk/` alone unless a page is actually served from there.

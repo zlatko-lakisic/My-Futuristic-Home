@@ -7,6 +7,10 @@ views:
     icon: mdi:grass
     sections:
       - type: grid
+        column_span: 4
+        cards:
+          - !include includes/nav_row.yaml
+      - type: grid
         cards:
           - type: heading
             heading_style: title
@@ -953,7 +957,7 @@ views:
                                 [[[
                                   const n = entity.state;
                                   const iconUrl =
-                                    'https://raw.githubusercontent.com/cyberconsecurity/Unifi/main/WiFi/PNG/UAP-AC-LITE.png';
+                                    '/local/unifi-ap-mesh.png';
                                   return `<div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:100%;box-sizing:border-box;gap:12px;font-family:var(--ha-font-family,sans-serif);">
                                     <div style="display:flex;align-items:center;gap:14px;min-width:0;flex:0 1 auto;">
                                       <img src="${iconUrl}" width="44" height="44" alt="" style="object-fit:contain;flex-shrink:0;display:block;" loading="lazy" />

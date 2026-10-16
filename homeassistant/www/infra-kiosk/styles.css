@@ -185,6 +185,9 @@ h1 {
 .conn-err { background: var(--red-bg); color: #ffcdd2; }
 
 .band { margin-bottom: 18px; }
+.wan-map-host { width: 100%; min-height: 780px; border-radius: 16px; overflow: hidden; }
+.wan-map-host wan-connections-map,
+.wan-map-host ha-card { display: block; width: 100%; }
 .band-title {
   margin: 0 0 6px;
   font-size: 0.82rem;
@@ -192,6 +195,12 @@ h1 {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   opacity: 0.92;
+}
+.wan-count {
+  margin-left: 8px;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
 }
 .band-sub, .subhead {
   margin: 0 0 10px;

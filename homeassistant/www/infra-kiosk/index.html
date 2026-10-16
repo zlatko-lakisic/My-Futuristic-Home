@@ -8,7 +8,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#111111" />
   <title>Infrastructure · Kiosk</title>
-  <link rel="stylesheet" href="styles.css?v=20260810b" />
+  <link rel="stylesheet" href="styles.css?v=20261009c" />
   <script src="config.js"></script>
 </head>
 <body class="has-sidebar">
@@ -55,6 +55,11 @@
           <div class="device-grid" id="card-network-devices"></div>
         </div>
         <div class="row row-gauges" id="card-gateway-gauges"></div>
+      </section>
+
+      <section class="band">
+        <h2 class="band-title">WAN CONNECTIONS <span id="wan-count" class="wan-count">0</span></h2>
+        <div id="card-wan-map" class="wan-map-host"></div>
       </section>
 
       <section class="band">
@@ -108,7 +113,8 @@
     </div>
   </div>
 
+  <script type="module" src="/wan_connections_map/wan-connections-map.js?v=37"></script>
   <script src="ha.js?v=20260803b"></script>
-  <script src="infrastructure.js?v=20260810a"></script>
+  <script src="infrastructure.js?v=20261009d"></script>
 </body>
 </html>
