@@ -1,0 +1,45 @@
+- type: custom:button-card
+  name: Bedroom Hallway
+  show_icon: false
+  show_state: false
+  triggers_update: all
+  tap_action:
+    action: none
+  hold_action:
+    action: none
+  label: |
+    [[[
+      const on = hass.states['light.light_switch']?.state === 'on' ? 1 : 0;
+      return on + (on === 1 ? ' light on' : ' lights on');
+    ]]]
+  show_label: true
+  styles:
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - padding: 0
+      - height: 40px
+    grid:
+      - grid-template-areas: '"n l"'
+      - grid-template-columns: 1fr auto
+    name:
+      - font-size: 18px
+      - font-weight: 800
+      - justify-self: start
+    label:
+      - font-size: 12px
+      - font-weight: 700
+      - color: "#7dd3fc"
+      - background: rgba(56,189,248,0.16)
+      - border-radius: 999px
+      - padding: 4px 8px
+- type: tile
+  entity: light.light_switch
+  name: Bedroom hall
+  tap_action:
+    action: toggle
+  hold_action:
+    action: more-info
+  features:
+    - type: light-brightness

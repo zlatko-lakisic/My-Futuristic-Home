@@ -1,0 +1,219 @@
+# Self-contained overview status strip. Reuse this card on a future wall view.
+# Two columns so a phone does not scroll sideways.
+type: vertical-stack
+cards:
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: custom:button-card
+        entity: lock.front_door
+        name: Locks
+        icon: mdi:lock
+        show_state: false
+        triggers_update:
+          - lock.front_door
+          - lock.back_door
+          - lock.door_to_garage
+          - lock.office_door
+        tap_action:
+          action: navigate
+          navigation_path: /security-yaml/security
+        hold_action:
+          action: more-info
+        label: |
+          [[[
+            const ids = ['lock.front_door','lock.back_door','lock.door_to_garage','lock.office_door'];
+            const states = ids.map(id => hass.states[id]?.state);
+            const unlocked = states.filter(s => s === 'unlocked').length;
+            const bad = states.filter(s => !s || s === 'unavailable' || s === 'unknown').length;
+            const locked = states.filter(s => s === 'locked').length;
+            if (locked === ids.length) return 'All locked';
+            const parts = [];
+            if (unlocked) parts.push(unlocked + ' unlocked');
+            if (bad) parts.push(bad + ' unavailable');
+            return parts.join(' · ') || 'Check locks';
+          ]]]
+        show_label: true
+        styles:
+          card:
+            - border-radius: 16px
+            - padding: 8px 4px
+            - height: 78px
+            - background: |
+                [[[
+                  const ids = ['lock.front_door','lock.back_door','lock.door_to_garage','lock.office_door'];
+                  const states = ids.map(id => hass.states[id]?.state);
+                  if (states.every(s => s === 'locked')) return '#14532d';
+                  if (states.some(s => !s || s === 'unavailable' || s === 'unknown')) return '#78350f';
+                  return '#7c2d12';
+                ]]]
+          name:
+            - font-size: 11px
+            - font-weight: 700
+          label:
+            - font-size: 12px
+            - font-weight: 700
+            - color: "#ecfdf5"
+          icon:
+            - width: 20px
+            - color: "#86efac"
+      - type: custom:button-card
+        entity: light.basement_light
+        name: Lights
+        icon: mdi:lightbulb-group
+        show_state: false
+        triggers_update: all
+        tap_action:
+          action: none
+        hold_action:
+          action: none
+        label: |
+          [[[
+            const ids = ['switch.light_switch','light.kitchen_countertop_lights_light','switch.light_switch_3','switch.spotlight_switch','switch.living_room_livingroom_lamp_1','switch.living_room_livingroom_lamp_2','light.light_switch_2','light.light_switch','switch.master_bedroom_light_switch','light.master_bedroom_closet_lights_top_light','light.master_bedroom_closet_light_bottom_light','switch.vanity','switch.light_switch_2','light.closet_light','switch.light_switch_5','light.in_wall_paddle_dimmer_no_ntrl_700s','light.kitchenette_light','light.kitchenette_counter_light_light','light.garage_hallway_light_switch','light.steps_light_switch','switch.light_switch_4','light.garage_light','light.garage_door_light','light.basement_light'];
+            const on = ids.filter(id => hass.states[id]?.state === 'on').length;
+            return on + ' on';
+          ]]]
+        show_label: true
+        styles:
+          card:
+            - border-radius: 16px
+            - padding: 8px 4px
+            - height: 78px
+            - background: "#1e293b"
+          name:
+            - font-size: 11px
+            - font-weight: 700
+          label:
+            - font-size: 12px
+            - font-weight: 700
+            - color: "#fde68a"
+          icon:
+            - width: 20px
+            - color: "#fbbf24"
+      - type: custom:button-card
+        entity: climate.new_livingroom_climate
+        name: Climate
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /climate-yaml/climate
+        hold_action:
+          action: more-info
+        label: |
+          [[[
+            const c = hass.states['climate.new_livingroom_climate'];
+            const temp = c?.attributes?.current_temperature;
+            const mode = c?.state || 'unknown';
+            const t = (temp === undefined || temp === null) ? '—' : Math.round(temp) + '°';
+            return t + ' · ' + mode;
+          ]]]
+        show_label: true
+        styles:
+          card:
+            - border-radius: 16px
+            - padding: 8px 4px
+            - height: 78px
+            - background: "#1e293b"
+          name:
+            - font-size: 11px
+            - font-weight: 700
+          label:
+            - font-size: 12px
+            - font-weight: 700
+            - color: "#7dd3fc"
+          icon:
+            - width: 20px
+            - color: "#38bdf8"
+      - type: custom:button-card
+        entity: binary_sensor.nest_protect_hallway_smoke_status
+        name: Alerts
+        icon: mdi:smoke-detector
+        show_state: false
+        triggers_update: all
+        tap_action:
+          action: navigate
+          navigation_path: /security-yaml/security
+        hold_action:
+          action: more-info
+        label: |
+          [[[
+            const safety = ['binary_sensor.nest_protect_kitchen_smoke_status','binary_sensor.nest_protect_kitchen_co_status','binary_sensor.nest_protect_basement_smoke_status','binary_sensor.nest_protect_basement_co_status','binary_sensor.nest_protect_hallway_smoke_status','binary_sensor.nest_protect_hallway_co_status','binary_sensor.nest_protect_office_smoke_status','binary_sensor.nest_protect_office_co_status'];
+            const indoor = ['switch.light_switch','light.kitchen_countertop_lights_light','switch.light_switch_3','switch.spotlight_switch','switch.living_room_livingroom_lamp_1','switch.living_room_livingroom_lamp_2','light.light_switch_2','light.light_switch','switch.master_bedroom_light_switch','light.master_bedroom_closet_lights_top_light','light.master_bedroom_closet_light_bottom_light','switch.vanity','switch.light_switch_2','light.closet_light','switch.light_switch_5','light.in_wall_paddle_dimmer_no_ntrl_700s','light.kitchenette_light','light.kitchenette_counter_light_light','light.garage_hallway_light_switch','light.steps_light_switch','switch.light_switch_4','light.garage_light','light.garage_door_light','light.basement_light','lock.front_door','lock.back_door','lock.door_to_garage','lock.office_door'];
+            const alarm = safety.filter(id => hass.states[id]?.state === 'on').length;
+            const bad = indoor.concat(safety).filter(id => {
+              const s = hass.states[id]?.state;
+              return !s || s === 'unavailable' || s === 'unknown';
+            }).length;
+            if (alarm) return alarm + ' smoke/CO';
+            if (bad) return bad + ' unavailable';
+            return 'Clear';
+          ]]]
+        show_label: true
+        styles:
+          card:
+            - border-radius: 16px
+            - padding: 8px 4px
+            - height: 78px
+            - background: |
+                [[[
+                  const safety = ['binary_sensor.nest_protect_kitchen_smoke_status','binary_sensor.nest_protect_kitchen_co_status','binary_sensor.nest_protect_basement_smoke_status','binary_sensor.nest_protect_basement_co_status','binary_sensor.nest_protect_hallway_smoke_status','binary_sensor.nest_protect_hallway_co_status','binary_sensor.nest_protect_office_smoke_status','binary_sensor.nest_protect_office_co_status'];
+                  if (safety.some(id => hass.states[id]?.state === 'on')) return '#7f1d1d';
+                  return '#1e293b';
+                ]]]
+          name:
+            - font-size: 11px
+            - font-weight: 700
+          label:
+            - font-size: 12px
+            - font-weight: 700
+            - color: "#fde68a"
+          icon:
+            - width: 20px
+            - color: "#fbbf24"
+  - type: custom:button-card
+    name: All off
+    icon: mdi:lightbulb-off
+    tap_action:
+      action: call-service
+      service: homeassistant.turn_off
+      service_data:
+        entity_id:
+          - switch.light_switch
+          - light.kitchen_countertop_lights_light
+          - switch.light_switch_3
+          - switch.spotlight_switch
+          - switch.living_room_livingroom_lamp_1
+          - switch.living_room_livingroom_lamp_2
+          - light.light_switch_2
+          - light.light_switch
+          - switch.master_bedroom_light_switch
+          - light.master_bedroom_closet_lights_top_light
+          - light.master_bedroom_closet_light_bottom_light
+          - switch.vanity
+          - switch.light_switch_2
+          - light.closet_light
+          - switch.light_switch_5
+          - light.in_wall_paddle_dimmer_no_ntrl_700s
+          - light.kitchenette_light
+          - light.kitchenette_counter_light_light
+          - light.garage_hallway_light_switch
+          - light.steps_light_switch
+          - switch.light_switch_4
+          - light.garage_light
+          - light.garage_door_light
+          - light.basement_light
+    hold_action:
+      action: none
+    styles:
+      card:
+        - border-radius: 16px
+        - padding: 8px 4px
+        - height: 78px
+        - background: "#1e3a5f"
+      name:
+        - font-size: 11px
+        - font-weight: 700
+      icon:
+        - width: 22px
+        - color: "#7dd3fc"

@@ -1,0 +1,243 @@
+# Status only. No tag identifiers, lock codes, or arm and disarm controls.
+views:
+  - title: Security
+    path: security
+    icon: mdi:shield-home
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - !include includes/nav_row.yaml
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Locks
+            heading_style: title
+          - type: custom:button-card
+            name: Lock all
+            icon: mdi:lock
+            tap_action:
+              action: call-service
+              service: lock.lock
+              service_data:
+                entity_id:
+                  - lock.front_door
+                  - lock.back_door
+                  - lock.door_to_garage
+                  - lock.office_door
+            hold_action:
+              action: none
+            styles:
+              card:
+                - border-radius: 16px
+                - background: "#14532d"
+                - height: 64px
+              name:
+                - font-weight: 800
+                - color: "#ecfdf5"
+              icon:
+                - color: "#86efac"
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: tile
+                entity: lock.front_door
+                name: Front door
+                tap_action:
+                  action: call-service
+                  service: lock.toggle
+                  target:
+                    entity_id: lock.front_door
+                hold_action:
+                  action: more-info
+              - type: tile
+                entity: lock.back_door
+                name: Back door
+                tap_action:
+                  action: call-service
+                  service: lock.toggle
+                  target:
+                    entity_id: lock.back_door
+                hold_action:
+                  action: more-info
+              - type: tile
+                entity: lock.door_to_garage
+                name: Door to garage
+                tap_action:
+                  action: call-service
+                  service: lock.toggle
+                  target:
+                    entity_id: lock.door_to_garage
+                hold_action:
+                  action: more-info
+              - type: tile
+                entity: lock.office_door
+                name: Office door
+                tap_action:
+                  action: call-service
+                  service: lock.toggle
+                  target:
+                    entity_id: lock.office_door
+                hold_action:
+                  action: more-info
+      - type: grid
+        cards:
+          - type: heading
+            heading: Doors
+            heading_style: title
+          - type: tile
+            entity: binary_sensor.hallway_front_door
+            name: Front door
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.back_door_door
+            name: Back door
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.door_to_garage_door
+            name: Door to garage
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.office_door_door
+            name: Office door
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+      - type: grid
+        cards:
+          - type: heading
+            heading: Gates
+            heading_style: title
+          - type: tile
+            entity: binary_sensor.east_side_door_door
+            name: East gate
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.west_side_gate_door
+            name: West gate
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.fence_gate_door
+            name: Fence gate
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+      - type: grid
+        cards:
+          - type: heading
+            heading: Entry cameras
+            heading_style: title
+          - type: picture-entity
+            entity: camera.front_door
+            name: Front door
+            camera_view: auto
+            show_state: false
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: picture-entity
+            entity: camera.driveway
+            name: Driveway
+            camera_view: auto
+            show_state: false
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+      - type: grid
+        cards:
+          - type: heading
+            heading: Smoke and CO
+            heading_style: title
+          - type: tile
+            entity: binary_sensor.nest_protect_kitchen_smoke_status
+            name: Kitchen smoke
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.nest_protect_kitchen_co_status
+            name: Kitchen CO
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.nest_protect_hallway_smoke_status
+            name: Hallway smoke
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.nest_protect_hallway_co_status
+            name: Hallway CO
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.nest_protect_office_smoke_status
+            name: Office smoke
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.nest_protect_office_co_status
+            name: Office CO
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.nest_protect_basement_smoke_status
+            name: Basement smoke
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.nest_protect_basement_co_status
+            name: Basement CO
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
+      - type: grid
+        cards:
+          - type: heading
+            heading: Alarm
+            heading_style: title
+          - type: tile
+            entity: alarm_control_panel.alarmo
+            name: Alarm
+            tap_action:
+              action: none
+            hold_action:
+              action: none
+            icon_tap_action:
+              action: none
