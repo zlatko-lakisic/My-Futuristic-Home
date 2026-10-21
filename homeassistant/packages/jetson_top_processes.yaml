@@ -1,0 +1,28 @@
+# Top 10 processes on the Jetson (Glances processlist API) for the infrastructure dashboard.
+#
+# Mirrors packages/nvr_top_processes.yaml. Runs inside the HA Core container where
+# Python lives at /usr/local/bin/python3.
+#
+# Files on the HA host (same folder):
+#   - jetson_top_processes.yaml (this file)
+#   - jetson_glances_top_processes.py (fetch + sort; edit URL inside if the host differs)
+#
+# Include from configuration.yaml:
+#   homeassistant:
+#     packages:
+#       jetson_top_processes: !include packages/jetson_top_processes.yaml
+#
+# After changes: Developer tools → YAML → Reload command line configuration (or restart).
+
+command_line:
+  - sensor:
+      name: Jetson Glances top processes
+      unique_id: jetson_glances_top_processes
+      icon: mdi:format-list-numbered
+      scan_interval: 60
+      command: /usr/local/bin/python3 /config/packages/jetson_glances_top_processes.py
+      value_template: "{{ value_json.count | default(0) | int }}"
+      json_attributes:
+        - processes
+        - processes_json
+        - error
