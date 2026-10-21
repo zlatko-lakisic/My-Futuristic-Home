@@ -1165,18 +1165,15 @@ actions:
         repeat:
           for_each: '{{ notify_targets }}'
           sequence:
-          - action: notify.send_message
+          # send_message only accepts title and message, so the GIF was pasted as a
+          # link. The legacy companion action attaches it (animated on Android 14+).
+          - action: "{{ 'notify.mobile_app_' ~ (repeat.item | replace('notify.', '')) }}"
             continue_on_error: true
-            target:
-              entity_id: '{{ repeat.item }}'
             data:
               title: '{{ notify_title }}'
-              message: >-
-                {{ mobile_short }}
-                {% if (notify_media_image | default('', true) | string | trim | length) > 0 %}
-
-                {{ notify_media_image }}
-                {% endif %}
+              message: '{{ mobile_short }}'
+              data:
+                image: '{{ notify_media_image }}'
   - alias: Hold until trigger sensors stay clear
     repeat:
       while:
