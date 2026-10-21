@@ -26,3 +26,9 @@ infrastructure/configs/clone/
 .cursor/secrets/.*
 .DS_Store
 homeassistant/www/infra-kiosk/config.js
+
+# Secrets and credentials
+.cursor/secrets/
+homeassistant/www/infra-kiosk/infra-kiosk/config.js
+__pycache__/
+*.pyc

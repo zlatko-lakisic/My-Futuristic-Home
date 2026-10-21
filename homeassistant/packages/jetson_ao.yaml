@@ -1,0 +1,65 @@
+# Jetson Agentic-Orchestration (AO) engine health + GPU monitor.
+#
+# The Jetson AO at https://172.16.90.20:8765 exposes a public /health endpoint over plain
+# TLS (self-signed; no client cert). /health returns engine status and hardware.gpu
+# telemetry (compute % + VRAM via tegrastats) — the real source for the Jetson GPU gauges
+# and the online/offline monitor on the infrastructure dashboard.
+#
+# Files on the HA host (same folder):
+#   - jetson_ao.yaml (this file)
+#   - jetson_ao_probe.py (HTTPS probe + GPU parse; edit BASE inside if the host/port differs)
+#
+# Include from configuration.yaml:
+#   homeassistant:
+#     packages:
+#       jetson_ao: !include packages/jetson_ao.yaml
+
+command_line:
+  - sensor:
+      name: Jetson AO status
+      unique_id: jetson_ao_status
+      icon: mdi:robot-outline
+      scan_interval: 30
+      command_timeout: 15
+      command: /usr/local/bin/python3 /config/packages/jetson_ao_probe.py
+      value_template: "{{ value_json.state | default('offline') }}"
+      json_attributes:
+        - ok
+        - version
+        - service
+        - gpu_name
+        - gpu_percent
+        - gpu_vram_percent
+        - gpu_vram_used_gb
+        - gpu_vram_total_gb
+        - http
+        - error
+
+template:
+  - binary_sensor:
+      - name: Jetson AO healthy
+        unique_id: jetson_ao_healthy
+        device_class: connectivity
+        icon: mdi:robot
+        state: "{{ state_attr('sensor.jetson_ao_status', 'ok') | default(false) }}"
+        availability: "{{ states('sensor.jetson_ao_status') not in ['unknown', 'unavailable'] }}"
+
+  - sensor:
+      - name: Jetson AO GPU compute
+        unique_id: jetson_ao_gpu_compute
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:gpu
+        state: "{{ state_attr('sensor.jetson_ao_status', 'gpu_percent') | default('unknown') }}"
+        availability: "{{ state_attr('sensor.jetson_ao_status', 'gpu_percent') is not none }}"
+
+      - name: Jetson AO GPU memory
+        unique_id: jetson_ao_gpu_memory
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:memory
+        state: "{{ state_attr('sensor.jetson_ao_status', 'gpu_vram_percent') | default('unknown') }}"
+        availability: "{{ state_attr('sensor.jetson_ao_status', 'gpu_vram_percent') is not none }}"
+        attributes:
+          used_gb: "{{ state_attr('sensor.jetson_ao_status', 'gpu_vram_used_gb') | default('unknown') }}"
+          total_gb: "{{ state_attr('sensor.jetson_ao_status', 'gpu_vram_total_gb') | default('unknown') }}"

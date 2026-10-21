@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#111111" />
+  <title>Infrastructure · Kiosk</title>
+  <link rel="stylesheet" href="styles.css?v=20260810b" />
+  <script src="config.js"></script>
+</head>
+<body class="has-sidebar">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-eyebrow">My Futuristic Home</div>
+      <div class="sidebar-title">Kiosk</div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-link active" data-page="infrastructure" href="index.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 20h20v-2H2v2zm2-4h3V6H4v10zm5 0h3V4H9v12zm5 0h3V9h-3v7zm5 0h3V2h-3v14z"/></svg>
+        <span>Infrastructure</span>
+      </a>
+      <a class="nav-link" data-page="backyard" href="backyard.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-1.5 3.5-4.5 5.5-8 6 2.5 1 4 3.5 4 6.5V21h8v-5.5c0-3 1.5-5.5 4-6.5-3.5-.5-6.5-2.5-8-6z"/></svg>
+        <span>Backyard</span>
+      </a>
+    </nav>
+    <div class="sidebar-foot">
+      <div id="clock" class="clock">--:--</div>
+      <div id="conn" class="conn conn-off">Connecting…</div>
+    </div>
+  </aside>
+
+  <div class="shell">
+    <header class="top">
+      <div class="top-left">
+        <h1>TOTAL INFRASTRUCTURE MONITORING</h1>
+      </div>
+    </header>
+
+    <main id="app">
+      <section class="band">
+        <h2 class="band-title">CORE NETWORK STATUS</h2>
+        <div class="row row-gateway">
+          <div class="card gateway-hero" id="card-gateway-hero">
+            <div class="card-title">MikroTik Basement</div>
+            <div class="card-sub">Main gateway</div>
+            <div class="mono" id="gateway-wan-ip">WAN IP · —</div>
+            <!-- CSS background art — never recreate <img> (iPad Safari flashes on DOM rewrite) -->
+            <div class="gateway-hero-art" role="img" aria-label="MikroTik hAP"></div>
+          </div>
+          <div class="card gateway-status" id="card-gateway-status"></div>
+          <div class="device-grid" id="card-network-devices"></div>
+        </div>
+        <div class="row row-gauges" id="card-gateway-gauges"></div>
+      </section>
+
+      <section class="band">
+        <h2 class="band-title">POWER WATCHDOGS (MSNSWITCH)</h2>
+        <p class="band-sub">Hardware PDU watchdogs — outlet power, UIS auto-reset, and ping checker health</p>
+        <div class="row cols-3" id="card-watchdogs"></div>
+      </section>
+
+      <section class="band">
+        <h2 class="band-title">PHYSICAL SERVERS &amp; NVR CLUSTER</h2>
+        <div class="infra-servers">
+          <div class="infra-servers-left">
+            <h3 class="subhead">Home Assistant &amp; VMs</h3>
+            <div class="stack" id="card-servers"></div>
+          </div>
+          <div class="infra-servers-right">
+            <div class="infra-nvr-col">
+              <h3 class="subhead">NVR &amp; GPU Acceleration</h3>
+              <div class="stack" id="card-nvr"></div>
+              <div class="stack" id="card-nvr-nics"></div>
+            </div>
+            <div class="infra-gpu-col">
+              <h3 class="subhead">GPU MONITORING (NVIDIA)</h3>
+              <div class="stack" id="card-gpu"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="band">
+        <h2 class="band-title">CAMERA PIPELINE HEALTH</h2>
+        <p class="band-sub">Frigate FPS / CPU only — no live video on this page</p>
+        <div class="row cols-5" id="card-cameras"></div>
+      </section>
+
+      <section class="band">
+        <h2 class="band-title">STORAGE &amp; SERVICES</h2>
+        <p class="band-sub">OMV storage health</p>
+        <div class="row cols-2" id="card-storage"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="auth-gate" class="auth-gate hidden">
+    <div class="auth-box">
+      <h2>Connect to Home Assistant</h2>
+      <p>Paste a long-lived access token. Stored only in this browser.</p>
+      <input id="token-input" type="password" placeholder="Long-lived access token" autocomplete="off" />
+      <button id="token-save" type="button">Save &amp; connect</button>
+      <p class="auth-hint">Create one in HA → your profile → Long-Lived Access Tokens</p>
+    </div>
+  </div>
+
+  <script src="ha.js?v=20260803b"></script>
+  <script src="infrastructure.js?v=20260810a"></script>
+</body>
+</html>
