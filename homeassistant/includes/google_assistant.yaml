@@ -87,6 +87,12 @@ entity_config:
     expose: true
   switch.soffet_lights_socket_1:
     expose: true
+  switch.living_room_livingroom_lamp_1:
+    name: Livingroom Lamp 1
+    expose: true
+  switch.living_room_livingroom_lamp_2:
+    name: Livingroom Lamp 2
+    expose: true
   switch.house_fan:
     name: House Fan
     expose: true
