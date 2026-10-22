@@ -83,7 +83,7 @@ The script syncs **root-level YAML** and these trees both ways: `configuration.y
 ### Runtime config in Git (2026-04 sync)
 The repository now tracks the live HA bundle under `homeassistant/` so changes can be reviewed in Git before deploy. Highlights from the consolidated sync:
 
-- **Living room climate:** Documented in [docs_ha/unified_climate_control.md](docs_ha/unified_climate_control.md). `climate.new_livingroom_climate` (`climate_template`) combines Nest `climate.living_room` and Midea `climate.150633094697190_climate` / `switch.150633094697190_power`; templates mirror manual changes; `hvac_action_template` exposes idle / heating / cooling from underlying `hvac_action` attributes.
+- **Living room climate:** Documented in [docs_ha/unified_climate_control.md](docs_ha/unified_climate_control.md). `climate.new_livingroom_climate` (`climate_template`) combines Nest `climate.living_room_home_heating` and Midea `climate.150633094697190_climate` / `switch.150633094697190_power`; templates mirror manual changes; `hvac_action_template` exposes idle / heating / cooling from underlying `hvac_action` attributes.
 - **`script.control_climate`:** Entity-based actions, `mode: single`, off/cool/heat branches aligned with the template logic and mutual exclusion.
 - **Automations:** Split under `automations/` with `automation: !include_dir_merge_list automations/`; includes `04_living_room_climate_exclusivity.yaml` so heat and AC cannot run together (including manual changes).
 - **Integrations catalog:** [docs_ha/integrations_catalog.md](docs_ha/integrations_catalog.md) maps every live config entry domain to its role.
