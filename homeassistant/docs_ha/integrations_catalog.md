@@ -40,7 +40,7 @@ Entries marked **ignored** or **not_loaded** are discovery leftovers or intentio
 
 | Integration | Title / instance | State | What it is used for |
 | :--- | :--- | :--- | :--- |
-| `nest` | Kuca | loaded | Google Nest account (speakers / Nest ecosystem). Thermostat entity expected by unified climate as `climate.living_room` was missing at this snapshot. |
+| `nest` | Home Heating | loaded | Google Nest SDM. Thermostat is `climate.living_room_home_heating` (heat path for unified climate). |
 | `midea_ac_lan` | Air Conditioning | loaded | Living-room Midea mini-split LAN control. Feeds unified climate cool path. |
 | `climate_template` (HACS) | (YAML platform) | | Virtual `climate.new_livingroom_climate` and BHyve manual watering climate. See [Unified Climate Control](unified_climate_control.md). |
 | `bhyve` | Orbit B-hyve account | loaded | Irrigation valves and zones for agentic / manual watering. |

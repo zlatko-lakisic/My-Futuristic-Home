@@ -37,9 +37,9 @@ Automations in 04_living_room_climate_exclusivity.yaml
 
 | Role | Integration | Entity (as wired in YAML) |
 | :--- | :--- | :--- |
-| Heat | Google Nest (`nest`) | `climate.living_room` |
+| Heat | Google Nest (`nest`) | `climate.living_room_home_heating` (Home Heating) |
 | Cool | Midea AC LAN (`midea_ac_lan`) | `climate.150633094697190_climate`, `switch.150633094697190_power`, swing/boost switches |
-| Room feel | Sensors referenced by template | `sensor.living_room_temperature`, `sensor.living_room_humidity` |
+| Room feel | Sensors referenced by template | `sensor.living_room_home_heating_temperature`, `sensor.living_room_home_heating_humidity` |
 | Unified face | `climate_template` (HACS) | `climate.new_livingroom_climate` (friendly name Livingroom Climate Control) |
 
 Virtual climate modes exposed to the UI: `off`, `cool`, `heat`. Fan, swing, and presets are AC-only and mirrored from Midea.
@@ -84,22 +84,22 @@ These catch panel and app changes that bypass `script.control_climate`.
 | `homeassistant/automations/04_living_room_climate_exclusivity.yaml` | Mutual exclusion |
 | Home Control dashboard | Thermostat card bound to `climate.new_livingroom_climate` |
 
-## Live status notes (Jul 2026)
+## Live status notes (Oct 2026)
 
-- Unified entity `climate.new_livingroom_climate` is present (`off`, action `idle`).
+- Unified entity `climate.new_livingroom_climate` is present.
 - Midea AC entity and power switch are present and controllable.
 - Exclusivity automations are **on**.
-- Nest thermostat entity `climate.living_room` and `sensor.living_room_temperature` / `_humidity` were **not** in the live registry at this snapshot. Nest Protect integration is in `setup_error`. Heat path and current-temp templates will not work until Nest thermostat and room sensors are restored or the YAML is pointed at replacement entities.
-- Google Assistant still exposes the `climate` domain. Prefer the unified entity on dashboards.
+- Nest thermostat is `climate.living_room_home_heating` (Google name Home Heating) with `sensor.living_room_home_heating_temperature` / `_humidity`.
+- Google Assistant exposes the `climate` domain. Voice should use the unified entity; raw Nest and Midea climates are denylisted.
 
 ## Troubleshooting
 
 | Symptom | Direction |
 | :--- | :--- |
-| Cool works, heat does nothing | Confirm `climate.living_room` exists and Nest integration can set heat |
+| Cool works, heat does nothing | Confirm `climate.living_room_home_heating` exists and Nest integration can set heat |
 | Heat and cool fight | Confirm both exclusivity automations are on. Check for UI cards still targeting Nest or Midea directly |
 | Unified card shows wrong mode | Compare Nest/Midea real states. Templates prefer Nest heating over Midea cooling |
-| Current temp blank / unknown | Restore `sensor.living_room_temperature` or retarget `current_temperature_template` |
+| Current temp blank / unknown | Confirm `sensor.living_room_home_heating_temperature` or retarget `current_temperature_template` |
 | Fan/swing ignored in heat | Expected. Those controls only apply to Midea |
 
 ## Related

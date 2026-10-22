@@ -7,8 +7,9 @@
 # With "Environment variable sensors" enabled, it exposes each
 # /system/script/environment entry as a sensor whose state is the variable value.
 #
-# Mostar prefers NYC via L2TP for the main default route, so hostname-based
-# fetches (and /ip cloud) report the NYC egress IP. This script:
+# The main default is the ISP CPE (192.168.100.1, distance 1). The L2TP
+# default remains at distance 2. This script still pins the probe to the ISP
+# gateway so a lookup cannot follow the tunnel if that backup route is active:
 #   1) resolves api.ipify.org once (via explicit public DNS — FreeIPA/L2TP DNS
 #      can be flaky when use-peer-dns=exclusively)
 #   2) installs a temporary /32 via the ISP CPE gateway (192.168.100.1)
