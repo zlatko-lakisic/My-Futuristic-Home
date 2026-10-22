@@ -29,16 +29,16 @@ views:
                 style: icons
           - type: markdown
             content: >
-              {% set nest = states('climate.living_room') %}
-              {% set nest_action = state_attr('climate.living_room', 'hvac_action') %}
+              {% set nest = states('climate.living_room_home_heating') %}
+              {% set nest_action = state_attr('climate.living_room_home_heating', 'hvac_action') %}
               {% set ac = states('climate.150633094697190_climate') %}
               {% set ac_action = state_attr('climate.150633094697190_climate', 'hvac_action') %}
               {% if nest in ['unknown', 'unavailable', 'none'] %}
-              Nest thermostat is not connected.
+              Home heating is not connected.
               {% elif nest_action in ['heating', 'preheating'] %}
-              Nest is heating.
+              Home heating is heating.
               {% else %}
-              Nest is {{ nest_action or nest }}.
+              Home heating is {{ nest_action or nest }}.
               {% endif %}
               {% if ac_action in ['cooling', 'drying'] %}
               AC is cooling.
@@ -52,6 +52,13 @@ views:
           - type: heading
             heading: Room temperatures
             heading_style: title
+          - type: tile
+            entity: sensor.living_room_home_heating_temperature
+            name: Home heating
+            tap_action:
+              action: more-info
+            hold_action:
+              action: more-info
           - type: tile
             entity: sensor.nest_temperature_sensor_living_room_temperature
             name: Living room sensor

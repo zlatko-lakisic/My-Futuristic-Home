@@ -122,3 +122,5 @@ entity_config:
     expose: false
   climate.150633094697190_climate:
     expose: false
+  climate.living_room_home_heating:
+    expose: false

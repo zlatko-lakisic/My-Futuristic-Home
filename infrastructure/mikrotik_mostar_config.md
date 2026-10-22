@@ -17,7 +17,7 @@ Remote-site router behind a NAT-enabled ISP CPE. Site diagrams: [`networking.md`
 | `ether1 - wan` | Uplink to ISP CPE — static `192.168.100.100/24`, gateway `192.168.100.1` |
 | `telemach_bridge` | Local Mostar wired (ether2–5) + `wlan_mostar` SSID `Kuca-Mostar` |
 | `nyc_bridge` | `192.168.88.1/24` + `wlan_nyc` SSID `Kuca-NYC`; clients marked `via_nyc` |
-| `mikrotik-kuca-l2tp` | L2TP/IPsec client → `nyc.mostardesigns.com` (`add-default-route=yes`, distance 1) |
+| `mikrotik-kuca-l2tp` | L2TP/IPsec client → `nyc.mostardesigns.com` (`add-default-route=yes`, `default-route-distance=2`) |
 | `wg-nyc` | WireGuard interface present; **peer disabled** (standby) |
 | `mikrotik-kuca-ovpn-client` | OpenVPN client (**disabled**) |
 
@@ -29,7 +29,7 @@ DHCP on `nyc_bridge` serves `192.168.88.0/24` (incl. reserved TV leases). WAN DH
 
 | Table / route | Behavior |
 | --- | --- |
-| main default | Dynamic via L2TP (distance 1); static ISP `192.168.100.1` distance 2 |
+| main default | Static ISP `192.168.100.1` distance 1, `pref-src=192.168.100.100` (router tools, updates, `/ip cloud`); dynamic L2TP distance 2 |
 | `via_nyc` | Default → `172.16.91.1` for `nyc_bridge` traffic |
 | `torrent_over_mostar` | Default → `192.168.100.1` with `pref-src=192.168.100.100` |
 | NYC LAN reachability | `10.0.10.0/24`, `192.168.89.0/24` → `172.16.91.1` |
@@ -55,7 +55,7 @@ MSS clamp (`new-mss=1300`) on forward helps double-NAT TCP.
 
 ## Public WAN IP → Home Assistant
 
-L2TP installs a preferred default toward NYC, so `/ip cloud` and naive HTTPS fetches report the **NYC** egress IP.
+The main default is the ISP CPE, so `/ip cloud`, package updates, and router ping/traceroute egress via `192.168.100.1`. The L2TP default stays installed at distance 2 and is used only if that ISP route is inactive.
 
 Live automation (`hacs-public-wan-ip`, every 5m):
 
