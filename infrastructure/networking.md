@@ -134,8 +134,8 @@ sequenceDiagram
 | Piece | Live state |
 | --- | --- |
 | WAN | Static `192.168.100.100/24`, gw `192.168.100.1` (behind ISP CPE NAT) |
-| Preferred default | L2TP `mikrotik-kuca-l2tp` → NYC (`add-default-route=yes`, distance 1) |
-| Backup default | ISP `192.168.100.1` distance 2 |
+| Preferred default | ISP `192.168.100.1` distance 1, `pref-src=192.168.100.100` (router-originated internet) |
+| Backup default | L2TP `mikrotik-kuca-l2tp` distance 2 (`add-default-route=yes`) |
 | `nyc_bridge` | `192.168.88.1/24` + SSID `Kuca-NYC` — clients policy-routed toward NYC (`via_nyc`) |
 | `telemach_bridge` | Local Mostar wired + SSID `Kuca-Mostar` |
 | WireGuard `wg-nyc` | Interface up, **peer disabled** (standby) |
