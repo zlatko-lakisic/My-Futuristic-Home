@@ -10,6 +10,12 @@ Travel router cloned from Mostar, with its own LAN. It is not in the NYC rack. U
 
 Site diagrams: [`networking.md`](networking.md). NYC peer: [`mikrotik_config.md`](mikrotik_config.md).
 
+The sections below describe this live router. A later board is produced by [`scripts/flash_roaming_mikrotik.ps1`](../scripts/flash_roaming_mikrotik.ps1) on Windows, or [`scripts/flash_roaming_mikrotik.sh`](../scripts/flash_roaming_mikrotik.sh) on macOS and Linux. The example knobs are [`infrastructure/roaming/roaming.example.json`](roaming/roaming.example.json). Real passwords stay in `.cursor/secrets/roaming-flash.json`. The script is a dry-run until `-Apply -Confirmed`, and it resets a board only with `-ConfirmedBoard` after that board is on-link at `192.168.88.1`. It will not reuse this router's name, `192.168.86.0/24`, or `172.16.91.25` unless `-ReflashLive` is passed, and it still will not reset this serial.
+
+Each new board gets its own PPP secret on Kuca, `l2tp-roaming-{name}`, and that username and password are written on the board. The L2TP address is the lowest free host in `172.16.91.0/27` outside the shared pool. Kuca writes are journaled under `infrastructure/roaming/out/` and undone with `-Rollback`. The hAP ac lite (RB952Ui-5ac2nD-US) is the next board. It is smips, so it cannot run the container package. It does not have a name or LAN subnet yet. Its 2.4 GHz radio is the legacy wireless master and uplink, and its 5 GHz radio is an extra access point for the same two SSIDs.
+
+On a flashed board, `{Name}-Roaming-NYC` is the VPN LAN. `{Name}-Roaming` is a separate LAN, default `172.31.250.0/24`, masqueraded out the guest Wi-Fi (or ether1 when the station is down) and never sent into L2TP. Its DHCP DNS is the uplink's DNS, so a phone on that SSID can open a hotel splash page. The hotel authorizes the station MAC, and the VPN SSID connects after that. Join a guest network from a Winbox terminal with `:global JoinSsid`, `:global JoinPass` (empty for an open network), and `/system script run join-guest`. House Wi-Fi `192.168.90.0/24` may manage the board and is not treated as an at-home uplink.
+
 ---
 
 ## Role
@@ -58,7 +64,7 @@ Association and DHCP succeed before the hotel login form is submitted. The hotel
 
 To reach the form, a PC on `nyc_bridge` (ether2–5 or `Kuca-Roaming-NYC`) has to open a plain HTTP page (`http://neverssl.com` or `http://1.1.1.1`) while LAN traffic is masqueraded straight out `wlan_uplink` and L2TP is still down. Phone captive-portal popups miss it, because this router does not use the hotel’s DNS.
 
-That order is not what the router does today. A hotel address is outside the home ranges below, so `roaming-isp-routes` turns L2TP on immediately and sends `nyc_bridge` into the tunnel. The tunnel cannot connect until the form is done, so the form never loads. Hold the VPN and keep masquerade on `wlan_uplink` until the portal accepts the station MAC, then let L2TP come up.
+That order is not what this live router does. A hotel address is outside the home ranges below, so `roaming-isp-routes` turns L2TP on immediately and sends `nyc_bridge` into the tunnel. The tunnel cannot connect until the form is done, so the form never loads on `Kuca-Roaming-NYC`. Boards from the flash script keep that VPN behavior on `{Name}-Roaming-NYC` and open the splash page from `{Name}-Roaming` instead.
 
 ---
 
