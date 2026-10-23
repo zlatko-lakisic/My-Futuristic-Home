@@ -22,6 +22,9 @@ infrastructure/configs/*.backup
 infrastructure/configs/*.rsc
 infrastructure/configs/clone/
 
+# Generated travel-router flash output (passwords, SSH keys, Kuca rollback journal)
+infrastructure/roaming/out/
+
 # Login files in .cursor/secrets/ (names start with a dot)
 .cursor/secrets/.*
 .DS_Store
