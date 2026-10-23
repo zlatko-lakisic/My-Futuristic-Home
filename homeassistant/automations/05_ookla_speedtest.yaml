@@ -1,0 +1,13 @@
+- id: ookla_speedtest_every_6h
+  alias: Ookla Speedtest every 6 hours
+  description: Automatically run Ookla WAN speedtest every 6 hours (matches configured scan interval).
+  triggers:
+  - platform: time_pattern
+    hours: /6
+    minutes: "5"
+  conditions: []
+  actions:
+  - action: ookla_speedtest.run_speedtest
+    data:
+      entity_id: sensor.ookla_speedtest_download
+  mode: single

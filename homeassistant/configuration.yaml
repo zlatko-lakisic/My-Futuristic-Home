@@ -16,6 +16,27 @@ scene: !include scenes.yaml
 
 lovelace:
   dashboards:
+    home-yaml:
+      mode: yaml
+      title: Home
+      icon: mdi:home
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/home.yaml
+    climate-yaml:
+      mode: yaml
+      title: Climate
+      icon: mdi:thermostat
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/climate.yaml
+    security-yaml:
+      mode: yaml
+      title: Security
+      icon: mdi:shield-home
+      show_in_sidebar: true
+      require_admin: false
+      filename: dashboards/security.yaml
     infrastructure-yaml:
       mode: yaml
       title: Infrastructure
@@ -94,6 +115,8 @@ homeassistant:
     visit_correlation: !include packages/visit_correlation.yaml
     security_supervision: !include packages/security_supervision.yaml
     unban_local_networks: !include packages/unban_local_networks.yaml
+    person_geocode_fallback: !include packages/person_geocode_fallback.yaml
+    nvr_stack_control: !include packages/nvr_stack_control.yaml
 
 influxdb:
   api_version: "1"
@@ -144,44 +167,16 @@ climate:
     max_temp: 85
     
     # get current temp.
-    current_temperature_template: "{{ states('sensor.living_room_temperature') }}"
+    current_temperature_template: "{{ states('sensor.living_room_home_heating_temperature') }}"
     
     # get current humidity.
-    current_humidity_template: "{{ states('sensor.living_room_humidity') }}"
+    current_humidity_template: "{{ states('sensor.living_room_home_heating_humidity') }}"
 
     # Mirror real equipment (manual changes on Nest or Midea are picked up here).
-    hvac_mode_template: >-
-      {% set nest = states('climate.living_room') %}
-      {% set nest_act = state_attr('climate.living_room', 'hvac_action') | default('', true) %}
-      {% set heating = nest == 'heat' or (nest == 'auto' and nest_act == 'heating') %}
-      {% set midea = states('climate.150633094697190_climate') %}
-      {% set cooling = is_state('switch.150633094697190_power', 'on')
-        or midea in ['cool', 'dry', 'fan_only'] %}
-      {% if heating %}
-        heat
-      {% elif cooling %}
-        cool
-      {% else %}
-        off
-      {% endif %}
+    hvac_mode_template: "{% set nest = states('climate.living_room_home_heating') %}{% set nest_act = state_attr('climate.living_room_home_heating', 'hvac_action') | default('', true) %}{% set heating = nest == 'heat' or (nest == 'auto' and nest_act == 'heating') %}{% set midea = states('climate.150633094697190_climate') %}{% set cooling = is_state('switch.150633094697190_power', 'on') or midea in ['cool', 'dry', 'fan_only'] %}{{ 'heat' if heating else 'cool' if cooling else 'off' }}"
     # Nest/Midea hvac_action → combined action (idle = not actively heating or cooling).
-    hvac_action_template: "{% set n = state_attr('climate.living_room', 'hvac_action') | default('', true) | lower %}{% set m = state_attr('climate.150633094697190_climate', 'hvac_action') | default('', true) | lower %}{% if n in ['heating', 'preheating'] %}heating{% elif m in ['cooling', 'drying'] %}cooling{% else %}idle{% endif %}"
-    target_temperature_template: >-
-      {% set nest = states('climate.living_room') %}
-      {% set nest_act = state_attr('climate.living_room', 'hvac_action') | default('', true) %}
-      {% set heating = nest == 'heat' or (nest == 'auto' and nest_act == 'heating') %}
-      {% set midea = states('climate.150633094697190_climate') %}
-      {% set cooling = is_state('switch.150633094697190_power', 'on')
-        or midea in ['cool', 'dry', 'fan_only'] %}
-      {% if heating %}
-        {{ state_attr('climate.living_room', 'temperature') | float(72) }}
-      {% elif cooling %}
-        {{ state_attr('climate.150633094697190_climate', 'temperature') | float(72) }}
-      {% else %}
-        {% set n = state_attr('climate.living_room', 'temperature') | default(72, true) | float(72) %}
-        {% set a = state_attr('climate.150633094697190_climate', 'temperature') | default(72, true) | float(72) %}
-        {{ ((n + a) / 2) | round(1) }}
-      {% endif %}
+    hvac_action_template: "{% set n = state_attr('climate.living_room_home_heating', 'hvac_action') | default('', true) | lower %}{% set m = state_attr('climate.150633094697190_climate', 'hvac_action') | default('', true) | lower %}{% if n in ['heating', 'preheating'] %}heating{% elif m in ['cooling', 'drying'] %}cooling{% else %}idle{% endif %}"
+    target_temperature_template: "{% set nest = states('climate.living_room_home_heating') %}{% set nest_act = state_attr('climate.living_room_home_heating', 'hvac_action') | default('', true) %}{% set heating = nest == 'heat' or (nest == 'auto' and nest_act == 'heating') %}{% set midea = states('climate.150633094697190_climate') %}{% set cooling = is_state('switch.150633094697190_power', 'on') or midea in ['cool', 'dry', 'fan_only'] %}{% set n = state_attr('climate.living_room_home_heating', 'temperature') | default(72, true) | float(72) %}{% set a = state_attr('climate.150633094697190_climate', 'temperature') | default(72, true) | float(72) %}{{ n if heating else a if cooling else ((n + a) / 2) | round(1) }}"
 
     # AC-only: mirror Midea fan/swing/presets (Nest has no equivalent).
     fan_mode_template: "{{ state_attr('climate.150633094697190_climate', 'fan_mode') | default('auto', true) }}"
@@ -231,23 +226,7 @@ sensor:
 
 mqtt: !include mqtt.yaml
 
-input_select:
-  bhyve_manual_zone:
-    name: BHyve Manual Zone
-    # Labels must match each valve entity's friendly_name (Developer tools → States).
-    options:
-      - Cabbage zone
-      - East Lawn
-      - Flower Bed
-      - Flower Garden & Back Lawn Time Corn zone
-      - Front Lawn
-      - Kitchen Lawn
-      - Flower Garden & Back Lawn Time Slope Kitchen Left zone
-      - Vegitable Garden Timer Peppers & Kale Zone zone
-      - Vegitable Garden Timer Tomato Zone zone
-      - Vegitable Garden Timer Top Zone zone
-    initial: Front Lawn
-    icon: mdi:sprinkler-variant
+input_select: !include input_select.yaml
 
 input_number:
   bhyve_manual_duration_minutes:

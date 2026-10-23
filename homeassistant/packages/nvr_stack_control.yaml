@@ -1,0 +1,58 @@
+# NVR compose stack control (host API on 10.0.10.16:18191).
+# Requires secret: nvr_control_api_key
+# homeassistant.packages:
+#   nvr_stack_control: !include packages/nvr_stack_control.yaml
+
+input_boolean:
+  nvr_stack_busy:
+    name: NVR stack busy
+    icon: mdi:progress-clock
+
+rest_command:
+  nvr_stack_start:
+    url: "http://10.0.10.16:18191/api/v1/stack/start"
+    method: POST
+    headers:
+      X-API-Key: !secret nvr_control_api_key
+      Content-Type: application/json
+    timeout: 600
+  nvr_stack_stop:
+    url: "http://10.0.10.16:18191/api/v1/stack/stop"
+    method: POST
+    headers:
+      X-API-Key: !secret nvr_control_api_key
+      Content-Type: application/json
+    timeout: 600
+  nvr_stack_down:
+    url: "http://10.0.10.16:18191/api/v1/stack/down"
+    method: POST
+    headers:
+      X-API-Key: !secret nvr_control_api_key
+      Content-Type: application/json
+    timeout: 600
+  nvr_stack_restart:
+    url: "http://10.0.10.16:18191/api/v1/stack/restart"
+    method: POST
+    headers:
+      X-API-Key: !secret nvr_control_api_key
+      Content-Type: application/json
+    timeout: 600
+
+rest:
+  - resource: "http://10.0.10.16:18191/api/v1/stack/status"
+    method: GET
+    headers:
+      X-API-Key: !secret nvr_control_api_key
+    scan_interval: 15
+    timeout: 10
+    sensor:
+      - name: NVR stack state
+        unique_id: nvr_stack_state
+        value_template: "{{ value_json.state | default('unknown') }}"
+        json_attributes:
+          - running
+          - stopped
+          - total
+          - detail
+          - busy_action
+          - containers

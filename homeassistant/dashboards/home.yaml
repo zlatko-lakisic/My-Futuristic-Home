@@ -1,0 +1,153 @@
+# Home dashboard. Replaces home_control.yaml, which stays until this view is confirmed.
+# Sections reflow: one column on a phone, several on a laptop.
+views:
+  - title: Overview
+    path: overview
+    icon: mdi:home
+    type: sections
+    max_columns: 1
+    sections:
+      - type: grid
+        cards:
+          - !include includes/nav_row.yaml
+          - !include includes/status_strip.yaml
+          - !include includes/currently_on.yaml
+
+  - title: Top floor
+    path: top
+    icon: mdi:home-floor-1
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - !include includes/nav_row.yaml
+      - type: grid
+        cards: !include includes/room_kitchen.yaml
+      - type: grid
+        cards: !include includes/room_dining.yaml
+      - type: grid
+        cards: !include includes/room_living.yaml
+      - type: grid
+        cards: !include includes/room_hallway.yaml
+      - type: grid
+        cards: !include includes/room_bedroom_hallway.yaml
+      - type: grid
+        cards: !include includes/room_master.yaml
+      - type: grid
+        cards: !include includes/room_guest_bedroom.yaml
+      - type: grid
+        cards: !include includes/room_guest_bathroom.yaml
+      - type: grid
+        cards: !include includes/room_middle.yaml
+
+  - title: Bottom floor
+    path: bottom
+    icon: mdi:home-floor-0
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - !include includes/nav_row.yaml
+      - type: grid
+        cards: !include includes/room_bottom_hallway.yaml
+      - type: grid
+        cards: !include includes/room_office.yaml
+      - type: grid
+        cards: !include includes/room_garage.yaml
+      - type: grid
+        cards: !include includes/room_basement.yaml
+
+  - title: Media
+    path: media
+    icon: mdi:television
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - !include includes/nav_row.yaml
+      - type: grid
+        cards:
+          - type: heading
+            heading: Televisions
+            heading_style: title
+          - type: tile
+            entity: media_player.living_room_tv
+            name: Living Room TV
+            tap_action:
+              action: call-service
+              service: media_player.media_play_pause
+              target:
+                entity_id: media_player.living_room_tv
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: media_player.master_bedroom_tv
+            name: Master Bedroom TV
+            tap_action:
+              action: call-service
+              service: media_player.media_play_pause
+              target:
+                entity_id: media_player.master_bedroom_tv
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: media_player.office_tv
+            name: Office TV
+            tap_action:
+              action: call-service
+              service: media_player.media_play_pause
+              target:
+                entity_id: media_player.office_tv
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: media_player.chromecast8072_2
+            name: Office projector
+            tap_action:
+              action: call-service
+              service: media_player.media_play_pause
+              target:
+                entity_id: media_player.chromecast8072_2
+            hold_action:
+              action: more-info
+      - type: grid
+        cards:
+          - type: heading
+            heading: Speakers
+            heading_style: title
+          - type: tile
+            entity: media_player.living_room_speaker
+            name: Living Room speaker
+            tap_action:
+              action: call-service
+              service: media_player.media_play_pause
+              target:
+                entity_id: media_player.living_room_speaker
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: media_player.master_bedroom_speaker_2
+            name: Master Bedroom speaker
+            tap_action:
+              action: call-service
+              service: media_player.media_play_pause
+              target:
+                entity_id: media_player.master_bedroom_speaker_2
+            hold_action:
+              action: more-info
+          - type: tile
+            entity: media_player.office_speaker_2
+            name: Office speaker
+            tap_action:
+              action: call-service
+              service: media_player.media_play_pause
+              target:
+                entity_id: media_player.office_speaker_2
+            hold_action:
+              action: more-info

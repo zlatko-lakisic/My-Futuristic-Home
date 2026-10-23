@@ -1,0 +1,82 @@
+# Office dimmer is light.steps_light_switch (device name "Light switch").
+# Steps is switch.light_switch_4. That device's basic light entity is disabled,
+# so the switch is the live control and is not a twin of the office light.
+- type: custom:button-card
+  name: Office
+  show_icon: false
+  show_state: false
+  triggers_update: all
+  tap_action:
+    action: none
+  hold_action:
+    action: none
+  label: |
+    [[[
+      const ids = ['light.steps_light_switch','switch.light_switch_4'];
+      const on = ids.filter(id => hass.states[id]?.state === 'on').length;
+      return on + (on === 1 ? ' light on' : ' lights on');
+    ]]]
+  show_label: true
+  styles:
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - padding: 0
+      - height: 40px
+    grid:
+      - grid-template-areas: '"n l"'
+      - grid-template-columns: 1fr auto
+    name:
+      - font-size: 18px
+      - font-weight: 800
+      - justify-self: start
+    label:
+      - font-size: 12px
+      - font-weight: 700
+      - color: "#7dd3fc"
+      - background: rgba(56,189,248,0.16)
+      - border-radius: 999px
+      - padding: 4px 8px
+- type: grid
+  columns: 2
+  square: false
+  cards:
+    - type: tile
+      entity: light.steps_light_switch
+      name: Office
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      features:
+        - type: light-brightness
+    - type: tile
+      entity: switch.light_switch_4
+      name: Steps
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      features:
+        - type: toggle
+    - type: tile
+      entity: lock.office_door
+      name: Office door
+      tap_action:
+        action: call-service
+        service: lock.toggle
+        target:
+          entity_id: lock.office_door
+      hold_action:
+        action: more-info
+- type: tile
+  entity: media_player.office_tv
+  name: TV
+  tap_action:
+    action: call-service
+    service: media_player.media_play_pause
+    target:
+      entity_id: media_player.office_tv
+  hold_action:
+    action: more-info

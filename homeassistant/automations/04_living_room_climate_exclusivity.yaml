@@ -4,18 +4,18 @@
   description: When Nest is heating or in heat mode, turn off Midea power and climate if cooling was active.
   mode: single
   triggers:
-  - entity_id: climate.living_room
+  - entity_id: climate.living_room_home_heating
     trigger: state
     to: heat
-  - entity_id: climate.living_room
+  - entity_id: climate.living_room_home_heating
     trigger: state
     attribute: hvac_action
     to: heating
   conditions:
   - condition: template
     value_template: >-
-      {{ is_state('climate.living_room', 'heat')
-         or (is_state('climate.living_room', 'auto') and state_attr('climate.living_room', 'hvac_action') | default('', true) == 'heating') }}
+      {{ is_state('climate.living_room_home_heating', 'heat')
+         or (is_state('climate.living_room_home_heating', 'auto') and state_attr('climate.living_room_home_heating', 'hvac_action') | default('', true) == 'heating') }}
   - condition: template
     value_template: >-
       {{ is_state('switch.150633094697190_power', 'on')
@@ -57,8 +57,8 @@
   conditions:
   - condition: template
     value_template: >-
-      {{ is_state('climate.living_room', 'heat')
-         or (is_state('climate.living_room', 'auto') and state_attr('climate.living_room', 'hvac_action') | default('', true) == 'heating') }}
+      {{ is_state('climate.living_room_home_heating', 'heat')
+         or (is_state('climate.living_room_home_heating', 'auto') and state_attr('climate.living_room_home_heating', 'hvac_action') | default('', true) == 'heating') }}
   - condition: template
     value_template: >-
       {{ is_state('switch.150633094697190_power', 'on')
@@ -66,6 +66,6 @@
   actions:
   - action: climate.set_hvac_mode
     target:
-      entity_id: climate.living_room
+      entity_id: climate.living_room_home_heating
     data:
       hvac_mode: 'off'

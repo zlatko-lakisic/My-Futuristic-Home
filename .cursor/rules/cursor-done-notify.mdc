@@ -1,0 +1,60 @@
+---
+description: Opt-in HA push to Zlatko when a Cursor turn finishes (icon + optional screenshot/GIF)
+alwaysApply: true
+---
+
+# Cursor done → Home Assistant push
+
+When the user **explicitly** asks to be notified (e.g. “notify me”, “ping me”, “push when finished”), send **one** companion push after this turn’s work finishes (success or failure). Never notify by default. Skip for clarifications-only or plan discussion with no execution.
+
+## Recipient
+
+Zlatko’s phone only — do not fan out.
+
+## Character limits (hard)
+
+Match house companion limits:
+
+- **Title ≤ 50 characters**
+- **Message ≤ 100 characters**
+
+Truncate with `…` if needed. Put detail in the chat reply, not the push.
+
+## Media
+
+1. **Always** set Cursor branding: `icon_url: /local/cursor-notify-icon.png`.
+2. **Optionally** attach a visual when it clarifies the outcome (UI result, error dialog, before/after):
+   - Prefer a **PNG screenshot**; use a short **GIF** only when motion helps more than a still.
+   - Write the file under `homeassistant/www/cursor-notify/` (e.g. `done-<yyyyMMdd-HHmmss>.png` or `.gif`).
+   - Sync to live HA **before** calling notify (see below) so the phone can load `/local/cursor-notify/<file>`.
+   - Set `data.image` to that `/local/...` path. Omit `image` when there is no useful visual — do not invent decorative media.
+3. On Android, `image` is the large attachment (may replace the small icon); still send `icon_url`. Keep attachments small (well under ~10 MB).
+
+## Sync (required when icon/media paths must resolve)
+
+From the My-Futuristic-Home repo root after adding/updating files under `homeassistant/www/`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/sync_homeassistant_config.ps1
+```
+
+## Notify call (Home Assistant MCP)
+
+```text
+ha_call_service:
+  domain: notify
+  service: mobile_app_zlatko_galaxy
+  service_data:
+    title: "<≤50 chars, usually Cursor or Cursor: <gist>>"
+    message: "<≤100 chars outcome + task gist>"
+    data:
+      icon_url: /local/cursor-notify-icon.png
+      channel: Cursor
+      # image: /local/cursor-notify/<file.png|gif>   # only when attached
+```
+
+If `mobile_app_zlatko_galaxy` returns HTTP 400, retry once with the live service name that targets Zlatko’s companion (entity `notify.zlatko_galaxy`); keep the same `data` shape — do not drop the icon/image.
+
+## Failure
+
+If the MCP notify call fails, mention it once in the chat reply. No retry loops.

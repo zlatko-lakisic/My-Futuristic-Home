@@ -14,7 +14,8 @@ set [ find default-name=ether3 ] comment="Living room TV" l2mtu=1598
 set [ find default-name=ether4 ] comment="Office Computer" l2mtu=1598
 set [ find default-name=ether5 ] comment="Bedroom TV" l2mtu=1598
 /interface l2tp-client
-add add-default-route=yes allow=mschap2 allow-fast-path=yes connect-to=\
+add add-default-route=yes default-route-distance=2 allow=mschap2 \
+    allow-fast-path=yes connect-to=\
     nyc.mostardesigns.com disabled=no ipsec-secret=<REDACTED_IPSEC_SECRET> name=\
     mikrotik-kuca-l2tp password=<REDACTED_PASSWORD> use-ipsec=yes use-peer-dns=\
     exclusively user=<REDACTED_USER>
@@ -219,8 +220,8 @@ add disabled=no distance=1 dst-address=0.0.0.0/0 gateway=192.168.100.1 \
 add disabled=no dst-address=192.168.100.0/24 gateway="ether1 - wan" \
     routing-table=torrent_over_mostar
 add dst-address=0.0.0.0/0 gateway=172.16.91.1 routing-table=via_nyc
-add disabled=no distance=2 dst-address=0.0.0.0/0 gateway=192.168.100.1 \
-    routing-table=main
+add disabled=no distance=1 dst-address=0.0.0.0/0 gateway=192.168.100.1 \
+    pref-src=192.168.100.100 routing-table=main
 add comment="torrent return to NYC" dst-address=172.16.55.0/29 gateway=\
     172.16.91.1
 /routing bfd configuration

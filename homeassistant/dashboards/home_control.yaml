@@ -304,8 +304,8 @@ views:
                   - input_select.bhyve_manual_zone
                   - sensor.bhyve_zone_entity
                   - valve.garden_zone
-                  - valve.east_lawn_timer_east_lawn_zone_zone
-                  - valve.east_lawn_timer_flower_bed_zone_zone
+                  - valve.back_yard_east_lawn_timer_east_lawn_zone_zone
+                  - valve.back_yard_east_lawn_timer_flower_bed_zone_zone
                   - valve.flower_garden_back_lawn_time_2nd_tier_flowers_zone
                   - valve.flower_garden_back_lawn_time_back_lawn_zone_zone
                   - valve.flower_garden_back_lawn_time_zone_4_zone

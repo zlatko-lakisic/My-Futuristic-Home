@@ -1,0 +1,15 @@
+---
+description: After opening a PR, always merge it unless the user says not to
+alwaysApply: true
+---
+
+# Always merge PRs
+
+When you create a pull request for this Home Assistant / home automation work:
+
+1. Open the PR as usual (branch → commit → push → `gh pr create`).
+2. **Merge it immediately** with `gh pr merge <n> --merge` (delete the head branch when safe).
+3. Pull `main`, then sync live HA from `main` (`scripts/sync_homeassistant_config.ps1 -Direction Push`) so the Samba config matches merged git.
+4. Do **not** leave feature work only on open branches — that is how live HA gets overwritten and “loses” changes.
+
+Exceptions only when the user explicitly says not to merge, or merge is blocked (failed required checks / conflicts). In those cases, report the blocker and fix or ask.

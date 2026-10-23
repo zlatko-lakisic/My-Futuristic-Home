@@ -28,7 +28,7 @@ New entities in these domains are published unless listed with `expose: false`:
 
 - UniFi AP LEDs: `light.ap_*_led`
 - Camera IR: `light.garden_*_ir_light_0`
-- `climate.bhyve_manual_watering` and raw Midea `climate.150633094697190_climate` (voice uses `climate.new_livingroom_climate`)
+- `climate.bhyve_manual_watering`, raw Midea `climate.150633094697190_climate`, and raw Nest `climate.living_room_home_heating` (voice uses `climate.new_livingroom_climate`)
 - TVs (`switch.living_room_tv`, `switch.master_bedroom_tv`, `switch.tv`)
 
 ## After YAML changes
