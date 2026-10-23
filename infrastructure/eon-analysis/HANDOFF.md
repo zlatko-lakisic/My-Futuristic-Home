@@ -1,8 +1,10 @@
 # EON split-routing investigation — handoff
 
+Resume from [HANDOFF-2026-10-23.md](HANDOFF-2026-10-23.md). That file is the current state. The rest of this page is the 2026-10-10 procedure: what to capture, and the rules that applied before any router change. Phases A and B have been run. A living-room Mostar flag was built, proven, and turned off. Do not treat the "investigation only" lines below as the live router.
+
 Continue this from another machine. This file has no LAN addresses. Real values are in [eon-analysis.local.env](../../.cursor/secrets/eon-analysis.local.env). That one file is tracked. The rest of `.cursor/secrets/` is not, so the other laptop still needs its own copy of the router and resolver logins.
 
-Checked 2026-10-10, about 17:36–17:46 America/New_York, on router `Kuca` (hAP ac, RouterOS 7.24.4). Nothing in this investigation has been implemented. No route, NAT, firewall, DNS, DHCP, or tunnel change was made.
+Checked 2026-10-10, about 17:36–17:46 America/New_York, on router `Kuca` (hAP ac, RouterOS 7.24.4). At that check, nothing in this investigation had been implemented. Later changes are listed in the 2026-10-23 handoff, not here.
 
 ## Goal
 
