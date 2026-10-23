@@ -4,7 +4,7 @@ sensor:
   - platform: history_stats
     name: Irrigation 7d east lawn
     unique_id: mfh_irrigation_7d_east_lawn
-    entity_id: valve.east_lawn_timer_east_lawn_zone_zone
+    entity_id: valve.back_yard_east_lawn_timer_east_lawn_zone_zone
     state: "open"
     type: time
     start: "{{ today_at('00:00') }}"
@@ -12,7 +12,7 @@ sensor:
   - platform: history_stats
     name: Irrigation 7d east flower bed
     unique_id: mfh_irrigation_7d_east_flower_bed
-    entity_id: valve.east_lawn_timer_flower_bed_zone_zone
+    entity_id: valve.back_yard_east_lawn_timer_flower_bed_zone_zone
     state: "open"
     type: time
     start: "{{ today_at('00:00') }}"
@@ -61,6 +61,14 @@ sensor:
     name: Irrigation 7d zucchini eggplant
     unique_id: mfh_irrigation_7d_zucchini_eggplant
     entity_id: valve.vegitable_garden_timer_zucchini_and_eggplant_zone_zone
+    state: "open"
+    type: time
+    start: "{{ today_at('00:00') }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Irrigation 7d corn
+    unique_id: mfh_irrigation_7d_corn
+    entity_id: valve.flower_garden_back_lawn_time_zone_4_zone
     state: "open"
     type: time
     start: "{{ today_at('00:00') }}"
@@ -116,3 +124,9 @@ template:
         state_class: measurement
         availability: "{{ states('sensor.irrigation_7d_zucchini_eggplant') not in ['unknown', 'unavailable', 'none', ''] }}"
         state: "{{ (states('sensor.irrigation_7d_zucchini_eggplant') | float(0) * 60) | round(1) }}"
+      - name: Irrigation 7d corn minutes
+        unique_id: mfh_irrigation_7d_corn_minutes
+        unit_of_measurement: "min"
+        state_class: measurement
+        availability: "{{ states('sensor.irrigation_7d_corn') not in ['unknown', 'unavailable', 'none', ''] }}"
+        state: "{{ (states('sensor.irrigation_7d_corn') | float(0) * 60) | round(1) }}"

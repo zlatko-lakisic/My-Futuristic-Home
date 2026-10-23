@@ -35,6 +35,9 @@
 		},
 		{
 			"path": "../hacs-comstar-vision"
+		},
+		{
+			"path": "../hacs-wan-connections-map"
 		}
 	],
 	"settings": {}

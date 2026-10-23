@@ -1,6 +1,6 @@
 # Network Topology & VLANs
 
-Live reference (2026-07-27): NYC `Kuca` (RB962UiGS-5HacT2HnT, ROS 7.23.2) and Mostar `Kuca-Mostar` (RB951G-2HnD, ROS 7.23.2). Detailed RouterOS notes: [`mikrotik_config.md`](mikrotik_config.md), [`mikrotik_mostar_config.md`](mikrotik_mostar_config.md). Subnet tables: [`networks.md`](networks.md).
+Live reference: NYC `Kuca` (RB962UiGS-5HacT2HnT, ROS 7.23.2, checked 2026-07-27), Mostar `Kuca-Mostar` (RB951G-2HnD, ROS 7.23.2, checked 2026-07-27), and roaming `Kuca-Roaming` (RB951Ui-2HnD, ROS 7.24.5, checked 2026-10-15). Detailed RouterOS notes: [`mikrotik_config.md`](mikrotik_config.md), [`mikrotik_mostar_config.md`](mikrotik_mostar_config.md), [`mikrotik_roaming_config.md`](mikrotik_roaming_config.md). Subnet tables: [`networks.md`](networks.md).
 
 ---
 
@@ -134,8 +134,8 @@ sequenceDiagram
 | Piece | Live state |
 | --- | --- |
 | WAN | Static `192.168.100.100/24`, gw `192.168.100.1` (behind ISP CPE NAT) |
-| Preferred default | L2TP `mikrotik-kuca-l2tp` → NYC (`add-default-route=yes`, distance 1) |
-| Backup default | ISP `192.168.100.1` distance 2 |
+| Preferred default | ISP `192.168.100.1` distance 1, `pref-src=192.168.100.100` (router-originated internet) |
+| Backup default | L2TP `mikrotik-kuca-l2tp` distance 2 (`add-default-route=yes`) |
 | `nyc_bridge` | `192.168.88.1/24` + SSID `Kuca-NYC` — clients policy-routed toward NYC (`via_nyc`) |
 | `telemach_bridge` | Local Mostar wired + SSID `Kuca-Mostar` |
 | WireGuard `wg-nyc` | Interface up, **peer disabled** (standby) |
@@ -151,14 +151,48 @@ sequenceDiagram
 | OpenVPN | Server enabled | Client **disabled** | Reserved `172.16.91.29` |
 | WireGuard | `wg-mostar` **disabled** | `wg-nyc` peer **disabled** | Would be `172.16.91.1/30` ↔ `172.16.91.2/30` |
 
-NYC static routes: `192.168.88.0/24` and `192.168.100.0/24` → `172.16.91.30`.
+NYC static routes: `192.168.88.0/24` and `192.168.100.0/24` → `172.16.91.30`. `192.168.86.0/24` → `172.16.91.25` (roaming).
+
+---
+
+## Roaming device
+
+`Kuca-Roaming` is a travel router, not a third site. Detail: [`mikrotik_roaming_config.md`](mikrotik_roaming_config.md).
+
+| Piece | Live state |
+| --- | --- |
+| Preferred WAN | `ether1 - wan` DHCP, distance 2 |
+| Fallback WAN | `wlan_uplink` virtual station, DHCP distance 3, only when ether1 is down |
+| `nyc_bridge` | `192.168.86.1/24`, ether2–5, SSID `Kuca-Roaming-NYC` |
+| `roaming lan bridge` | SSID `Kuca-Roaming` only |
+| Home uplink | `192.168.89.0/24`, `10.0.10.0/24`, or `172.16.90.0/24`: VPN stays down, LAN masquerades out the uplink |
+| Away uplink | L2TP/IPsec to NYC at `172.16.91.25`. OpenVPN `172.16.91.24` stays disabled |
+| Radio | Hidden 2.4 GHz master. `frequency=auto`. `roaming-wifi-channel` follows the upstream SSID |
+| Open Wi-Fi | Security profile `default`. `uplink-sp` is WPA2 and will not join a network with no passphrase |
+| Captive portal | Hotel login must be completed as the `wlan_uplink` MAC, with L2TP still down. The away script currently brings L2TP up first, so the form does not load |
+
+```mermaid
+flowchart LR
+  Hotel((Hotel or other WAN))
+  ETH["ether1 DHCP distance 2"]
+  WIFI["wlan_uplink DHCP distance 3"]
+  R["Kuca-Roaming"]
+  NYCBR["nyc_bridge 192.168.86.0/24"]
+  LOCAL["roaming lan bridge Kuca-Roaming"]
+  NYC["NYC L2TP 172.16.91.25"]
+  Hotel --- ETH & WIFI
+  ETH --> R
+  WIFI --> R
+  R --- NYCBR & LOCAL
+  R -->|"only when uplink is not a home LAN"| NYC
+```
 
 ---
 
 ## Related docs
 
 - [`networks.md`](networks.md) — subnet inventory  
-- [`mikrotik_config.md`](mikrotik_config.md) / [`mikrotik_mostar_config.md`](mikrotik_mostar_config.md)  
+- [`mikrotik_config.md`](mikrotik_config.md) / [`mikrotik_mostar_config.md`](mikrotik_mostar_config.md) / [`mikrotik_roaming_config.md`](mikrotik_roaming_config.md)  
 - [`switching.md`](switching.md) — CSS326 / house switch  
 - [`../storage/nas2.md`](../storage/nas2.md) — OMV + torrent macvlan  
 - [`../homeassistant/docs_ha/radio_topology.md`](../homeassistant/docs_ha/radio_topology.md) — Z-Wave / Zigbee / cloud radios  

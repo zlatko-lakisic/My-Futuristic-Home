@@ -6,6 +6,44 @@ input_boolean:
     name: AI Dusk Watering In Progress
     icon: mdi:sprinkler-variant
 
+  # Per-zone agentic watering enable (off = skip in script.ai_sequential_watering).
+  ai_watering_enable_east_lawn:
+    name: Water East Lawn
+    icon: mdi:sprinkler-variant
+    initial: true
+  ai_watering_enable_flower_bed:
+    name: Water Flower Bed
+    icon: mdi:sprinkler-variant
+    initial: true
+  ai_watering_enable_front_lawn:
+    name: Water Front Lawn
+    icon: mdi:sprinkler-variant
+    initial: true
+  ai_watering_enable_slope_kitchen_left:
+    name: Water Slope Kitchen Left
+    icon: mdi:sprinkler-variant
+    initial: true
+  ai_watering_enable_peppers_kale:
+    name: Water Peppers and Kale
+    icon: mdi:sprinkler-variant
+    initial: true
+  ai_watering_enable_tomato:
+    name: Water Tomato
+    icon: mdi:sprinkler-variant
+    initial: true
+  ai_watering_enable_zucchini:
+    name: Water Zucchini
+    icon: mdi:sprinkler-variant
+    initial: true
+  ai_watering_enable_kitchen_lawn:
+    name: Water Kitchen Lawn
+    icon: mdi:sprinkler-variant
+    initial: true
+  ai_watering_enable_corn:
+    name: Water Corn
+    icon: mdi:sprinkler-variant
+    initial: true
+
 input_number:
   ai_dusk_watering_next_index:
     name: AI Dusk Watering Next Zone Index

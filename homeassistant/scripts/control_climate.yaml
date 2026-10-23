@@ -46,11 +46,11 @@ control_climate:
             entity_id: switch.150633094697190_power
       - if:
         - condition: template
-          value_template: "{{ states('climate.living_room') not in ['unknown', 'unavailable', 'none'] and states('climate.living_room') != 'off' }}"
+          value_template: "{{ states('climate.living_room_home_heating') not in ['unknown', 'unavailable', 'none'] and states('climate.living_room_home_heating') != 'off' }}"
         then:
         - action: climate.set_hvac_mode
           target:
-            entity_id: climate.living_room
+            entity_id: climate.living_room_home_heating
           data:
             hvac_mode: 'off'
       alias: Climate state is Off
@@ -61,12 +61,12 @@ control_climate:
       - if:
         - condition: template
           value_template: >-
-            {{ is_state('climate.living_room', 'heat')
-               or (is_state('climate.living_room', 'auto') and state_attr('climate.living_room', 'hvac_action') | default('', true) == 'heating') }}
+            {{ is_state('climate.living_room_home_heating', 'heat')
+               or (is_state('climate.living_room_home_heating', 'auto') and state_attr('climate.living_room_home_heating', 'hvac_action') | default('', true) == 'heating') }}
         then:
         - action: climate.set_hvac_mode
           target:
-            entity_id: climate.living_room
+            entity_id: climate.living_room_home_heating
           data:
             hvac_mode: 'off'
         alias: Turn off Heat
@@ -109,17 +109,17 @@ control_climate:
         alias: Stop Midea climate
       - if:
         - condition: template
-          value_template: "{{ not is_state('climate.living_room', 'heat') }}"
+          value_template: "{{ not is_state('climate.living_room_home_heating', 'heat') }}"
         then:
         - action: climate.set_hvac_mode
           target:
-            entity_id: climate.living_room
+            entity_id: climate.living_room_home_heating
           data:
             hvac_mode: heat
         alias: Enable Nest heat mode
       - action: climate.set_temperature
         target:
-          entity_id: climate.living_room
+          entity_id: climate.living_room_home_heating
         data:
           temperature: '{{ temperature }}'
           hvac_mode: heat

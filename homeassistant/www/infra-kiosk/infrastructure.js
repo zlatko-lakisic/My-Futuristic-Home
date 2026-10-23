@@ -27,6 +27,7 @@ var ENTITIES = [
     "sensor.mikrotik_mostar_ether1_rx",
     "sensor.mikrotik_mostar_ether1_tx",
     "sensor.mikrotik_mostar_environment_publicip",
+    "sensor.mikrotik_home_wan_geo",
     "sensor.perimiter_switch_cpu_temperature",
     "sensor.perimeter_switch_total_rx",
     "sensor.perimeter_switch_total_tx",
@@ -122,15 +123,35 @@ var ENTITIES = [
     "sensor.nas1_disk_nvme2n1",
     "sensor.nas1_disk_nvme3n1",
     "binary_sensor.nas1_services_smb_cifs_service",
-    "binary_sensor.nas1_services_ssh_service",
+    "binary_sensor.nas1_services_smb_cifs_service_2",
     "binary_sensor.nas1_services_nfs_service",
+    "binary_sensor.nas1_services_nfs_service_2",
+    "binary_sensor.nas1_services_ssh_service",
+    "binary_sensor.nas1_services_ssh_service_2",
+    "binary_sensor.nas1_services_rsync_server_service",
+    "binary_sensor.nas1_services_rsync_server_service_2",
+    "binary_sensor.nas1_services_docker_service",
+    "binary_sensor.nas1_services_docker_service_2",
+    "binary_sensor.nas1_services_cterm_service",
+    "binary_sensor.nas1_services_file_browser_service",
+    "binary_sensor.nas1_services_wetty_service",
     "sensor.nas2_filesystem",
     "sensor.nas2_filesystem_2",
+    "sensor.nas2_system_cpu_load",
+    "sensor.nas2_system_memory",
     "sensor.nas2_disk",
     "sensor.nas2_disk_2",
     "sensor.nas2_disk_3",
     "sensor.nas2_disk_4",
-    "sensor.nas2_disk_5"
+    "sensor.nas2_disk_5",
+    "binary_sensor.nas2_services_smb_cifs_service",
+    "binary_sensor.nas2_services_nfs_service",
+    "binary_sensor.nas2_services_ssh_service",
+    "binary_sensor.nas2_services_rsync_server_service",
+    "binary_sensor.nas2_services_docker_service",
+    "binary_sensor.nas2_services_cterm_service",
+    "binary_sensor.nas2_services_file_browser_service",
+    "binary_sensor.nas2_services_wetty_service"
   ];
 
   function $(id) { return document.getElementById(id); }
@@ -996,7 +1017,29 @@ function setHtml(id, html) {
       cam("Garden South", "sensor.garden_south_frigate_fps", "sensor.garden_south_pipeline_cpu");
   }
 
-  function nasCard(title, sub, md0Id, osId, cpuId, memId, diskIds, services) {
+  function nasServiceLabel(entityId, prefix) {
+    var labelMap = {
+      smb_cifs: "SMB", nfs: "NFS", ssh: "SSH", rsync_server: "Rsync",
+      docker: "Docker", file_browser: "Files", cterm: "CTerm", wetty: "Wetty"
+    };
+    var raw = entityId.replace("binary_sensor." + prefix + "_services_", "").replace(/_service$/, "");
+    if (raw.slice(-2) === "_2") raw = raw.slice(0, -2);
+    return labelMap[raw] || raw.replace(/_/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+
+  function nasServices(prefix) {
+    var out = [];
+    ENTITIES.forEach(function (id) {
+      if (id.indexOf("binary_sensor." + prefix + "_services_") !== 0 || id.slice(-8) !== "_service") return;
+      var s = st(id);
+      if (!s || bad(s.state)) return;
+      out.push({ id: id, label: nasServiceLabel(id, prefix) });
+    });
+    out.sort(function (a, b) { return a.label.localeCompare(b.label); });
+    return out;
+  }
+
+  function nasCard(title, sub, md0Id, osId, cpuId, memId, diskIds, nasPrefix) {
     var a = num(md0Id);
     var b = osId ? num(osId) : null;
     var cpu = cpuId ? num(cpuId) : null;
@@ -1019,7 +1062,7 @@ function setHtml(id, html) {
     var offline = a == null && b == null && disksOk === 0;
     var smTxt = offline ? "OMV: offline" : (smartBad ? "SMART: Check" : "SMART: OK");
     var smCol = offline || smartBad ? "#e57373" : "#81c784";
-    var pills = (services || []).map(function (svc) {
+    var pills = nasServices(nasPrefix).map(function (svc) {
       var on = st(svc.id) && st(svc.id).state === "on";
       return '<span class="svc ' + (on ? "svc-on" : "svc-off") + '">' + svc.label + "</span>";
     }).join("");
@@ -1043,6 +1086,53 @@ function setHtml(id, html) {
     );
   }
 
+  var wanCard = null;
+  var wanStamp = "";
+
+  function renderWanMap() {
+    var host = $("card-wan-map");
+    if (!host || !window.customElements || !customElements.get("wan-connections-map")) return;
+    if (!wanCard) {
+      wanCard = document.createElement("wan-connections-map");
+      wanCard.setConfig({ entity: "sensor.mikrotik_home_wan_geo", flow: false });
+      host.appendChild(wanCard);
+    }
+    var entity = H.st("sensor.mikrotik_home_wan_geo");
+    if (!entity) return;
+    var points = (entity.attributes && entity.attributes.points) || [];
+    var tracked = 0;
+    for (var i = 0; i < points.length; i++) tracked += Number(points[i].count) || 0;
+    var countEl = $("wan-count");
+    if (countEl) countEl.textContent = String(tracked);
+    var attrs = entity.attributes || {};
+    var stamp = (attrs.stale ? "1" : "0") + ":" + (attrs.collected_utc || "") + "|" + points.map(function (point) {
+      var flows = (point.flows || []).map(function (flow) {
+        return [flow.protocol, flow.local_address, flow.local_port, flow.local_name, flow.hostname, flow.rate_bps, flow.inbound, flow.seed_bps, flow.leech_bps].join(",");
+      }).join(";");
+      var resources = (point.resources || []).map(function (item) {
+        return [item.method, item.host, item.path, item.bytes, item.open ? 1 : 0].join(",");
+      }).join(";");
+      return [
+        point.ip,
+        point.kind,
+        point.rate_bps,
+        point.seed_bps || 0,
+        point.leech_bps || 0,
+        point.count,
+        (point.hostnames || []).join(","),
+        point.bot || "",
+        point.operator || "",
+        point.ppp_name || "",
+        (point.torrents || []).join(","),
+        flows,
+        resources
+      ].join(":");
+    }).join("|");
+    if (stamp === wanStamp) return;
+    wanStamp = stamp;
+    wanCard.hass = { states: { "sensor.mikrotik_home_wan_geo": entity } };
+  }
+
   function renderStorage() {
     $("card-storage").innerHTML =
       nasCard(
@@ -1053,21 +1143,17 @@ function setHtml(id, html) {
         "sensor.nas1_system_cpu_load",
         "sensor.nas1_system_memory",
         ["sensor.nas1_disk_nvme0n1", "sensor.nas1_disk_nvme1n1", "sensor.nas1_disk_nvme2n1", "sensor.nas1_disk_nvme3n1"],
-        [
-          { id: "binary_sensor.nas1_services_smb_cifs_service", label: "SMB" },
-          { id: "binary_sensor.nas1_services_nfs_service", label: "NFS" },
-          { id: "binary_sensor.nas1_services_ssh_service", label: "SSH" }
-        ]
+        "nas1"
       ) +
       nasCard(
         "NAS2 (OMV)",
         "md0 + OS volume",
         "sensor.nas2_filesystem",
         "sensor.nas2_filesystem_2",
-        null,
-        null,
+        "sensor.nas2_system_cpu_load",
+        "sensor.nas2_system_memory",
         ["sensor.nas2_disk", "sensor.nas2_disk_2", "sensor.nas2_disk_3", "sensor.nas2_disk_4", "sensor.nas2_disk_5"],
-        []
+        "nas2"
       );
   }
 
@@ -1075,6 +1161,7 @@ function setHtml(id, html) {
     renderGateway();
     renderNetworkDevices();
     renderGaugesAndTraffic();
+    renderWanMap();
     renderWatchdogs();
     renderServers();
     renderCameras();
@@ -1093,4 +1180,10 @@ function setHtml(id, html) {
     entities: ENTITIES,
     paint: paint
   });
+
+  if (window.customElements && customElements.whenDefined) {
+    customElements.whenDefined("wan-connections-map").then(function () {
+      renderWanMap();
+    });
+  }
 })();

@@ -1,0 +1,97 @@
+# Main light is the live binary switch. The multilevel light entity was a restored
+# duplicate (unavailable while this switch was on) and was removed from the registry.
+- type: custom:button-card
+  name: Master Bedroom
+  show_icon: false
+  show_state: false
+  triggers_update: all
+  tap_action:
+    action: none
+  hold_action:
+    action: none
+  label: |
+    [[[
+      const ids = ['switch.master_bedroom_light_switch','light.master_bedroom_closet_lights_top_light','light.master_bedroom_closet_light_bottom_light','switch.vanity'];
+      const on = ids.filter(id => hass.states[id]?.state === 'on').length;
+      return on + (on === 1 ? ' light on' : ' lights on');
+    ]]]
+  show_label: true
+  styles:
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - padding: 0
+      - height: 40px
+    grid:
+      - grid-template-areas: '"n l"'
+      - grid-template-columns: 1fr auto
+    name:
+      - font-size: 18px
+      - font-weight: 800
+      - justify-self: start
+    label:
+      - font-size: 12px
+      - font-weight: 700
+      - color: "#7dd3fc"
+      - background: rgba(56,189,248,0.16)
+      - border-radius: 999px
+      - padding: 4px 8px
+- type: grid
+  columns: 2
+  square: false
+  cards:
+    - type: tile
+      entity: switch.master_bedroom_light_switch
+      name: Main
+      icon: mdi:ceiling-light
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      features:
+        - type: toggle
+    - type: tile
+      entity: switch.vanity
+      name: Vanity
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      features:
+        - type: toggle
+    - type: tile
+      entity: light.master_bedroom_closet_lights_top_light
+      name: Closet top
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      features:
+        - type: toggle
+    - type: tile
+      entity: light.master_bedroom_closet_light_bottom_light
+      name: Closet bottom
+      tap_action:
+        action: toggle
+      hold_action:
+        action: more-info
+      features:
+        - type: toggle
+- type: tile
+  entity: binary_sensor.master_bedroom_closet_presence_sensor_occupancy
+  name: Closet presence
+  tap_action:
+    action: more-info
+  hold_action:
+    action: more-info
+- type: tile
+  entity: media_player.master_bedroom_tv
+  name: TV
+  tap_action:
+    action: call-service
+    service: media_player.media_play_pause
+    target:
+      entity_id: media_player.master_bedroom_tv
+  hold_action:
+    action: more-info
