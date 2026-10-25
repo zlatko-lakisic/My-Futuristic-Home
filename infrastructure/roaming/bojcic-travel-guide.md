@@ -1,0 +1,42 @@
+# Bojcic travel router
+
+This is the small travel router named Bojcic-Travel. It makes a private Wi-Fi network that connects back to the house.
+
+## Wi-Fi
+
+Use **Bojcic-Travel-Roaming-NYC** for normal use. Phones and laptops on this network are on the house VPN.
+
+Use **Bojcic-Travel-Roaming** only when a hotel or cafe asks you to sign in on a web page. Join that network, open a web page, finish the sign-in, then switch back to **Bojcic-Travel-Roaming-NYC**.
+
+Both networks use the same password: `bojcic1234`
+
+## Log in to the router
+
+Connect to **Bojcic-Travel-Roaming-NYC**, then open a browser to `192.168.85.1`.
+
+- User: `admin`
+- Password: `fl!ntst0n3`
+
+On the NYC network the router’s address is `192.168.85.1`. On the hotel sign-in network its address is `172.31.251.1`.
+
+## Plug it in away from home
+
+The internet cable goes in the WAN port, the port named ether1. The other ports are for a computer.
+
+When that cable is on a network other than the house, the router dials home by itself. At the house, on `192.168.89.0/24`, it stays local and does not bring the tunnel up. A cable on `192.168.90.0/24` does bring the tunnel up.
+
+The home address for this router is `172.16.91.3`.
+
+## Saved logins
+
+| What | Value |
+| --- | --- |
+| NYC Wi-Fi name | `Bojcic-Travel-Roaming-NYC` |
+| Hotel sign-in Wi-Fi name | `Bojcic-Travel-Roaming` |
+| Wi-Fi password | `bojcic1234` |
+| Router user | `admin` |
+| Router password | `fl!ntst0n3` |
+| Home server | `nyc.mostardesigns.com` |
+| Home login name | `l2tp-roaming-bojcic-travel` |
+| Home login password | `8Jq53yuBG3hfVFxiaMMl9aEN` |
+| Home IPsec secret | `12345678` |

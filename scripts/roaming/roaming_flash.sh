@@ -331,9 +331,9 @@ append_service_address() {
 format_plan() {
   cat <<EOF
 identity: $cfg_identity
-vpn-lan: $cfg_lan_cid
-local-lan: $cfg_local_cid
-ppp-secret: $cfg_l2tp_use
+vpn-lan: $cfg_lan_cidr
+local-lan: $cfg_local_cidr
+ppp-secret: $cfg_l2tp_user
 vpn-address: $1
 ipsec: $2
 admin-keys: $3
@@ -438,8 +438,8 @@ service_list() {
   done <<EOF
 $cfg_home
 $cfg_extra
-$cfg_lan_cid
-$cfg_local_cid
+$cfg_lan_cidr
+$cfg_local_cidr
 172.16.91.0/27
 EOF
   printf '\n'
@@ -803,7 +803,7 @@ build_kuca_commands() {
     echo "JOURNAL|set|ppp-secret|$cfg_l2tp_user|$existing_remote|||"
   else
     local pass_arg=
-    if [[ $write_password == yes ]]; then pass_arg=" password=$(ros_quote "$cfg_l2tp_password")"; fi
+    if [[ -n $cfg_l2tp_password ]]; then pass_arg=" password=$(ros_quote "$cfg_l2tp_password")"; fi
     echo "/ppp secret add name=$quoted_name profile=$(ros_quote 'mostardesigns.com l2tp') service=l2tp remote-address=$vpn$pass_arg comment=$quoted_comment"
     echo "JOURNAL|add|ppp-secret|$cfg_l2tp_user||||"
   fi
@@ -837,6 +837,10 @@ build_kuca_commands() {
       api) previous=$SNAP_API ;;
       api-ssl) previous=$SNAP_API_SSL ;;
     esac
+    if [[ -z $previous ]]; then
+      echo "Leaving $service unchanged. Its address list is empty." >&2
+      continue
+    fi
     appended=$(append_service_address "$previous" "$cfg_lan_cidr") || return
     echo "/ip service set $service address=$(ros_quote "$appended")"
     echo "JOURNAL|set|service||$previous|$service||"
