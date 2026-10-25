@@ -23,9 +23,7 @@ On the NYC network the router’s address is `192.168.85.1`. On the hotel sign-i
 
 The internet cable goes in the WAN port, the port named ether1. The other ports are for a computer.
 
-When that cable is on a network other than the house, the router dials home by itself. At the house, on `192.168.89.0/24`, it stays local and does not bring the tunnel up. A cable on `192.168.90.0/24` does bring the tunnel up.
-
-The home address for this router is `172.16.91.3`.
+Away from home, it connects back to the house on its own. At the house, it is just local Wi-Fi.
 
 ## Saved logins
 
@@ -36,7 +34,3 @@ The home address for this router is `172.16.91.3`.
 | Wi-Fi password | `bojcic1234` |
 | Router user | `admin` |
 | Router password | `fl!ntst0n3` |
-| Home server | `nyc.mostardesigns.com` |
-| Home login name | `l2tp-roaming-bojcic-travel` |
-| Home login password | `8Jq53yuBG3hfVFxiaMMl9aEN` |
-| Home IPsec secret | `12345678` |
