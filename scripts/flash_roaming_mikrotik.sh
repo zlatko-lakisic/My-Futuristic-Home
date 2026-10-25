@@ -68,7 +68,7 @@ ros_ssh() {
 printf '%s\n' "$ROAMING_SSH_PASSWORD"
 EOF
   chmod 700 "$askpass"
-  local -a opts=(-n -T -o ConnectTimeout=15 -o PreferredAuthentications=password,keyboard-interactive -o NumberOfPasswordPrompts=1)
+  local -a opts=(-n -T -o ConnectTimeout=15 -o PreferredAuthentications=publickey,password,keyboard-interactive -o NumberOfPasswordPrompts=1)
   if [[ $accept_new == yes ]]; then
     opts+=(-o StrictHostKeyChecking=accept-new)
   else
@@ -194,9 +194,9 @@ else
   profile_text=$(ros_ssh "$kuca_ip" "$kuca_user" "$kuca_pass" no '/ppp profile print terse proplist=name,remote-address')
   pool_text=$(ros_ssh "$kuca_ip" "$kuca_user" "$kuca_pass" no '/ip pool print terse proplist=name,ranges')
   service_text=$(ros_ssh "$kuca_ip" "$kuca_user" "$kuca_pass" no '/ip service print terse proplist=name,address')
-  ipsec_text=$(ros_ssh "$kuca_ip" "$kuca_user" "$kuca_pass" no '/interface l2tp-server server print terse proplist=ipsec-secret')
+  ipsec_text=$(ros_ssh "$kuca_ip" "$kuca_user" "$kuca_pass" no ':put ("ipsec-secret=" . [/interface l2tp-server server get ipsec-secret])')
   key_text=$(ros_ssh "$kuca_ip" "$kuca_user" "$kuca_pass" no ':foreach i in=[/user ssh-keys find where user=admin] do={ :put [/user ssh-keys get $i key] }')
-  server_ipsec=$(printf '%s\n' "$ipsec_text" | sed -n 's/.*ipsec-secret="\{0,1\}\([^" ]*\)"\{0,1\}.*/\1/p' | head -n 1)
+  server_ipsec=$(printf '%s\n' "$ipsec_text" | tr -d '\r' | sed -n 's/.*ipsec-secret="\{0,1\}\([^" ]*\)"\{0,1\}.*/\1/p' | head -n 1)
   ipsec_state=$(ipsec_result "$server_ipsec" "$cfg_ipsec")
   unset server_ipsec
   [[ $ipsec_state == match ]] || die 'IPsec secret mismatch. The server secret was not changed.'
@@ -245,8 +245,9 @@ else
   done <<<"$route_text"
   while IFS= read -r line; do
     [[ $line =~ list=([^[:space:]]+) ]] || continue
+    list_name=${BASH_REMATCH[1]}
     [[ $line =~ address=([^[:space:]]+) ]] || continue
-    SNAP_LISTS+=$'\n'"${BASH_REMATCH[1]}"$'\t'"${BASH_REMATCH[1]}"
+    SNAP_LISTS+=$'\n'"$list_name"$'\t'"${BASH_REMATCH[1]}"
   done <<<"$list_text"
   SNAP_WWW=$(printf '%s\n' "$service_text" | sed -n 's/.*name=www .*address="\{0,1\}\([^" ]*\)"\{0,1\}.*/\1/p' | head -n 1)
   SNAP_API=$(printf '%s\n' "$service_text" | sed -n 's/.*name=api .*address="\{0,1\}\([^" ]*\)"\{0,1\}.*/\1/p' | head -n 1)
