@@ -85,7 +85,7 @@ cfg_name=Cabin
 cfg_lan_network=10.51.0.0
 cfg_l2tp_user=
 fill_derived_config
-cabin_user=$cfg_l2tp_use
+cabin_user=$cfg_l2tp_user
 cfg_name=Trip
 cfg_lan_network=10.50.0.0
 cfg_l2tp_user=
