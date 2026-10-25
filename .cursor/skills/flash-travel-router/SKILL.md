@@ -22,6 +22,8 @@ Write answers only to `.cursor/secrets/roaming-flash.json`. Do not print passwor
 
 Start from the repo root. Kuca login is `.cursor/secrets/.router-kuca`. Mostar login is `.cursor/secrets/.router-mostar`.
 
+Never connect to, configure, or reset `192.168.88.1`. That address is off limits. Do not factory-reset a board onto it. When the board is already on its LAN gateway, override settings there. For Bojcic-Travel that gateway is `192.168.85.1`.
+
 ## Before questions
 
 On Windows, install Posh-SSH when `Get-Module -ListAvailable -Name Posh-SSH` finds nothing:
@@ -149,7 +151,7 @@ A RouterOS version below 7.15 stops the reset and prints the upgrade step. Ask:
 - Roll back Kuca
 - Stop
 
-`192.168.88.1` must be on-link on the adapter cabled to the board. A routed answer can be Mostar. Say so and ask them to move the cable onto ether2–ether5. Do not continue.
+Do not use `192.168.88.1` for this step. Leave that address untouched. Apply the configuration on the board's current LAN gateway.
 
 ## After it boots
 
