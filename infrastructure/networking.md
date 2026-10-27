@@ -54,6 +54,7 @@ flowchart TB
 
     R --> PER[Bridge perimiter]
     R --> HOME[Bridge home_lan]
+    R --> CAM["ether4 camera LAN 10.0.20.1/28"]
     R --> LAN_VPN["Bridge Lan<br/>VPN pool 172.16.91.0/27"]
     HOME --> V2["VLAN 2 home_wifi"]
     HOME --> V4["VLAN 4 iot"]
@@ -63,7 +64,6 @@ flowchart TB
   subgraph PERZ["Perimeter 10.0.10.0/24"]
     PER --- E2[ether2 CSS326 / servers]
     PER --- E3[ether3 MSNSwitch 10.0.10.254]
-    PER --- E4[ether4 spare]
     E2 --- PX["CSS326 port 6 Proxmox 10.0.10.11"]
     E2 --- NAS2["NAS2 OMV 10.0.10.17"]
     E2 --- BEE[Beelink Traefik/UniFi 10.0.10.6]
@@ -73,7 +73,7 @@ flowchart TB
 
   subgraph STORE["Storage backplane 172.16.100.0/24"]
     NAS2 --- BR0["NAS2 br0 172.16.100.1"]
-    BR0 --- NVR["NVR 172.16.100.2"]
+    BR0 --- NVR["NVR 172.16.100.3"]
   end
 
   subgraph HOUSE["House / IoT"]

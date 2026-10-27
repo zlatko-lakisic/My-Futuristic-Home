@@ -3,7 +3,9 @@
 ## **Overview**
 This is the complete configuration for the Frigate NVR service. It is designed to work with **CodeProject.AI** for object, face, and plate detection and utilizes an NVIDIA RTX A4000; this is documented in the [NVR Infrastructure File](../infrastructure/nvr.md).
 
-**HA consumers (Aug 2026):** zone AI notifications and flood lights use Frigate zones `driveway_zone` (driveway) and `near_front_door` (front_door / Front Yard). See [Zone Activity AI](../homeassistant/docs_ha/zone_activity_ai.md). Driveway detect is **1280×720**; zone AI notify titles take plates from Frigate LPR (`sensor.driveway_last_recognized_plate`), not LLM guesses. The excerpt below mirrors live zone names/filters after the Aug 2026 FP cleanup; full live config lives in the docker-infrastructure NVR tree.
+**HA consumers (Aug 2026):** zone AI notifications and flood lights use Frigate zones `driveway_zone` (driveway) and `near_front_door` (front_door / Front Yard). See [Zone Activity AI](../homeassistant/docs_ha/zone_activity_ai.md). Driveway detect is **1280×720**; zone AI notify titles take plates from Frigate LPR (`sensor.driveway_last_recognized_plate`), not LLM guesses. The excerpt below mirrors live zone names/filters after the Aug 2026 FP cleanup; full live config lives on the NVR at `/var/docker/frigate/config.yml`.
+
+**Live go2rtc hosts (2026-10-27):** back yard `10.0.20.3`, driveway `10.0.20.8`, front door `10.0.20.4`, west side `10.0.20.7`. These four are on the camera LAN. Garden north `192.168.89.12`, garden south `192.168.89.20`, east side `192.168.89.14`, and basement `192.168.89.22` stay on the house LAN until the back-yard cabling is finished. Basement exists in go2rtc and has no `cameras:` block. UniFi paths are `:554/s2`.
 
 ## **Full Configuration (`config.yml`)**
 *Note: This file uses environment variables (e.g., `{MQTT_USER}`) which are defined in the [frigate.env](./frigate.env) file.*
