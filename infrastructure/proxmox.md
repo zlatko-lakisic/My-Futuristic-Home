@@ -8,7 +8,7 @@ The compute layer is hosted on a high-performance bare metal server. This node p
 ## **Hardware Specifications**
 - **CPU:** Dual Intel Xeon W-11855M (12 Cores / 24 Threads total)
 - **RAM:** 125GB DDR4 ECC
-- **Networking:** Single onboard Ethernet connected to **MikroTik Port 4**
+- **Networking:** Single onboard Ethernet on **CSS326 port 6** (SwOS name `Proxmox`, 1G). Address stays `10.0.10.11`. A failed ping bounces that port from Home Assistant.
 - **IP Address:** `10.0.10.11`
 
 ## **Storage Configuration**
