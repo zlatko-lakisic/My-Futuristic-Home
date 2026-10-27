@@ -20,15 +20,20 @@ The switching fabric is divided into two distinct tiers:
 | **3** | NC | Beelink EQ14 (NIC 1) | UniFi Controller Management |
 | **4** | NAS1 | Custom NAS Server | Primary Storage Data Link |
 | **5** | NAS1 MSNSwitch | MSNSwitch Device | Power Management for NAS1 |
+| **6** | Proxmox | Proxmox host `10.0.10.11` | Dedicated access port. Home Assistant bounces this port when the host stops answering. |
 | **13** | NAS2 | Custom NAS Server | Secondary Storage Data Link |
 | **23** | NVR | Surveillance Server | Video Processing Link |
 | **SFP+ 1** | [Open] | Future 10G Link | Reserved for NAS1 |
 | **SFP+ 2** | [Open] | Future 10G Link | Reserved for NAS2 |
 
 ### **VLAN Settings (SwOS)**
-* **VLAN Mode:** `Enabled`
-* **VLAN Receive:** `Any`
-* **Default VLAN ID:** `10`
+Checked live 2026-10-27. Every port, including port 6, NAS2, and Frigate, matches:
+
+* **VLAN mode:** `1` (same value on every port)
+* **VLAN receive:** `0` (any)
+* **Default VLAN ID:** `1`
+
+Port 6 was not changed. It already matched the working server ports.
 
 ---
 
