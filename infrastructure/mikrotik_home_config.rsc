@@ -16,7 +16,8 @@ set [ find default-name=ether2 ] comment=10.0.10.1 l2mtu=1598 mac-address=\
     <REDACTED_MAC>
 set [ find default-name=ether3 ] comment="MSNSwitch - 10.0.10.254" l2mtu=1598 \
     mac-address=<REDACTED_MAC>
-set [ find default-name=ether4 ] comment="proxmox - direct 10.0.10.11" l2mtu=\
+set [ find default-name=ether4 ] comment=\
+    "spare-proxmox-moved-to-CSS326-port-6" l2mtu=\
     1598 mac-address=<REDACTED_MAC>
 set [ find default-name=ether5 ] arp=local-proxy-arp comment=192.168.89.1 \
     l2mtu=1598 mac-address=<REDACTED_MAC>
@@ -147,24 +148,6 @@ add dont-require-permissions=no name=cloudns-update owner=admin policy=\
     ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="/\
     tool fetch url=\"https://ipv4.cloudns.net/api/dynamicURL/\?q=<REDACTED_CLOUDNS_TOKEN>\"\
     \n output=none"
-add dont-require-permissions=no name=disable_enable_ether4 owner=admin \
-    policy=read,write,policy,test source=\
-    "/interface disable ether4;\
-    \n:delay 2s;\
-    \n/interface enable ether4;"
-add dont-require-permissions=no name=ping_proxmox_stack owner=admin policy=\
-    read,write,policy,test source=":local pingtarget \"10.0.10.11\";\
-    \n:local interfacetotoggle \"ether4\";\
-    \n:local pingcount 5;\
-    \n\
-    \n:local pingresult [/ping \$pingtarget count=\$pingcount];\
-    \n\
-    \n:if (\$pingresult = 0) do={\
-    \n  # Ping failed, disable the interface\
-    \n  /log info \"Ping to \$pingtarget failed, disabling \$interfacetotoggle\
-    \";\
-    \n  /system script run disable_enable_ether4;\
-    \n}"
 add dont-require-permissions=no name=recreate-traefik-docker owner=admin \
     policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
     source="# === Configuration ===\
@@ -769,8 +752,8 @@ add interval=30s name="DNS Fialover Scheduler" on-event=":local PingTarget \"1\
     \n}" policy=\
     ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
     start-date=2019-10-07 start-time=00:00:00
-add interval=1m name=ping_proxmox_stack_scheduler on-event=ping_proxmox_stack \
-    policy=read,write,policy,test start-time=startup
+add disabled=yes interval=1m name=ping_proxmox_stack_scheduler on-event=\
+    ping_proxmox_stack policy=read,write,policy,test start-time=startup
 add interval=5m name=traefik-watchdog on-event=\
     "/system script run recreate-traefik-docker" policy=\
     ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \

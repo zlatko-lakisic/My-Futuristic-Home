@@ -117,6 +117,7 @@ homeassistant:
     unban_local_networks: !include packages/unban_local_networks.yaml
     person_geocode_fallback: !include packages/person_geocode_fallback.yaml
     nvr_stack_control: !include packages/nvr_stack_control.yaml
+    proxmox_link_watchdog: !include packages/proxmox_link_watchdog.yaml
 
 influxdb:
   api_version: "1"

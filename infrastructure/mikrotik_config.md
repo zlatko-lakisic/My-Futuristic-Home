@@ -36,7 +36,7 @@ add name=perimiter
 set [ find default-name=ether1 ] comment=WAN name="ether1 - WAN"
 set [ find default-name=ether2 ] comment=10.0.10.1
 set [ find default-name=ether3 ] comment="MSNSwitch - 10.0.10.254"
-set [ find default-name=ether4 ] comment="proxmox - direct 10.0.10.11"
+set [ find default-name=ether4 ] comment="spare-proxmox-moved-to-CSS326-port-6"
 set [ find default-name=ether5 ] arp=local-proxy-arp comment=192.168.89.1
 
 /interface vlan
@@ -46,7 +46,7 @@ add arp=proxy-arp interface=home_lan name=iot_vlan vlan-id=4
 
 **Bridge membership:**
 
-- `perimiter`: ether2, ether3, ether4  
+- `perimiter`: ether2, ether3, ether4 (ether4 is spare; Proxmox moved to CSS326 port 6)
 - `home_lan`: ether5, wlan3 (5 GHz maint SSID)  
 - Wireless SSIDs include `Kuca 2g`, hidden maintenance SSID, plus virtual APs  
 
@@ -159,7 +159,7 @@ Detail: [`mikrotik_roaming_config.md`](mikrotik_roaming_config.md).
 | `cloudns-update` | Hourly dynamic DNS (credentials redacted in scrubbed export) |
 | `EnableDns` / `DisableDns` | Toggle DNS/NTP failover NAT toward `10.0.10.1` |
 | `DNS Fialover Scheduler` | Every 30s health-check of `10.0.10.10` |
-| `ping_proxmox_stack` | Ping `10.0.10.11`; bounce `ether4` if down |
+| `ping_proxmox_stack_scheduler` | Disabled. Scripts `ping_proxmox_stack` and `disable_enable_ether4` are removed. The link bounce now belongs on CSS326 port 6. |
 | `recreate-traefik-docker` | Watch Docker API on `10.0.10.6:2375`; webhook recreate if Traefik stopped |
 | `Daily Reboot` | 03:00 daily reboot |
 
@@ -185,7 +185,7 @@ Full static map is in the sanitized `.rsc`.
 
 ## Notes / drift
 
-- Proxmox direct comment / watchdog target is `10.0.10.11` (not older `10.0.10.230` notes).  
+- Proxmox host `10.0.10.11` is on CSS326 port 6. ether4 stays on the perimeter bridge as a spare. There is no static DHCP lease or static ARP for that host.
 - Perimeter DHCP server is **disabled**.  
 - AWS site-to-site IPsec/BGP templates remain **disabled**.  
 - qBittorrent lives on NAS2 (`10.0.10.17`) with macvlan `172.16.55.2` — see [`../storage/nas2.md`](../storage/nas2.md).  

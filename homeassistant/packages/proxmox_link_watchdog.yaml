@@ -1,0 +1,37 @@
+# Ping the Proxmox host. If all five probes fail, bounce CSS326 port 6
+# the same way the old hAP ether4 script did: disable, wait 2 seconds, enable.
+# The check repeats every minute while the host stays down.
+
+command_line:
+  - binary_sensor:
+      name: Proxmox host ping
+      unique_id: proxmox_host_ping
+      device_class: connectivity
+      scan_interval: 60
+      command_timeout: 15
+      command: "/bin/ping -c 5 -W 1 10.0.10.11 >/dev/null 2>&1 && echo ON || echo OFF"
+      payload_on: "ON"
+      payload_off: "OFF"
+
+automation:
+  - id: proxmox_css326_port6_link_watchdog
+    alias: Proxmox CSS326 port 6 link watchdog
+    description: >-
+      When 10.0.10.11 fails five pings, disable CSS326 port 6 for 2 seconds
+      and enable it again. Repeats once a minute while the host stays down.
+    mode: single
+    triggers:
+      - platform: time_pattern
+        minutes: "/1"
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.proxmox_host_ping
+        state: "off"
+    actions:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.basement_perimiter_switch_p06_port6
+      - delay: "00:00:02"
+      - action: switch.turn_on
+        target:
+          entity_id: switch.basement_perimiter_switch_p06_port6
