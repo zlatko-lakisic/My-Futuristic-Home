@@ -21,13 +21,14 @@ The GPU is passed directly from the host to Docker containers using the NVIDIA C
 - **Engine:** Docker (Containerized NVR software)
 
 ## **Network Configuration**
-The NVR uses three distinct physical interfaces to optimize traffic flow:
+The NVR uses separate physical interfaces so management, the house LAN, camera ingest, and storage do not share one NIC:
 
 | Interface | Connection | IP Address | Role |
 | :--- | :--- | :--- | :--- |
-| **Eth 3** | Perimeter Switch | `10.0.10.6` | Web UI / Management |
-| **Eth 4** | House LAN Switch | `192.168.89.37` | Camera Ingestion (VLAN 4) |
-| **Eth 7** | **NAS2 Port 2** | `172.16.100.2` | **Direct-Attach Storage (NFS)** |
+| **enp3s0** | CSS326 port 3 | `10.0.10.16/24` | Management |
+| **br-cam** (`enp4s0`, spare `enp11s0`) | House LAN | `192.168.89.37/24` | Current camera ingest. Default route via `192.168.89.1`. Leave `enp11s0` in this bridge |
+| **enp8s0** | CSS326 port 13, labeled NVR (VLAN 20). This is not the jack labeled 8 on the case | `10.0.20.2/28` | Camera LAN. No default gateway. Link is up at 1G |
+| **enp7s0** | NAS2 direct link. The jack labeled 8 on the back of the NVR stays on NAS2 | `172.16.100.3/24` | NFS storage backplane |
 
 ## **Remote Storage Configuration (`/etc/fstab`)**
 To ensure the NVR consistently mounts storage from both NAS units without stalling the boot process, the following entries are used. This configuration leverages `systemd` automount logic and the high-speed direct-attach link to NAS2.
