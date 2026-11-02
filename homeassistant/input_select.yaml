@@ -9,6 +9,16 @@ qbittorrent_active_sort:
   initial: eta
   icon: mdi:sort
 
+livingroom_climate_thermostat:
+  name: Living room thermostat
+  options:
+    - Home Heating
+    - Living Room
+    - Master Bedroom
+    - Air Conditioner
+  initial: Home Heating
+  icon: mdi:thermostat
+
 bhyve_manual_zone:
   name: BHyve Manual Zone
   # Labels must match each valve entity's friendly_name (Developer tools → States).

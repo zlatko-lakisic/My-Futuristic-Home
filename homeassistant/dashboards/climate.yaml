@@ -15,6 +15,10 @@ views:
           - type: heading
             heading: Living room
             heading_style: title
+          - type: entities
+            entities:
+              - entity: input_select.livingroom_climate_thermostat
+                name: Thermostat
           - type: thermostat
             entity: climate.new_livingroom_climate
             name: Living room
@@ -29,6 +33,11 @@ views:
                 style: icons
           - type: markdown
             content: >
+              {% set sel = states('input_select.livingroom_climate_thermostat') %}
+              Active: **{{ sel }}**
+              {% if sel in ['Home Heating', 'Living Room', 'Master Bedroom'] %}
+              (heats with Nest; room reading follows this pick).
+              {% endif %}
               {% set nest = states('climate.living_room_home_heating') %}
               {% set nest_action = state_attr('climate.living_room_home_heating', 'hvac_action') %}
               {% set ac = states('climate.150633094697190_climate') %}
