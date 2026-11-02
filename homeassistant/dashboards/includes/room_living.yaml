@@ -67,6 +67,10 @@
         action: more-info
       features:
         - type: toggle
+- type: entities
+  entities:
+    - entity: input_select.livingroom_climate_thermostat
+      name: Thermostat
 - type: thermostat
   entity: climate.new_livingroom_climate
   name: Climate
