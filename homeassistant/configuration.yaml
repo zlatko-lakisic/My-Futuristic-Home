@@ -167,19 +167,56 @@ climate:
     min_temp: 55
     max_temp: 85
     
-    # get current temp.
-    current_temperature_template: "{{ states('sensor.living_room_home_heating_temperature') }}"
+    # Room feel follows the picker (Nest thermostat / Living Room / Master Bedroom / AC).
+    current_temperature_template: >-
+      {% set sel = states('input_select.livingroom_climate_thermostat') | default('Home Heating', true) %}
+      {% if sel == 'Living Room' %}
+        {% set t = states('sensor.nest_temperature_sensor_living_room_temperature') %}
+      {% elif sel == 'Master Bedroom' %}
+        {% set t = states('sensor.nest_temperature_sensor_master_bedroom_temperature') %}
+      {% elif sel == 'Air Conditioner' %}
+        {% set t = states('sensor.150633094697190_indoor_temperature') %}
+      {% else %}
+        {% set t = states('sensor.living_room_home_heating_temperature') %}
+      {% endif %}
+      {{ t if t not in ['unknown', 'unavailable', 'none', ''] else states('sensor.living_room_home_heating_temperature') }}
     
     # get current humidity.
     current_humidity_template: "{{ states('sensor.living_room_home_heating_humidity') }}"
 
-    # Mirror real equipment (manual changes on Nest or Midea are picked up here).
-    hvac_mode_template: "{% set nest = states('climate.living_room_home_heating') %}{% set nest_act = state_attr('climate.living_room_home_heating', 'hvac_action') | default('', true) %}{% set heating = nest == 'heat' or (nest == 'auto' and nest_act == 'heating') %}{% set midea = states('climate.150633094697190_climate') %}{% set cooling = is_state('switch.150633094697190_power', 'on') or midea in ['cool', 'dry', 'fan_only'] %}{{ 'heat' if heating else 'cool' if cooling else 'off' }}"
-    # Nest/Midea hvac_action → combined action (idle = not actively heating or cooling).
-    hvac_action_template: "{% set n = state_attr('climate.living_room_home_heating', 'hvac_action') | default('', true) | lower %}{% set m = state_attr('climate.150633094697190_climate', 'hvac_action') | default('', true) | lower %}{% if n in ['heating', 'preheating'] %}heating{% elif m in ['cooling', 'drying'] %}cooling{% else %}idle{% endif %}"
-    target_temperature_template: "{% set nest = states('climate.living_room_home_heating') %}{% set nest_act = state_attr('climate.living_room_home_heating', 'hvac_action') | default('', true) %}{% set heating = nest == 'heat' or (nest == 'auto' and nest_act == 'heating') %}{% set midea = states('climate.150633094697190_climate') %}{% set cooling = is_state('switch.150633094697190_power', 'on') or midea in ['cool', 'dry', 'fan_only'] %}{% set n = state_attr('climate.living_room_home_heating', 'temperature') | default(72, true) | float(72) %}{% set a = state_attr('climate.150633094697190_climate', 'temperature') | default(72, true) | float(72) %}{{ n if heating else a if cooling else ((n + a) / 2) | round(1) }}"
+    # Mirror Nest heat or AC based on picker (Nest room sensors still drive Nest heat).
+    hvac_mode_template: >-
+      {% set sel = states('input_select.livingroom_climate_thermostat') | default('Home Heating', true) %}
+      {% if sel == 'Air Conditioner' %}
+        {% set midea = states('climate.150633094697190_climate') %}
+        {% set powered = is_state('switch.150633094697190_power', 'on') %}
+        {% if not powered or midea in ['unknown', 'unavailable', 'none', 'off'] %}off
+        {% elif midea in ['cool', 'dry', 'fan_only'] %}cool
+        {% elif midea == 'heat' %}heat
+        {% else %}cool{% endif %}
+      {% else %}
+        {% set nest = states('climate.living_room_home_heating') %}
+        {% set nest_act = state_attr('climate.living_room_home_heating', 'hvac_action') | default('', true) %}
+        {{ 'heat' if nest == 'heat' or (nest == 'auto' and nest_act == 'heating') else 'off' }}
+      {% endif %}
+    hvac_action_template: >-
+      {% set sel = states('input_select.livingroom_climate_thermostat') | default('Home Heating', true) %}
+      {% if sel == 'Air Conditioner' %}
+        {% set m = state_attr('climate.150633094697190_climate', 'hvac_action') | default('', true) | lower %}
+        {% if m in ['cooling', 'drying'] %}cooling{% elif m == 'heating' %}heating{% else %}idle{% endif %}
+      {% else %}
+        {% set n = state_attr('climate.living_room_home_heating', 'hvac_action') | default('', true) | lower %}
+        {{ 'heating' if n in ['heating', 'preheating'] else 'idle' }}
+      {% endif %}
+    target_temperature_template: >-
+      {% set sel = states('input_select.livingroom_climate_thermostat') | default('Home Heating', true) %}
+      {% if sel == 'Air Conditioner' %}
+        {{ state_attr('climate.150633094697190_climate', 'temperature') | default(72, true) | float(72) }}
+      {% else %}
+        {{ state_attr('climate.living_room_home_heating', 'temperature') | default(72, true) | float(72) }}
+      {% endif %}
 
-    # AC-only: mirror Midea fan/swing/presets (Nest has no equivalent).
+    # Fan/swing/preset are AC-only; still mirrored so the card stays populated.
     fan_mode_template: "{{ state_attr('climate.150633094697190_climate', 'fan_mode') | default('auto', true) }}"
     swing_mode_template: "{{ 'vertical' if is_state('switch.150633094697190_swing_vertical', 'on') else 'off' }}"
     preset_mode_template: "{{ state_attr('climate.150633094697190_climate', 'preset_mode') | default('none', true) }}"
