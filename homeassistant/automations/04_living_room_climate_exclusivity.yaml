@@ -1,4 +1,7 @@
 # Mutual exclusivity: Nest (heat) vs Midea AC — matches script.control_climate + manual changes.
+# Picker: Home Heating | Living Room | Master Bedroom | Air Conditioner
+# Nest room options still actuate climate.living_room_home_heating; they only change which
+# temperature reading the unified card shows (HA cannot switch Nest's active sensor via SDM).
 - id: '1763120400001'
   alias: Living room heat disables AC
   description: When Nest is heating or in heat mode, turn off Midea power and climate if cooling was active.
@@ -19,8 +22,18 @@
   - condition: template
     value_template: >-
       {{ is_state('switch.150633094697190_power', 'on')
-         or states('climate.150633094697190_climate') in ['cool', 'dry', 'fan_only'] }}
+         or states('climate.150633094697190_climate') in ['cool', 'dry', 'fan_only', 'heat'] }}
   actions:
+  - if:
+    - condition: state
+      entity_id: input_select.livingroom_climate_thermostat
+      state: Air Conditioner
+    then:
+    - action: input_select.select_option
+      target:
+        entity_id: input_select.livingroom_climate_thermostat
+      data:
+        option: Home Heating
   - if:
     - condition: template
       value_template: "{{ states('climate.150633094697190_climate') not in ['unknown', 'unavailable', 'none'] and states('climate.150633094697190_climate') != 'off' }}"
@@ -39,7 +52,7 @@
         entity_id: switch.150633094697190_power
 - id: '1763120400002'
   alias: Living room AC disables Nest heating
-  description: When AC power or Midea climate indicates cooling, turn Nest off if it was heating.
+  description: When AC power or Midea climate is active, turn Nest off if it was heating.
   mode: single
   triggers:
   - entity_id: switch.150633094697190_power
@@ -54,6 +67,9 @@
   - entity_id: climate.150633094697190_climate
     trigger: state
     to: fan_only
+  - entity_id: climate.150633094697190_climate
+    trigger: state
+    to: heat
   conditions:
   - condition: template
     value_template: >-
@@ -62,10 +78,65 @@
   - condition: template
     value_template: >-
       {{ is_state('switch.150633094697190_power', 'on')
-         or states('climate.150633094697190_climate') in ['cool', 'dry', 'fan_only'] }}
+         or states('climate.150633094697190_climate') in ['cool', 'dry', 'fan_only', 'heat'] }}
   actions:
+  - if:
+    - condition: template
+      value_template: "{{ not is_state('input_select.livingroom_climate_thermostat', 'Air Conditioner') }}"
+    then:
+    - action: input_select.select_option
+      target:
+        entity_id: input_select.livingroom_climate_thermostat
+      data:
+        option: Air Conditioner
   - action: climate.set_hvac_mode
     target:
       entity_id: climate.living_room_home_heating
     data:
       hvac_mode: 'off'
+- id: '1763120400003'
+  alias: Living room thermostat selection turns off other
+  description: Nest room picks only change the shown sensor; switching Nest↔AC turns the other equipment off.
+  mode: single
+  triggers:
+  - entity_id: input_select.livingroom_climate_thermostat
+    trigger: state
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: >-
+          {{ states('input_select.livingroom_climate_thermostat') in ['Home Heating', 'Living Room', 'Master Bedroom']
+             and trigger.from_state.state == 'Air Conditioner' }}
+      sequence:
+      - if:
+        - condition: template
+          value_template: "{{ states('climate.150633094697190_climate') not in ['unknown', 'unavailable', 'none'] and states('climate.150633094697190_climate') != 'off' }}"
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.150633094697190_climate
+          data:
+            hvac_mode: 'off'
+      - if:
+        - condition: template
+          value_template: "{{ is_state('switch.150633094697190_power', 'on') }}"
+        then:
+        - action: switch.turn_off
+          target:
+            entity_id: switch.150633094697190_power
+    - conditions:
+      - condition: state
+        entity_id: input_select.livingroom_climate_thermostat
+        state: Air Conditioner
+      sequence:
+      - if:
+        - condition: template
+          value_template: "{{ states('climate.living_room_home_heating') not in ['unknown', 'unavailable', 'none'] and states('climate.living_room_home_heating') != 'off' }}"
+        then:
+        - action: climate.set_hvac_mode
+          target:
+            entity_id: climate.living_room_home_heating
+          data:
+            hvac_mode: 'off'
