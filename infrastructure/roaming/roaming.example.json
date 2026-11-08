@@ -1,5 +1,5 @@
 {
-  "_note": "Copy to .cursor/secrets/roaming-flash.json and fill passwords there. This example is the live Kuca-Roaming router. The flash refuses this name and LAN unless -ReflashLive is passed, and it still will not reset that board.",
+  "_note": "Copy to .cursor/secrets/roaming-flash.json and fill passwords and l2tp.server there. This example is the live Kuca-Roaming router. The flash refuses this name and LAN unless -ReflashLive is passed, and it still will not reset that board.",
   "name": "Kuca",
   "wifiPassword": "",
   "localWifiPassword": "",
@@ -19,7 +19,7 @@
     "192.168.90.0/24"
   ],
   "l2tp": {
-    "server": "<REDACTED_VPN_SERVER>",
+    "server": "",
     "username": "",
     "password": "",
     "ipsecSecret": ""

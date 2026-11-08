@@ -140,7 +140,7 @@ fi
 
 [[ -f $config ]] || die "Config not found. Copy infrastructure/roaming/roaming.example.json to .cursor/secrets/roaming-flash.json and fill it in."
 if ! assignments=$(load_config_json "$config" yes); then
-  die "The secrets file still has empty wifiPassword, adminPassword, or l2tp.ipsecSecret."
+  die "The secrets file still has empty wifiPassword, adminPassword, l2tp.ipsecSecret, or l2tp.server."
 fi
 # shellcheck disable=SC2086
 eval "$assignments"

@@ -182,8 +182,8 @@ if (-not (Test-Path -LiteralPath $Config)) {
 }
 $raw = Get-Content -Raw -LiteralPath $Config | ConvertFrom-Json
 $resolved = Resolve-RoamingConfig -Raw $raw -RequireSecrets:$Apply
-if (-not $Apply -and (-not $resolved.WifiPassword -or -not $resolved.AdminPassword -or -not $resolved.IpsecSecret)) {
-    throw "The secrets file still has empty wifiPassword, adminPassword, or l2tp.ipsecSecret."
+if (-not $Apply -and (-not $resolved.WifiPassword -or -not $resolved.AdminPassword -or -not $resolved.IpsecSecret -or -not $resolved.L2tpServer)) {
+    throw "The secrets file still has empty wifiPassword, adminPassword, l2tp.ipsecSecret, or l2tp.server."
 }
 
 $inventoryText = Get-Content -Raw -LiteralPath (Join-Path $repoRoot 'infrastructure\networks.md')
