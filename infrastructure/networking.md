@@ -24,7 +24,7 @@ flowchart TB
   end
 
   subgraph MOST["Mostar — Kuca-Mostar RB951G"]
-    CPE["ISP CPE<br/>public ~<REDACTED_WAN_IP>"]
+    CPE["ISP CPE<br/>public IP not documented"]
     MOST_WAN["ether1 WAN<br/>192.168.100.100/24"]
     MOST_R["L3 + policy routing"]
     NYC_BR["nyc_bridge<br/>192.168.88.0/24"]
