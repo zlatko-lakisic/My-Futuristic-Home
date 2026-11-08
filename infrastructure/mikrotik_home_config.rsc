@@ -73,13 +73,13 @@ add dh-group=modp1024 dpd-interval=10s dpd-maximum-failures=3 enc-algorithm=\
 add dh-group=modp1024 dpd-interval=10s dpd-maximum-failures=3 enc-algorithm=\
     aes-128 lifetime=8h name="AWS Profile 1" nat-traversal=no
 /ip ipsec peer
-add address=34.206.170.18/32 disabled=yes local-address=<REDACTED_WAN_IP> name=\
+add address=<REDACTED_VPN_PEER_1>/32 disabled=yes local-address=<REDACTED_WAN_IP> name=\
     "Omega AWS Peer 1" profile="AWS Profile 1"
-add address=34.199.7.183/32 disabled=yes local-address=<REDACTED_WAN_IP> name=\
+add address=<REDACTED_VPN_PEER_2>/32 disabled=yes local-address=<REDACTED_WAN_IP> name=\
     "Omega AWS Peer 2" profile="AWS Profile 2"
-add address=18.221.211.110/32 disabled=yes local-address=<REDACTED_WAN_IP> name=\
+add address=<REDACTED_VPN_PEER_3>/32 disabled=yes local-address=<REDACTED_WAN_IP> name=\
     "AWS Peer 2" profile="AWS Profile 2"
-add address=3.13.174.117/32 disabled=yes local-address=<REDACTED_WAN_IP> name=\
+add address=<REDACTED_VPN_PEER_4>/32 disabled=yes local-address=<REDACTED_WAN_IP> name=\
     "AWS Peer 1" profile="AWS Profile 1"
 /ip ipsec proposal
 add comment="AWS PROPOSAL" disabled=yes enc-algorithms=aes-128-cbc lifetime=\
@@ -402,15 +402,15 @@ add action=accept chain=forward comment=\
     "Allow WireGuard tunnel traffic to forward" src-address=172.16.91.0/24
 add action=accept chain=input dst-port=1701,500,4500 log=yes protocol=udp
 add action=accept chain=input comment="AWS 1" in-interface-list=WAN protocol=\
-    ipsec-esp src-address=34.199.7.183
+    ipsec-esp src-address=<REDACTED_VPN_PEER_2>
 add action=accept chain=input dst-address=<REDACTED_WAN_IP> dst-port=500 \
-    in-interface-list=WAN protocol=udp src-address=34.199.7.183 src-port=500
+    in-interface-list=WAN protocol=udp src-address=<REDACTED_VPN_PEER_2> src-port=500
 add action=accept chain=input dst-address=169.254.41.170 in-interface-list=\
     WAN protocol=tcp src-address=169.254.41.169 src-port=179
 add action=accept chain=input comment="AWS 2" protocol=ipsec-esp src-address=\
-    34.206.170.18
+    <REDACTED_VPN_PEER_1>
 add action=accept chain=input dst-address=<REDACTED_WAN_IP> dst-port=500 \
-    in-interface-list=WAN protocol=udp src-address=34.206.170.18 src-port=500
+    in-interface-list=WAN protocol=udp src-address=<REDACTED_VPN_PEER_1> src-port=500
 add action=accept chain=input dst-address=169.254.113.230 in-interface-list=\
     WAN protocol=tcp src-address=169.254.113.229 src-port=179
 add action=accept chain=forward comment="AWS Forward" in-interface-list=WAN \
@@ -583,8 +583,8 @@ add disabled=yes dst-address=10.90.0.0/16 peer="Omega AWS Peer 1" proposal=\
     "Aws 1" src-address=172.16.91.0/27 tunnel=yes
 add disabled=yes dst-address=10.90.0.0/16 peer="Omega AWS Peer 1" proposal=\
     "Aws 1" src-address=172.16.90.0/24 tunnel=yes
-add disabled=yes dst-address=34.199.7.183/32 peer="Omega AWS Peer 2" \
-    proposal="Aws 2" src-address=100.37.100.177/32 tunnel=yes
+add disabled=yes dst-address=<REDACTED_VPN_PEER_2>/32 peer="Omega AWS Peer 2" \
+    proposal="Aws 2" src-address=<REDACTED_WAN_IP>/32 tunnel=yes
 /ip route
 add check-gateway=ping disabled=no distance=1 dst-address=0.0.0.0/0 gateway=\
     172.16.91.30 routing-table=torrent_over_mostar scope=30 target-scope=10
