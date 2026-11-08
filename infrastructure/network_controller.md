@@ -16,7 +16,7 @@ The Network Controller manages the UniFi ecosystem and serves as the primary ing
 | Interface | Connection | IP Address | Purpose |
 | :--- | :--- | :--- | :--- |
 | **NIC 1 (eth0)** | Perimeter Switch | `10.0.10.6` | Web UI Access & Secure Ingress |
-| **NIC 2 (eth1)** | House LAN Switch | `192.168.89.6` | UniFi Inform Port (L2 Discovery) |
+| **NIC 2 (eth1)** | House LAN Switch | `192.168.89.6` | UniFi Inform. APs on VLAN 30 reach it routed through the hAP ac |
 
 ## **Software Stack (Docker)**
 The Beelink runs a critical management stack. Beyond the [UniFi Controller](../infrastructure/unifi.md), it hosts the network's Edge Proxy.
