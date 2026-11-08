@@ -1,6 +1,6 @@
 # Network Topology & VLANs
 
-Live reference: NYC `Kuca` (RB962UiGS-5HacT2HnT, ROS 7.23.2, checked 2026-07-27), Mostar `Kuca-Mostar` (RB951G-2HnD, ROS 7.23.2, checked 2026-07-27), and roaming `Kuca-Roaming` (RB951Ui-2HnD, ROS 7.24.5, checked 2026-10-15). Detailed RouterOS notes: [`mikrotik_config.md`](mikrotik_config.md), [`mikrotik_mostar_config.md`](mikrotik_mostar_config.md), [`mikrotik_roaming_config.md`](mikrotik_roaming_config.md). Subnet tables: [`networks.md`](networks.md).
+Live reference: NYC `Kuca` (RB962UiGS-5HacT2HnT, ROS 7.25.1, checked 2026-11-08), Mostar `Kuca-Mostar` (RB951G-2HnD, ROS 7.23.2, checked 2026-07-27), and roaming `Kuca-Roaming` (RB951Ui-2HnD, ROS 7.24.5, checked 2026-10-15). Detailed RouterOS notes: [`mikrotik_config.md`](mikrotik_config.md), [`mikrotik_mostar_config.md`](mikrotik_mostar_config.md), [`mikrotik_roaming_config.md`](mikrotik_roaming_config.md). Subnet tables: [`networks.md`](networks.md).
 
 ---
 
@@ -17,10 +17,12 @@ flowchart TB
     HOME["home_lan<br/>192.168.89.0/24"]
     WIFI["home_wifi_vlan VLAN2<br/>192.168.90.0/24"]
     IOT["iot_vlan VLAN4<br/>172.16.90.0/24"]
+    APM["ap_mgmt_vlan VLAN30<br/>10.0.30.0/28"]
+    CAMLAN["camera LAN ether4<br/>10.0.20.0/28"]
     TOR["torrent VLAN<br/>172.16.55.0/29"]
     L2TP_SRV["L2TP/IPsec server<br/>peer 172.16.91.30"]
     NYC_WAN --- NYC_R
-    NYC_R --- PER & HOME & WIFI & IOT & TOR & L2TP_SRV
+    NYC_R --- PER & HOME & WIFI & IOT & APM & CAMLAN & TOR & L2TP_SRV
   end
 
   subgraph MOST["Mostar — Kuca-Mostar RB951G"]
@@ -68,6 +70,7 @@ flowchart TB
     E2 --- PX["CSS326 port 6 Proxmox 10.0.10.11"]
     E2 --- NAS2["NAS2 OMV 10.0.10.17"]
     E2 --- BEE[Beelink Traefik/UniFi 10.0.10.6]
+    E2 --- JETE["Jetson Ethernet 10.0.10.20"]
     E2 --- CSS[CSS326 10.0.10.2]
     NAS2 --- QBIT["qBittorrent<br/>macvlan 172.16.55.2"]
   end
@@ -79,16 +82,43 @@ flowchart TB
 
   subgraph HOUSE["House / IoT"]
     HOME --- E5[ether5 house jacks]
-    HOME --- APT["sfp1 AP trunk<br/>CSS326 SFP1, APs on ports 13-16"]
+    HOME --- APT["sfp1 AP trunk<br/>VLANs 2, 4, 30 to CSS326 SFP1"]
     V4 --- JET["Jetson 172.16.90.20"]
     V4 --- PRINT["Printer 172.16.90.113"]
     E5 --- MQTT["MQTT 192.168.89.26"]
     E5 --- HA["HA 192.168.89.25"]
+    E5 --- BEEH["Beelink house NIC 192.168.89.6"]
   end
+
+  subgraph APZ["Access points, CSS326 ports 13-16"]
+    APT --- AP1["Bottom Floor 10.0.30.5, port 13"]
+    APT --- AP2["Backyard 10.0.30.3, port 14"]
+    APT --- AP3["Top Floor 10.0.30.4, port 15"]
+  end
+
+  subgraph CAMZ["Camera VLAN 20, CSS326 ports 17-24"]
+    CAM --- CSSCAM["CSS326 port 18"]
+    CSSCAM --- NVRCAM["NVR enp8s0 10.0.20.2, port 17"]
+    CSSCAM --- CAMS["Cameras, ports 21-24"]
+  end
+
+  V30 -.->|"AP inform TCP 8080, routed"| BEEH
 
   QBIT -.->|default via 172.16.55.1| TORNET
   TORNET -.->|mark torrent_over_mostar| L2TP[L2TP to Mostar]
 ```
+
+### CSS326 segmentation
+
+The CSS326 carries three groups that are separated by VLAN membership and Port Isolation. Port detail is in [`switching.md`](switching.md).
+
+| Group | Ports | Uplink to `Kuca` | Network |
+| --- | --- | --- | --- |
+| Servers | 1–12, SFP2 | Port 1 to `ether2` | `perimiter`, VLAN 1 |
+| Access points | 13–16 | SFP1 to `sfp1` | AP management on VLAN 30, Wi-Fi clients on tagged VLANs 2 and 4 |
+| Cameras | 17–24 | Port 18 to `ether4` | Camera LAN, VLAN 20. Cameras reach only the NVR port and the `ether4` uplink |
+
+AP VLAN 30 can reach only the UniFi controller on the house LAN, plus DHCP, DNS and NTP on the router. It has no direct internet access.
 
 ---
 
