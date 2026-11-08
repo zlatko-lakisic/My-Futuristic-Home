@@ -58,6 +58,7 @@ flowchart TB
     R --> LAN_VPN["Bridge Lan<br/>VPN pool 172.16.91.0/27"]
     HOME --> V2["VLAN 2 home_wifi"]
     HOME --> V4["VLAN 4 iot"]
+    HOME --> V30["VLAN 30 ap_mgmt 10.0.30.0/28"]
     PER --> TORNET["172.16.55.1/29 torrent"]
   end
 
@@ -77,7 +78,8 @@ flowchart TB
   end
 
   subgraph HOUSE["House / IoT"]
-    HOME --- E5[ether5 house jacks / APs]
+    HOME --- E5[ether5 house jacks]
+    HOME --- APT["sfp1 AP trunk<br/>CSS326 SFP1, APs on ports 13-16"]
     V4 --- JET["Jetson 172.16.90.20"]
     V4 --- PRINT["Printer 172.16.90.113"]
     E5 --- MQTT["MQTT 192.168.89.26"]

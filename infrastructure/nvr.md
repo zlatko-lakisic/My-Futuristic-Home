@@ -27,7 +27,7 @@ The NVR uses separate physical interfaces so management, the house LAN, camera i
 | :--- | :--- | :--- | :--- |
 | **enp3s0** | CSS326 port 3 | `10.0.10.16/24` | Management |
 | **br-cam** (`enp4s0`, spare `enp11s0`) | House LAN | `192.168.89.37/24` | Current camera ingest. Default route via `192.168.89.1`. Leave `enp11s0` in this bridge |
-| **enp8s0** | CSS326 port 13, labeled NVR (VLAN 20). This is not the jack labeled 8 on the case | `10.0.20.2/28` | Camera LAN. No default gateway. Link is up at 1G |
+| **enp8s0** | CSS326 port 17, labeled NVR-Cameras (VLAN 20). This is not the jack labeled 8 on the case | `10.0.20.2/28` | Camera LAN. No default gateway. Link is up at 1G |
 | **enp7s0** | NAS2 direct link. The jack labeled 8 on the back of the NVR stays on NAS2 | `172.16.100.3/24` | NFS storage backplane |
 
 ## **Remote Storage Configuration (`/etc/fstab`)**
