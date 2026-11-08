@@ -546,7 +546,7 @@ export const systems: System[] = [
         u: 8,
         role: 'Switching',
         model: 'MikroTik CSS326-24G-2S+RM',
-        detail: 'Perimeter switch with 10G SFP+ backbone ports reserved for storage and uplink paths.',
+        detail: 'Perimeter switch for servers, access points, and cameras, kept apart with VLANs and port isolation. SFP+ ports reserved for uplink paths.',
       },
       {
         u: 7,
@@ -564,7 +564,7 @@ export const systems: System[] = [
         u: 5,
         role: 'Controllers',
         model: 'TP-Link TL-SG1024',
-        detail: 'House LAN switching for trusted wired devices and AP uplinks.',
+        detail: 'House LAN switching for trusted wired devices.',
       },
       {
         u: 4,
