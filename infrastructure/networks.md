@@ -14,11 +14,12 @@ Canonical diagrams: [`networking.md`](networking.md). RouterOS detail: [`mikroti
 
 | Subnet | Name | Interface | Purpose |
 | :--- | :--- | :--- | :--- |
-| `192.168.89.0/24` | **home_lan** | `home_lan` (ether5 + maint WLAN) | APs, MQTT, house wall jacks, HA SMB |
+| `192.168.89.0/24` | **home_lan** | `home_lan` (ether5, sfp1 AP trunk + maint WLAN) | MQTT, house wall jacks, HA SMB |
 | `192.168.90.0/24` | **home_wifi_vlan** | VLAN 2 on `home_lan` | Trusted wireless clients |
 | `172.16.90.0/24` | **iot_vlan** | VLAN 4 on `home_lan` | Isolated IoT (Jetson `172.16.90.20`, printer, etc.) |
 | `10.0.10.0/24` | **perimiter** | `perimiter` (ether2–ether3) | Servers, NAS, switches, Traefik/UniFi |
 | `10.0.20.0/28` | **camera LAN** | `ether4` (`10.0.20.1/28`) | Cameras and NVR `enp8s0` (`10.0.20.2/28`). DHCP `10.0.20.3–10.0.20.12`. Not on the support list |
+| `10.0.30.0/28` | **ap_mgmt_vlan** | VLAN 30 on `home_lan` (`10.0.30.1/28`) | UniFi AP management. DHCP `10.0.30.3–10.0.30.14`. Reaches only the UniFi controller. Not on the support list |
 | `172.16.55.0/29` | **torrent-vlan** | Address on `perimiter` | qBittorrent breakout (`172.16.55.2` → Mostar) |
 | `172.16.91.0/27` | **VPN pool** | Bridge `Lan` + dynamic L2TP/OVPN | Remote VPN clients / Mostar tunnel endpoints |
 | `172.16.91.0/30` | **wg-mostar** | `wg-mostar` (**disabled**) | Standby WireGuard addressing |
@@ -111,7 +112,8 @@ Public-facing IPv4 is on the **ISP CPE**, not on Mostar ether1. Discovered every
 
 - Management `10.0.10.2`
 - Fed from hAP ac ether2 (VLAN 1)
-- Ports 13–24 are camera VLAN 20. Port 14 uplinks to hAP ac ether4. Port 13 is NVR `enp8s0`
+- Ports 13–16 are APs on VLAN 30, with Wi-Fi VLANs 2 and 4 tagged. SFP1 trunks them to hAP ac `sfp1`
+- Ports 17–24 are camera VLAN 20. Port 18 uplinks to hAP ac ether4. Port 17 is NVR `enp8s0`
 
 ### House: TP-Link TL-SG1024
 
