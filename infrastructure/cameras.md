@@ -9,7 +9,7 @@ The surveillance network consists of 8 high-definition IP cameras. They are stil
 The cameras are still on the house LAN and still answer at the addresses below. A separate camera segment is already configured and waiting for the data patches to move.
 
 - **Current subnet:** `192.168.89.0/24` (`home_dhcp` on Kuca). Every live camera is a DHCP client. A MikroTik reservation only pins the address; it is not a static address configured on the camera.
-- **Prepared subnet:** `10.0.20.0/28` on Kuca `ether4` (`10.0.20.1/28`). DHCP pool `10.0.20.3–10.0.20.12`. CSS326 ports 13–24 are VLAN 20 access ports. Port 14 is the uplink from `ether4`. Port 13 is NVR `enp8s0` at `10.0.20.2/28`.
+- **Prepared subnet:** `10.0.20.0/28` on Kuca `ether4` (`10.0.20.1/28`). DHCP pool `10.0.20.3–10.0.20.12`. CSS326 ports 17–24 are VLAN 20 access ports. Port 18 is the uplink from `ether4`. Port 17 is NVR `enp8s0` at `10.0.20.2/28`.
 - **Ingest today:** Frigate, on bridge `br-cam` (`192.168.89.37`), pulls the RTSP URLs below. `enp11s0` is also a member of `br-cam` and must stay off the new subnet.
 
 ## **Camera Inventory**

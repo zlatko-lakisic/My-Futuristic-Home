@@ -3,25 +3,26 @@
 The wireless layer is powered by Ubiquiti UniFi Access Points, managed by a self-hosted controller.
 
 ## **Access Point Inventory**
-All APs are hardwired to the TP-Link TL-SG1024 and assigned static IPs via the MikroTik hAP ac.
+All APs are wired to CSS326 ports 13–16 on AP management VLAN 30 (`10.0.30.0/28`), with reservations on the MikroTik hAP ac. Wi-Fi client traffic stays tagged on VLANs 2 and 4 and reaches the router over the SFP1 trunk. The CSS326 has no PoE, so AP power stays on the midspan.
 
-| Location | Model | Subnet | Status |
+| AP | MAC | Address | CSS326 port |
 | :--- | :--- | :--- | :--- |
-| **Basement** | UniFi nanoHD | 192.168.89.x | Wired |
-| **Office** | UniFi nanoHD | 192.168.89.x | Wired |
-| **Top Hallway** | UniFi nanoHD | 192.168.89.x | Wired |
-| **Backyard** | UAP-AC-M-US | 192.168.89.x | Outdoor/Wired |
+| **Bottom Floor** | `78:45:58:80:78:EE` | `10.0.30.5` | 13 |
+| **Backyard** | `F4:E2:C6:19:BF:A2` | `10.0.30.3` | 14 |
+| **Top Floor** | `78:45:58:80:7F:6C` | `10.0.30.4` | 15 |
+
+Port 16 is open for another AP. An older inventory listed nanoHDs in the Basement, Office and Top Hallway, plus a UAP-AC-M-US in the Backyard. Only the three APs above were on the network on 2026-11-08.
 
 ## **Controller Configuration**
 The UniFi Controller runs as a Docker container on the **Networking Server (10.0.10.6)**.
 
 ## ⚠️ Custom Port Configuration
-The standard port `8080` was conflicted or restricted, so the controller has been migrated to `8880` for device communication.
+The controller answers inform on both `8080` and `8880`. The three current APs use `8080`; the Kuca `ap-inform` firewall rule allows both.
 
 **Impact:**
-- Any new AP adoption must use the manual command: 
-  `set-inform http://192.168.89.6:8880/inform`
-- This ensures traffic stays on the **House LAN (192.168.89.6)** and avoids hitting the **MikroTik hAP ac** CPU for routing.
+- APs on VLAN 30 reach the controller at `192.168.89.6` through the MikroTik hAP ac, so inform traffic is routed. It is small, and Wi-Fi client traffic does not take this path to the controller.
+- New APs on ports 13–16 get a VLAN 30 address. Adopt them with:
+  `set-inform http://192.168.89.6:8080/inform`
 
 ### `docker-compose.yml` (Snippet)
 ```yaml
@@ -48,7 +49,7 @@ services:
       - /var/unifi-network-application/data:/config
     ports:
       - "10.0.10.6:8443:8443"       # Web UI (Perimeter IP)
-      - "192.168.89.6:8880:8880"    # NEW: Device Inform (House LAN IP)
+      - "192.168.89.6:8880:8880"    # Device Inform (House LAN IP). 8080 also answers live; check the running compose file
       - "3478:3478/udp"             # STUN
       - "10001:10001/udp"           # Discovery
       - "6789:6789"                 # Speed Test (Optional)
