@@ -17,7 +17,7 @@ Remote-site router behind a NAT-enabled ISP CPE. Site diagrams: [`networking.md`
 | `ether1 - wan` | Uplink to ISP CPE — static `192.168.100.100/24`, gateway `192.168.100.1` |
 | `telemach_bridge` | Local Mostar wired (ether2–5) + `wlan_mostar` SSID `Kuca-Mostar` |
 | `nyc_bridge` | `192.168.88.1/24` + `wlan_nyc` SSID `Kuca-NYC`; clients marked `via_nyc` |
-| `mikrotik-kuca-l2tp` | L2TP/IPsec client → `<REDACTED_VPN_SERVER>` (`add-default-route=yes`, `default-route-distance=2`) |
+| `mikrotik-kuca-l2tp` | L2TP/IPsec client → the NYC VPN hostname (not documented) (`add-default-route=yes`, `default-route-distance=2`) |
 | `wg-nyc` | WireGuard interface present; **peer disabled** (standby) |
 | `mikrotik-kuca-ovpn-client` | OpenVPN client (**disabled**) |
 

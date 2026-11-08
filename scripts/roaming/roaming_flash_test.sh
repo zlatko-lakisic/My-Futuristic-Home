@@ -73,13 +73,25 @@ cfg_prefix=24
 cfg_local_network=172.31.250.0
 cfg_local_prefix=24
 cfg_country='united states'
-cfg_l2tp_server=<REDACTED_VPN_SERVER>
+cfg_l2tp_server=vpn.example.test
 cfg_l2tp_user=
 cfg_l2tp_password=stored-secret
 cfg_ipsec=ipsec-secret
 cfg_home=$'192.168.89.0/24\n10.0.10.0/24\n172.16.90.0/24'
 cfg_extra=192.168.90.0/24
 fill_derived_config
+
+if python3 -c '' >/dev/null 2>&1; then
+  server_json=$(mktemp)
+  printf '%s' '{"name":"Trip","wifiPassword":"w","adminPassword":"a","lanNetwork":"10.50.0.0","l2tp":{"ipsecSecret":"i"}}' > "$server_json"
+  if load_config_json "$server_json" yes >/dev/null 2>&1; then fail 'missing VPN server is rejected'; fi
+  printf '%s' '{"name":"Trip","wifiPassword":"w","adminPassword":"a","lanNetwork":"10.50.0.0","l2tp":{"ipsecSecret":"i","server":"vpn.example.test"}}' > "$server_json"
+  if ! load_config_json "$server_json" yes >/dev/null 2>&1; then fail 'config with a VPN server is accepted'; fi
+  rm -f "$server_json"
+else
+  echo 'SKIP: python3 is unavailable, so the VPN server config checks did not run'
+fi
+
 [[ $cfg_l2tp_user == l2tp-roaming-trip ]] || fail 'secret name follows the router name'
 cfg_name=Cabin
 cfg_lan_network=10.51.0.0
