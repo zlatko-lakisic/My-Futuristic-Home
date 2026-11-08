@@ -2,7 +2,7 @@
 
 **Device model:** RB962UiGS-5HacT2HnT (hAP ac)  
 **Identity:** `Kuca`  
-**Software:** RouterOS 7.23.2 (re-verified live 2026-07-27)  
+**Software:** RouterOS 7.25.1 (verified live 2026-11-08)  
 **Serial / software id:** redacted  
 **Sanitized export:** [`mikrotik_home_config.rsc`](mikrotik_home_config.rsc)
 
@@ -19,6 +19,7 @@ Primary NYC gateway. Mostar (`Kuca-Mostar`) dials back over **L2TP/IPsec** (prim
 | House LAN | Bridge `home_lan` — trusted wired (`192.168.89.0/24`) |
 | Home Wi‑Fi VLAN | `home_wifi_vlan` (VLAN 2) — `192.168.90.0/24` |
 | IoT VLAN | `iot_vlan` (VLAN 4) — `172.16.90.0/24` |
+| AP management VLAN | `ap_mgmt_vlan` (VLAN 30) on `home_lan` — `10.0.30.0/28` |
 | VPN pool | `172.16.91.0/27` on bridge `Lan` (L2TP / OVPN / WG peer addressing) |
 | Torrent breakout | `172.16.55.0/29` on perimeter; marked `torrent_over_mostar` toward Mostar |
 
@@ -42,12 +43,13 @@ set [ find default-name=ether5 ] arp=local-proxy-arp comment=192.168.89.1
 /interface vlan
 add arp=proxy-arp interface=home_lan name=home_wifi_vlan vlan-id=2
 add arp=proxy-arp interface=home_lan name=iot_vlan vlan-id=4
+add comment=ap-mgmt interface=home_lan name=ap_mgmt_vlan vlan-id=30
 ```
 
 **Bridge membership:**
 
-- `perimiter`: ether2, ether3. `ether4` is not a bridge port. It is the camera LAN, `10.0.20.1/28`. Proxmox is on CSS326 port 6.
-- `home_lan`: ether5, wlan3 (5 GHz maint SSID)  
+- `perimiter`: ether2 (CSS326 port 1), ether3. `ether4` is not a bridge port. It is the camera LAN, `10.0.20.1/28`. Proxmox is on CSS326 port 6.
+- `home_lan`: ether5, sfp1 (AP trunk to CSS326 SFP1, tagged VLANs 2, 4 and 30), wlan3 (5 GHz maint SSID)  
 - Wireless SSIDs include `Kuca 2g`, hidden maintenance SSID, plus virtual APs  
 
 **Interface lists:** `WAN` (`ether1 - WAN`), `LAN` (`Lan`), `homelan` (`home_lan`, `ether5`), `NBI VPN` (legacy).
@@ -65,6 +67,7 @@ add address=192.168.90.1/24 interface=home_wifi_vlan network=192.168.90.0
 add address=172.16.91.1/27 interface=Lan network=172.16.91.0
 add address=172.16.55.1/29 comment=torrent-vlan-network interface=perimiter network=172.16.55.0
 add address=10.0.20.1/28 comment=camera-lan interface=ether4 network=10.0.20.0
+add address=10.0.30.1/28 comment=ap-mgmt interface=ap_mgmt_vlan network=10.0.30.0
 add address=172.16.91.1/30 interface=wg-mostar network=172.16.91.0
 ```
 
@@ -79,6 +82,7 @@ WAN uses DHCP on `ether1 - WAN` (public IPv4 is dynamic). Disabled AWS/link-loca
 | `iot_dhcp` | `iot_vlan` | Includes Jetson `172.16.90.20`, printer `172.16.90.113` |
 | `perimiter_dhcp` | `perimiter` | **Server disabled**; static leases retained historically |
 | `cam_dhcp` | `ether4` | Pool `cam_dhcp_pool` `10.0.20.3–10.0.20.12`. DNS and NTP are `10.0.20.1` |
+| `ap_mgmt_dhcp` | `ap_mgmt_vlan` | Pool `ap_mgmt_pool` `10.0.30.3–10.0.30.14`. DNS and NTP are `10.0.30.1`. Reservations: Backyard `.3`, Top Floor `.4`, Bottom Floor `.5` |
 
 ---
 
@@ -151,6 +155,7 @@ Detail: [`mikrotik_roaming_config.md`](mikrotik_roaming_config.md).
 - MQTT failover DNAT IoT → `192.168.89.26:1883`  
 - Filter log `TRACE-TORRENT` + accept for `172.16.55.0/29`  
 - `homeassistant` API user group for HACS MikroTik (API-only policies)
+- AP VLAN rules (`ap-*` comments): `10.0.30.0/28` may reach `192.168.89.6` on TCP 8080 and 8880 and UDP 3478 only. New connections out of or into the VLAN are otherwise dropped, except from the admin PC `192.168.89.13`. DHCP, DNS and NTP to the router are accepted before the input drop. APs have no direct internet
 
 ---
 
@@ -188,6 +193,7 @@ Full static map is in the sanitized `.rsc`.
 ## Notes / drift
 
 - Proxmox host `10.0.10.11` is on CSS326 port 6. `ether4` is the camera LAN (`10.0.20.1/28`), not a perimeter bridge port. New sessions from `10.0.20.0/28` are dropped in the forward chain (`camera-lan-no-new-egress`). DHCP, DNS, and NTP to the router on `ether4` are accepted before the input drop. The camera subnet is not on the `support` list.
+- APs moved to VLAN 30 on 2026-11-08. `mikrotik_home_config.rsc` predates this change and the camera LAN.
 - Perimeter DHCP server is **disabled**.  
 - AWS site-to-site IPsec/BGP templates remain **disabled**.  
 - qBittorrent lives on NAS2 (`10.0.10.17`) with macvlan `172.16.55.2` — see [`../storage/nas2.md`](../storage/nas2.md).  
