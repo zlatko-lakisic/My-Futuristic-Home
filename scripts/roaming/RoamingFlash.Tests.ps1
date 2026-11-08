@@ -32,7 +32,7 @@ function New-TestRaw {
         homeNetworks      = @('192.168.89.0/24', '10.0.10.0/24', '172.16.90.0/24')
         managementExtra   = @('192.168.90.0/24')
         l2tp              = [pscustomobject]@{
-            server       = 'nyc.mostardesigns.com'
+            server       = 'vpn.example.test'
             username     = ''
             password     = $Password
             ipsecSecret  = 'ipsec-secret'
@@ -102,6 +102,11 @@ Assert-Equal (Get-ApplyStage -Apply -Confirmed -ConfirmedBoard -OnLink) 'reset' 
 
 $trip = Resolve-RoamingConfig -Raw (New-TestRaw) -RequireSecrets
 $cabin = Resolve-RoamingConfig -Raw (New-TestRaw -Name 'Cabin' -Lan '10.51.0.0') -RequireSecrets
+$noServer = New-TestRaw
+$noServer.l2tp.server = ''
+$threw = $false
+try { Resolve-RoamingConfig -Raw $noServer -RequireSecrets | Out-Null } catch { $threw = $true }
+Assert-True $threw 'missing VPN server is rejected'
 Assert-Equal $trip.L2tpUsername 'l2tp-roaming-trip' 'secret name follows the router name'
 Assert-True ($trip.L2tpUsername -ne $cabin.L2tpUsername) 'a second name gets a different secret'
 $planText = Format-RoamingPlan -Config $trip -VpnAddress '172.16.91.6' -IpsecResult 'match' -KeyCount 2 -PoolNote 'vpn_pool'

@@ -122,7 +122,7 @@ Public-facing IPv4 is on the **ISP CPE**, not on Mostar ether1. Discovered every
 
 ### Remote: MikroTik RB951G (`Kuca-Mostar`)
 
-- Behind ISP CPE NAT; L2TP client to `nyc.mostardesigns.com`
+- Behind ISP CPE NAT; L2TP client to the NYC VPN hostname (not documented)
 - Dual WLAN: `Kuca-Mostar` (local) / `Kuca-NYC` (via NYC)
 
 ### Roaming: MikroTik RB951Ui-2HnD (`Kuca-Roaming`)

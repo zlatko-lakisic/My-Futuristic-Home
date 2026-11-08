@@ -322,7 +322,7 @@ add address=10.0.10.178 name=openldap.mostardesigns.com type=A
 add address=10.0.10.6 name=mail.mostardesigns.com type=A
 add address=10.0.10.6 name=imap.mostardesigns.com type=A
 add address=10.0.10.6 name=smtp.mostardesigns.com type=A
-add cname=nyc.mostardesigns.com name=api.double-take.io type=CNAME
+add cname=<REDACTED_VPN_SERVER> name=api.double-take.io type=CNAME
 add address=10.0.10.6 name=plex.mostardesigns.com type=A
 add address=10.0.10.6 name=radarr.mostardesigns.com type=A
 add address=10.0.10.6 name=sonarr.mostardesigns.com type=A

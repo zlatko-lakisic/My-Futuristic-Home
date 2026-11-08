@@ -27,7 +27,7 @@ On a flashed board, `{Name}-Roaming-NYC` is the VPN LAN. `{Name}-Roaming` is a s
 | `nyc_bridge` | `192.168.86.1/24`. ether2–5 and `wlan_nyc` SSID `Kuca-Roaming-NYC`. Away from home, this bridge is marked `via_nyc` |
 | `roaming lan bridge` | `wlan_kuca` SSID `Kuca-Roaming` only. Local SSID, not the NYC path |
 | `wlan_roaming` | Hidden physical AP (`kuca-radio`, `hide-ssid=yes`). Master for the virtual interfaces |
-| `mikrotik-kuca-l2tp` | L2TP/IPsec client → `nyc.mostardesigns.com`. Enabled only when the uplink is not a home LAN. Address `172.16.91.25` |
+| `mikrotik-kuca-l2tp` | L2TP/IPsec client → the NYC VPN hostname (not documented). Enabled only when the uplink is not a home LAN. Address `172.16.91.25` |
 | `mikrotik-kuca-ovpn-client` | OpenVPN client. Stays disabled. Reserved address `172.16.91.24` |
 | `wg-nyc` | WireGuard interface left over from the Mostar clone (`172.16.91.2/30`). Peer stays disabled. Do not enable it while Mostar still owns that standby |
 

@@ -16,7 +16,7 @@ set [ find default-name=ether5 ] comment="Bedroom TV" l2mtu=1598
 /interface l2tp-client
 add add-default-route=yes default-route-distance=2 allow=mschap2 \
     allow-fast-path=yes connect-to=\
-    nyc.mostardesigns.com disabled=no ipsec-secret=<REDACTED_IPSEC_SECRET> name=\
+    <REDACTED_VPN_SERVER> disabled=no ipsec-secret=<REDACTED_IPSEC_SECRET> name=\
     mikrotik-kuca-l2tp password=<REDACTED_PASSWORD> use-ipsec=yes use-peer-dns=\
     exclusively user=<REDACTED_USER>
 /interface wireguard
@@ -46,7 +46,7 @@ add address-pool=default-dhcp interface=nyc_bridge lease-time=10m name=\
     defconf
 /interface ovpn-client
 add add-default-route=yes certificate=mikrotik-kuca-ovpn-client-crt cipher=\
-    aes128-cbc connect-to=nyc.mostardesigns.com disabled=yes mac-address=\
+    aes128-cbc connect-to=<REDACTED_VPN_SERVER> disabled=yes mac-address=\
     <REDACTED_MAC> name=mikrotik-kuca-ovpn-client password=<REDACTED_PASSWORD> \
     profile=default-encryption user=<REDACTED_USER>
 /routing table
@@ -105,7 +105,7 @@ add interface=nyc_bridge list=OK-To-Route
 add auth=sha1,md5 mac-address=<REDACTED_MAC> name=ovpn-server1
 /interface wireguard peers
 add allowed-address=0.0.0.0/0 disabled=yes endpoint-address=\
-    nyc.mostardesigns.com endpoint-port=51820 interface=wg-nyc name=peer1 \
+    <REDACTED_VPN_SERVER> endpoint-port=51820 interface=wg-nyc name=peer1 \
     persistent-keepalive=25s public-key=\
     "<REDACTED_WIREGUARD_PUBLIC_KEY>"
 /ip address

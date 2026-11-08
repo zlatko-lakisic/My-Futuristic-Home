@@ -354,7 +354,6 @@ fill_derived_config() {
   [[ -n $cfg_prefix ]] || cfg_prefix=24
   [[ -n $cfg_local_prefix ]] || cfg_local_prefix=24
   [[ -n $cfg_local_network ]] || cfg_local_network=172.31.250.0
-  [[ -n $cfg_l2tp_server ]] || cfg_l2tp_server=nyc.mostardesigns.com
   local plan
   plan=$(lan_plan "$cfg_lan_network" "$cfg_prefix") || return
   cfg_lan_cidr=$(printf '%s\n' "$plan" | sed -n 's/^cidr=//p')
@@ -397,14 +396,14 @@ fields = {
     'cfg_local_network': get(raw, 'localNetwork', '172.31.250.0'),
     'cfg_local_prefix': get(raw, 'localPrefixLength', 24),
     'cfg_country': get(raw, 'country', 'united states'),
-    'cfg_l2tp_server': get(l2tp, 'server', 'nyc.mostardesigns.com'),
+    'cfg_l2tp_server': get(l2tp, 'server'),
     'cfg_l2tp_user': get(l2tp, 'username'),
     'cfg_l2tp_password': get(l2tp, 'password'),
     'cfg_ipsec': get(l2tp, 'ipsecSecret'),
     'cfg_home': '\n'.join(str(item) for item in home),
     'cfg_extra': '\n'.join(str(item) for item in extra),
 }
-if require and (not fields['cfg_wifi'] or not fields['cfg_admin'] or not fields['cfg_ipsec']):
+if require and (not fields['cfg_wifi'] or not fields['cfg_admin'] or not fields['cfg_ipsec'] or not fields['cfg_l2tp_server']):
     sys.exit(2)
 for key, value in fields.items():
     print(f"{key}={sh(value)}")

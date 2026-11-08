@@ -464,7 +464,7 @@ function Resolve-RoamingConfig {
     $extra = @('192.168.90.0/24')
     if ($Raw.managementExtra) { $extra = @($Raw.managementExtra) }
     $l2tp = $Raw.l2tp
-    $server = 'nyc.mostardesigns.com'
+    $server = ''
     $username = ''
     $password = ''
     $ipsec = ''
@@ -486,6 +486,7 @@ function Resolve-RoamingConfig {
         if (-not $wifi) { throw 'wifiPassword is required in the secrets file.' }
         if (-not $Raw.adminPassword) { throw 'adminPassword is required in the secrets file.' }
         if (-not $ipsec) { throw 'l2tp.ipsecSecret is required in the secrets file.' }
+        if (-not $server) { throw 'l2tp.server is required in the secrets file.' }
     }
     return [pscustomobject]@{
         Name            = $name

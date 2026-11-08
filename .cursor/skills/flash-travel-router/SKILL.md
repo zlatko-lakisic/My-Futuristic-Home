@@ -18,7 +18,7 @@ Flags for the PowerShell script are `-Config`, `-Apply`, `-Confirmed`, `-Confirm
 
 The shell script uses OpenSSH and `SSH_ASKPASS`. Do not install or use sshpass. Ask with the AskQuestion tool, one or two questions per turn. Every question has clickable choices. The form's Other field is the fill-in. If the value they need is not one of the choices, they type it in Other. A choice that says "type it in Other" is not answered until Other has text. Ask that question again when it does not.
 
-Write answers only to `.cursor/secrets/roaming-flash.json`. Do not print passwords, the IPsec secret, or SSH keys. Do not commit that file. Do not edit the plan file.
+Write answers only to `.cursor/secrets/roaming-flash.json`. Do not print passwords, the VPN server hostname, the IPsec secret, or SSH keys. Do not commit that file. Do not edit the plan file.
 
 Start from the repo root. Kuca login is `.cursor/secrets/.router-kuca`. Mostar login is `.cursor/secrets/.router-mostar`.
 
@@ -80,12 +80,16 @@ Ask in this order. Recommended choice goes first.
    - Type it in Other
    - I will paste it into the secrets file myself. Stop until that field is non-empty
 
-9. **Local SSID LAN.** Prompt: "Subnet for {Name}-Roaming, the splash-page SSID. It is not registered on Kuca."
+9. **VPN server.** Prompt: "Public hostname of the home L2TP server. It is stored only in the secrets file."
+   - Type it in Other
+   - I will paste it into the secrets file myself. Stop until that field is non-empty
+
+10. **Local SSID LAN.** Prompt: "Subnet for {Name}-Roaming, the splash-page SSID. It is not registered on Kuca."
    - 172.31.250.0/24
    - 172.31.251.0/24
    - Other: a different aligned subnet. It must not overlap the VPN LAN
 
-10. **Country.** Prompt: "Wi-Fi regulatory country."
+11. **Country.** Prompt: "Wi-Fi regulatory country."
     - united states
     - Other: a RouterOS country name
 
