@@ -25,7 +25,7 @@ Checked live 2026-11-08 after the AP VLAN move and port rename. Ports not listed
 | **6** | Proxmox | Proxmox `10.0.10.11` | Home Assistant bounces this port when the host stops answering |
 | **9** | NAS2 | NAS2 `10.0.10.17` | Stays on VLAN 1 |
 | **10** | Beelink | Beelink `10.0.10.6` | Traefik / UniFi host. Stays on VLAN 1 |
-| **11** | Port11 | `10.0.10.20`, `3C:6D:66:0C:8F:15` at 1G | Not identified yet |
+| **11** | Jetson | Jetson Ethernet `10.0.10.20`, `3C:6D:66:0C:8F:15` at 1G | Stays on VLAN 1 |
 | **13** | AP-BottomFloor | Bottom Floor AP `78:45:58:80:78:EE`, `10.0.30.5` | AP on VLAN 30 |
 | **14** | AP-BackYard | Backyard AP `F4:E2:C6:19:BF:A2`, `10.0.30.3` | AP on VLAN 30 |
 | **15** | AP-TopFloor | Top Floor AP `78:45:58:80:7F:6C`, `10.0.30.4` | AP on VLAN 30 |
