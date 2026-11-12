@@ -43,7 +43,7 @@ def main() -> int:
     base = (
         sys.argv[6].strip()
         if len(sys.argv) > 6 and sys.argv[6].strip()
-        else "http://192.168.89.37:5000"
+        else "http://10.0.10.20:5000"
     ).rstrip("/")
 
     after = max(0.0, since - 20.0)
