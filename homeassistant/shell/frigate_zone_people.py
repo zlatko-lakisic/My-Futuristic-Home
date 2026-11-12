@@ -41,7 +41,7 @@ def main() -> int:
     base = (
         sys.argv[4].strip()
         if len(sys.argv) > 4 and sys.argv[4].strip()
-        else "http://192.168.89.37:5000"
+        else "http://10.0.10.20:5000"
     ).rstrip("/")
 
     # Small lookback so we include the occupancy edge that started the automation.

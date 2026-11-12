@@ -142,8 +142,16 @@ blueprint:
         text:
     frigate_camera:
       name: Frigate camera name
-      description: Frigate camera id for visit correlation (e.g. east_side, west_side).
+      description: >
+        Frigate camera id for visit correlation (e.g. east_side, west_side). Also used to
+        pull stills from Frigate's API when the HA camera entity is unavailable.
       default: ""
+      selector:
+        text:
+    frigate_base_url:
+      name: Frigate API base URL
+      description: Used for the snapshot fallback when the HA camera entity is unavailable.
+      default: "http://10.0.10.20:5000"
       selector:
         text:
     visit_tracking_enabled:
@@ -172,6 +180,8 @@ variables:
   frigate_dog_sensor: !input frigate_dog_sensor
   property_zone_key: !input property_zone_key
   frigate_camera: !input frigate_camera
+  frigate_base_url: !input frigate_base_url
+  camera_entity: !input camera
   visit_tracking_enabled: !input visit_tracking_enabled
   notify_people: !input notify_people
   notify_only_when_away: !input notify_only_when_away
@@ -214,11 +224,26 @@ actions:
         then:
         - delay:
             seconds: '{{ frame_interval_seconds }}'
-      - action: camera.snapshot
-        target:
-          entity_id: !input camera
-        data:
-          filename: '/config/www/tmp/{{ gate_slug }}_{{ snapshot_timestamp }}_{{ repeat.index }}.jpg'
+      - alias: Snapshot via HA camera, or straight from Frigate when the entity is down
+        if:
+        - condition: template
+          value_template: >-
+            {{ states(camera_entity) in ['unavailable', 'unknown']
+               and (frigate_camera | default('', true) | string | trim | length) > 0 }}
+        then:
+        - action: shell_command.frigate_latest_snapshot
+          continue_on_error: true
+          data:
+            camera: '{{ frigate_camera }}'
+            dest: '/config/www/tmp/{{ gate_slug }}_{{ snapshot_timestamp }}_{{ repeat.index }}.jpg'
+            base_url: '{{ frigate_base_url }}'
+        else:
+        - action: camera.snapshot
+          continue_on_error: true
+          target:
+            entity_id: !input camera
+          data:
+            filename: '/config/www/tmp/{{ gate_slug }}_{{ snapshot_timestamp }}_{{ repeat.index }}.jpg'
       - alias: Keep latching occupancy during the burst
         variables:
           saw_person: >-

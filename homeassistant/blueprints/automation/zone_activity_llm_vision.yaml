@@ -248,7 +248,7 @@ blueprint:
           mode: slider
     frigate_base_url:
       name: Frigate API base URL
-      default: "http://192.168.89.37:5000"
+      default: "http://10.0.10.20:5000"
       selector:
         text:
     property_zone_key:
