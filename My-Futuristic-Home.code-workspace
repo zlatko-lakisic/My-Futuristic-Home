@@ -38,6 +38,9 @@
 		},
 		{
 			"path": "../hacs-wan-connections-map"
+		},
+		{
+			"path": "../car-tracker"
 		}
 	],
 	"settings": {}
