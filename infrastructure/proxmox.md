@@ -25,9 +25,14 @@ The server utilizes four **Western Digital SN810 2TB NVMe** drives, optimized fo
 
 ## **Virtualization Strategy**
 We utilize a hybrid approach to balance security and performance.
-- **Virtual Machines (VM):** Used for Home Assistant OS and the NVR (Frigate) to ensure kernel isolation.
-- **LXC Containers (CT):** Used for lightweight services like MQTT and Docker hosts.
+- **Virtual Machines (VM):** Used for Home Assistant OS and the NVR (Frigate) to ensure kernel isolation. Remaining QEMU guests include nginx-prod (100) and gitlab (102).
+- **LXC Containers (CT):** Used for lightweight services (tourguide LEMP CTs 190–193, AO Quill worker) and **MariaDB (CT 194)** on `10.0.10.207` (formerly QEMU VM 101).
+
+### MariaDB (CT 194)
+- **VMID:** 194 · **hostname:** `mariadb` · **IP:** `10.0.10.207` (unchanged for WordPress clients)
+- **Stack:** Ubuntu 24.04 · MariaDB 12.3 LTS · unprivileged LXC on `vm-store` / `vmbr0`
+- **QEMU 101:** Kept **stopped** after cutover for soak/rollback; destroy only after retire gate (48–72h + operator confirm). Snapshot `pre-lxc-194` exists on the old VM disk.
 
 ## **Backup Policy**
 - **Snapshots:** Taken before major updates.
-- **Automated Backups:** Daily dumps to [NAS1](../storage/nas1.md).
+- **Automated Backups:** Weekly vzdump (Sun 01:00) to `backups-ps3` for VMIDs including 100–102, 190–194. Daily dumps to [NAS1](../storage/nas1.md) where configured.
