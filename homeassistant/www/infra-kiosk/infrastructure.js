@@ -68,8 +68,8 @@ var ENTITIES = [
     "sensor.lxc_mariadb_194_memory_used_percentage",
     "sensor.qemu_gitlab2_102_cpu_used",
     "sensor.qemu_gitlab2_102_memory_used_percentage",
-    "sensor.qemu_active_directory_104_cpu_used",
-    "sensor.qemu_active_directory_104_memory_used_percentage",
+    "sensor.qemu_freeipa_106_cpu_used",
+    "sensor.qemu_freeipa_106_memory_used_percentage",
     "sensor.infra_garden_speaker_cpu_usage",
     "sensor.infra_garden_speaker_memory_usage",
     "sensor.infra_garden_speaker_nic_rx",
@@ -772,7 +772,7 @@ function setHtml(id, html) {
         "linear-gradient(90deg,#ffa726,#fb8c00)", "linear-gradient(90deg,#ffcc80,#e65100)"],
       ["gitlab (102)", "sensor.qemu_gitlab2_102_cpu_used", "sensor.qemu_gitlab2_102_memory_used_percentage",
         "linear-gradient(90deg,#42a5f5,#1e88e5)", "linear-gradient(90deg,#90caf9,#0d47a1)"],
-      ["kubernetes-test (104)", "sensor.qemu_active_directory_104_cpu_used", "sensor.qemu_active_directory_104_memory_used_percentage",
+      ["freeipa (106)", "sensor.qemu_freeipa_106_cpu_used", "sensor.qemu_freeipa_106_memory_used_percentage",
         "linear-gradient(90deg,#ab47bc,#8e24aa)", "linear-gradient(90deg,#ce93d8,#4a148c)"]
     ];
     var vmHtml = vms.map(function (row) {

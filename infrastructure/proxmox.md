@@ -25,8 +25,8 @@ The server utilizes four **Western Digital SN810 2TB NVMe** drives, optimized fo
 
 ## **Virtualization Strategy**
 We utilize a hybrid approach to balance security and performance.
-- **Virtual Machines (VM):** Used for Home Assistant OS and the NVR (Frigate) to ensure kernel isolation. Remaining QEMU guests include nginx-prod (100) and gitlab (102).
-- **LXC Containers (CT):** Used for lightweight services (tourguide LEMP CTs 190–193, AO Quill worker) and **MariaDB (CT 194)** on `10.0.10.207` (formerly QEMU VM 101).
+- **Virtual Machines (VM):** Used for Home Assistant OS and the NVR (Frigate) to ensure kernel isolation. Remaining tracked QEMU guests include nginx-prod (100), gitlab (102), and freeipa (106). QEMU kubernetes-test (104) was removed.
+- **LXC Containers (CT):** Used for lightweight services (tourguide LEMP CTs 190–193, AO Quill worker) and **MariaDB (CT 194)** on `10.0.10.207` (formerly QEMU VM 101). Home Assistant ProxmoxVE tracks CT 194 for infra dashboards.
 
 ### MariaDB (CT 194)
 - **VMID:** 194 · **hostname:** `mariadb` · **IP:** `10.0.10.207` (unchanged for WordPress clients)
