@@ -1,7 +1,9 @@
-# Map — one marker per person (GPS from linked phone / geocode fallback)
+# Map — people (GPS from linked phone / geocode fallback) + Family Car
 #
-# Device trackers are not plotted separately; each person is linked to one
+# People are not plotted as raw device_trackers; each person is linked to one
 # companion device (plus optional geocode fallback) in the Person settings.
+# Family Car is device_tracker.family_car (T-Beam GPS + Frigate LPR home).
+# Family Car Find Hub is the HACS Google Find My tracker (phone-sourced BLE).
 views:
   - title: Live Map
     path: map
@@ -60,6 +62,10 @@ views:
                         name: Adna
                       - entity: person.ibrica_lakisic
                         name: Ibrica
+                      - entity: device_tracker.family_car
+                        name: Family Car
+                      - entity: device_tracker.googlefindmytools_mc
+                        name: Family Car Find Hub
 
               - type: vertical-stack
                 view_layout:
@@ -81,6 +87,30 @@ views:
                       - entity: person.ibrica_lakisic
                         name: Ibrica
                         secondary_info: last-changed
+                  - type: heading
+                    heading: Vehicles
+                    heading_style: title
+                    icon: mdi:car
+                  - type: tile
+                    entity: device_tracker.family_car
+                    name: Family Car
+                    icon: mdi:car
+                    vertical: false
+                  - type: tile
+                    entity: device_tracker.googlefindmytools_mc
+                    name: Family Car Find Hub
+                    icon: mdi:bluetooth
+                    vertical: false
+                  - type: entities
+                    show_header_toggle: false
+                    entities:
+                      - entity: sensor.family_car_lpr
+                        name: Driveway LPR
+                        secondary_info: last-changed
+                      - entity: binary_sensor.car_tracker_ignition
+                        name: Ignition
+                      - entity: sensor.car_tracker_battery
+                        name: Tracker battery
                   - type: heading
                     heading: Zones
                     heading_style: title
