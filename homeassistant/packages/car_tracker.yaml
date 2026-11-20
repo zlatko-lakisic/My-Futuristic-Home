@@ -91,6 +91,20 @@ template:
                or (states('sensor.frigate_family_car_last_camera')
                    | lower not in ['unknown', 'unavailable', 'none', '']) }}
 
+input_datetime:
+  car_tracker_findhub_announced:
+    name: Family Car Find Hub announced
+    has_date: true
+    has_time: true
+    icon: mdi:bluetooth-transfer
+
+# Find Hub re-announce: Google drops a custom tracker's sightings once its
+# uploaded EIDs run out (one upload covers 4 days). The HACS integration only
+# announces from its CLI, so this runs a copy of GoogleFindMyTools with its
+# own saved login in /config/tools/googlefindmytools (not in git).
+shell_command:
+  car_tracker_findhub_announce: python3 /config/shell/findhub_announce.py
+
 homeassistant:
   customize:
     device_tracker.family_car:
@@ -207,3 +221,49 @@ automation:
         data:
           entity_id: input_number.car_tracker_lon
           value: "{{ state_attr('zone.home', 'longitude') }}"
+
+  # Daily, plus at HA start when the last good announce is over a day old.
+  - id: car_tracker_findhub_announce
+    alias: Family Car Find Hub re-announce
+    mode: single
+    triggers:
+      - trigger: time
+        at: "04:17:00"
+        id: daily
+      - trigger: homeassistant
+        event: start
+        id: start
+    conditions:
+      - condition: template
+        value_template: >-
+          {% set last = states('input_datetime.car_tracker_findhub_announced') | as_datetime %}
+          {{ trigger.id == 'daily' or last is none
+             or (now() - last | as_local).total_seconds() > 86400 }}
+    actions:
+      - action: shell_command.car_tracker_findhub_announce
+        response_variable: announce
+        continue_on_error: true
+      - if:
+          - condition: template
+            value_template: >-
+              {{ announce is defined and announce.returncode == 0
+                 and 'ok' in announce.stdout }}
+        then:
+          - action: input_datetime.set_datetime
+            target:
+              entity_id: input_datetime.car_tracker_findhub_announced
+            data:
+              timestamp: "{{ now().timestamp() }}"
+          - action: persistent_notification.dismiss
+            data:
+              notification_id: car_tracker_findhub_announce
+        else:
+          - action: persistent_notification.create
+            data:
+              notification_id: car_tracker_findhub_announce
+              title: Family Car Find Hub re-announce failed
+              message: >-
+                {{ (announce.stdout ~ ' ' ~ announce.stderr) | trim
+                   if announce is defined else 'shell_command did not return' }}
+                Google stops matching Find Hub sightings about 4 days after
+                the last good announce.
