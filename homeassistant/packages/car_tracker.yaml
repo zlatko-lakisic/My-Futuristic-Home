@@ -92,6 +92,13 @@ template:
                    | lower not in ['unknown', 'unavailable', 'none', '']) }}
 
 input_datetime:
+  # When the lat/lon helpers last got a position (GPS fix, LPR or Find Hub).
+  # A Find Hub sighting moves the car only if it is newer than this.
+  car_tracker_position_time:
+    name: Family Car position time
+    has_date: true
+    has_time: true
+    icon: mdi:map-clock
   car_tracker_findhub_announced:
     name: Family Car Find Hub announced
     has_date: true
@@ -160,6 +167,11 @@ automation:
               entity_id: input_number.car_tracker_lon
             data:
               value: "{{ s.lon }}"
+          - action: input_datetime.set_datetime
+            target:
+              entity_id: input_datetime.car_tracker_position_time
+            data:
+              timestamp: "{{ now().timestamp() }}"
       - action: >-
           input_boolean.turn_{{ 'on' if s.get('ignition', false) | bool else 'off' }}
         target:
@@ -221,6 +233,59 @@ automation:
         data:
           entity_id: input_number.car_tracker_lon
           value: "{{ state_attr('zone.home', 'longitude') }}"
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.car_tracker_position_time
+        data:
+          timestamp: "{{ now().timestamp() }}"
+
+  # Find Hub (BLE, crowdsourced by nearby Android phones) as a position
+  # source when the T-Beam has no GPS fix or no backhaul. A sighting moves the
+  # Family Car pin only when it is newer than the last position from any
+  # source. The entity drops latitude/longitude once its location goes stale.
+  - id: car_tracker_findhub_position
+    alias: Family Car position from Find Hub
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: state
+        entity_id: device_tracker.googlefindmytools_mc
+        attribute: last_seen
+    conditions:
+      - condition: template
+        value_template: >-
+          {% set fh = 'device_tracker.googlefindmytools_mc' %}
+          {% set seen = state_attr(fh, 'last_seen') | as_datetime %}
+          {% set acc = state_attr(fh, 'accuracy_m') %}
+          {{ seen is not none
+             and state_attr(fh, 'latitude') is number
+             and state_attr(fh, 'longitude') is number
+             and (acc is not number or acc <= 500)
+             and seen.timestamp()
+                 > state_attr('input_datetime.car_tracker_position_time', 'timestamp') | float(0) }}
+    actions:
+      - variables:
+          fh: device_tracker.googlefindmytools_mc
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.car_tracker_lat
+        data:
+          value: "{{ state_attr(fh, 'latitude') }}"
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.car_tracker_lon
+        data:
+          value: "{{ state_attr(fh, 'longitude') }}"
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.car_tracker_position_time
+        data:
+          timestamp: "{{ (state_attr(fh, 'last_seen') | as_datetime).timestamp() }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.car_tracker_transport
+        data:
+          value: findhub
 
   # Daily, plus at HA start when the last good announce is over a day old.
   - id: car_tracker_findhub_announce
