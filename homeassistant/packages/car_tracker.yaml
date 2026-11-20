@@ -1,0 +1,141 @@
+# Family Car (LilyGO T-Beam GPS + Frigate driveway LPR).
+# Board / ChirpStack updater call HA services (not /api/states) so a
+# dedicated non-admin long-lived token works. Helpers keep car_tracker_*
+# entity IDs for the firmware; the map identity is device_tracker.family_car
+# (template GPS tracker — not device_tracker.see, removed in Core 2027.5).
+
+input_boolean:
+  car_tracker_ignition:
+    name: Family Car ignition raw
+    icon: mdi:car-key
+
+input_number:
+  car_tracker_battery:
+    name: Family Car battery raw
+    min: 0
+    max: 100
+    step: 1
+    mode: box
+    unit_of_measurement: "%"
+    icon: mdi:battery
+  car_tracker_last_seq:
+    name: Family Car last seq raw
+    min: 0
+    max: 65535
+    step: 1
+    mode: box
+    icon: mdi:counter
+  car_tracker_lat:
+    name: Family Car latitude raw
+    min: -90
+    max: 90
+    step: 0.0000001
+    mode: box
+    # Seed to zone.home so a fresh helper is not stuck at min (-90).
+    initial: 41.0135637
+    icon: mdi:latitude
+  car_tracker_lon:
+    name: Family Car longitude raw
+    min: -180
+    max: 180
+    step: 0.0000001
+    mode: box
+    initial: -73.8084537
+    icon: mdi:longitude
+
+input_text:
+  car_tracker_transport:
+    name: Family Car transport raw
+    max: 16
+    icon: mdi:transit-connection-variant
+
+template:
+  - device_tracker:
+      - name: Family Car
+        unique_id: family_car_template
+        latitude: "{{ states('input_number.car_tracker_lat') | float(0) }}"
+        longitude: "{{ states('input_number.car_tracker_lon') | float(0) }}"
+  - binary_sensor:
+      - name: Family Car ignition
+        unique_id: car_tracker_ignition
+        device_class: power
+        icon: mdi:car-key
+        state: "{{ is_state('input_boolean.car_tracker_ignition', 'on') }}"
+  - sensor:
+      - name: Family Car battery
+        unique_id: car_tracker_battery
+        device_class: battery
+        unit_of_measurement: "%"
+        state_class: measurement
+        state: "{{ states('input_number.car_tracker_battery') }}"
+      - name: Family Car transport
+        unique_id: car_tracker_transport
+        icon: mdi:transit-connection-variant
+        state: "{{ states('input_text.car_tracker_transport') }}"
+      - name: Family Car last seq
+        unique_id: car_tracker_last_seq
+        state_class: measurement
+        state: "{{ states('input_number.car_tracker_last_seq') | int(0) }}"
+      - name: Family Car LPR
+        unique_id: family_car_lpr
+        icon: mdi:car-search
+        state: "{{ states('sensor.driveway_last_recognized_plate') }}"
+        attributes:
+          known_as: Family Car
+          plate_sensor: sensor.driveway_last_recognized_plate
+          frigate_last_camera: "{{ states('sensor.frigate_family_car_last_camera') }}"
+          matched: >-
+            {{ is_state('sensor.driveway_last_recognized_plate', 'Family Car')
+               or (states('sensor.frigate_family_car_last_camera')
+                   | lower not in ['unknown', 'unavailable', 'none', '']) }}
+
+homeassistant:
+  customize:
+    device_tracker.family_car:
+      friendly_name: Family Car
+      icon: mdi:car
+    device_tracker.googlefindmytools_mc:
+      friendly_name: Family Car Find Hub
+      icon: mdi:bluetooth
+    sensor.family_car_lpr:
+      friendly_name: Family Car LPR
+      icon: mdi:car-search
+
+automation:
+  # Frigate known_plates name the plate "Family Car" on
+  # sensor.driveway_last_recognized_plate; Frigate also exposes
+  # sensor.frigate_family_car_last_camera when that plate is seen.
+  # Mark the map tracker home at zone.home (T-Beam GPS still wins when away).
+  - id: family_car_lpr_home
+    alias: Family Car LPR → home
+    description: >
+      When Frigate LPR matches the known Family Car plate (driveway plate
+      sensor or frigate_family_car_last_camera), set Family Car lat/lon helpers
+      to zone.home so the template device_tracker shows home.
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: sensor.driveway_last_recognized_plate
+        to: Family Car
+      - trigger: state
+        entity_id: sensor.frigate_family_car_last_camera
+        not_to:
+          - unknown
+          - unavailable
+          - none
+          - None
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ is_state('sensor.driveway_last_recognized_plate', 'Family Car')
+             or (states('sensor.frigate_family_car_last_camera')
+                 | lower not in ['unknown', 'unavailable', 'none', '']) }}
+    actions:
+      - action: input_number.set_value
+        data:
+          entity_id: input_number.car_tracker_lat
+          value: "{{ state_attr('zone.home', 'latitude') }}"
+      - action: input_number.set_value
+        data:
+          entity_id: input_number.car_tracker_lon
+          value: "{{ state_attr('zone.home', 'longitude') }}"
