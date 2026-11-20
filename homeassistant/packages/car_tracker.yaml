@@ -1,8 +1,11 @@
 # Family Car (LilyGO T-Beam GPS + Frigate driveway LPR).
-# Board / ChirpStack updater call HA services (not /api/states) so a
-# dedicated non-admin long-lived token works. Helpers keep car_tracker_*
-# entity IDs for the firmware; the map identity is device_tracker.family_car
-# (template GPS tracker — not device_tracker.see, removed in Core 2027.5).
+# Ingest: the T-Beam (over home Wi-Fi) and the MetSci ChirpStack HTTP
+# integration (LoRaWAN uplinks) both POST to one webhook, handled by the
+# car_tracker_ingest automation below. The webhook id is the secret
+# car_tracker_webhook_id (secrets.yaml, not in git); the firmware gets the
+# same id from car-tracker/secrets/.ha_webhook. Helpers keep car_tracker_*
+# entity IDs; the map identity is device_tracker.family_car (template GPS
+# tracker, not device_tracker.see, removed in Core 2027.5).
 
 input_boolean:
   car_tracker_ignition:
@@ -31,8 +34,8 @@ input_number:
     max: 90
     step: 0.0000001
     mode: box
-    # Seed to zone.home so a fresh helper is not stuck at min (-90).
-    initial: 41.0135637
+    # No "initial": it would reset the car to home on every HA restart.
+    # The helper restores its last state instead.
     icon: mdi:latitude
   car_tracker_lon:
     name: Family Car longitude raw
@@ -40,7 +43,6 @@ input_number:
     max: 180
     step: 0.0000001
     mode: box
-    initial: -73.8084537
     icon: mdi:longitude
 
 input_text:
@@ -102,6 +104,72 @@ homeassistant:
       icon: mdi:car-search
 
 automation:
+  # One ingest path for every backhaul. Body is the ChirpStack v4 HTTP
+  # integration "up" event: {"object": <decoder/chirpstack_codec.js output>, ...}.
+  # The firmware posts the same shape over Wi-Fi and adds "transport": "wifi";
+  # ChirpStack posts carry no transport and are LoRaWAN. Join, status and log
+  # events from ChirpStack have no "object" and are ignored.
+  - id: car_tracker_ingest
+    alias: Family Car ingest (Wi-Fi + LoRaWAN)
+    mode: queued
+    max: 100
+    triggers:
+      - trigger: webhook
+        webhook_id: !secret car_tracker_webhook_id
+        allowed_methods:
+          - POST
+        local_only: false
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ trigger.json is mapping
+             and trigger.json.object is defined
+             and trigger.json.object is mapping
+             and trigger.json.object.get('event') == 'sample' }}
+    actions:
+      - variables:
+          s: "{{ trigger.json.object }}"
+          transport: "{{ trigger.json.get('transport', 'lorawan') }}"
+      - if:
+          - condition: template
+            value_template: >-
+              {{ s.get('fix_valid', false) | bool
+                 and s.get('lat') is number and s.get('lon') is number }}
+        then:
+          - action: input_number.set_value
+            target:
+              entity_id: input_number.car_tracker_lat
+            data:
+              value: "{{ s.lat }}"
+          - action: input_number.set_value
+            target:
+              entity_id: input_number.car_tracker_lon
+            data:
+              value: "{{ s.lon }}"
+      - action: >-
+          input_boolean.turn_{{ 'on' if s.get('ignition', false) | bool else 'off' }}
+        target:
+          entity_id: input_boolean.car_tracker_ignition
+      - if:
+          - condition: template
+            value_template: "{{ s.get('battery_pct') is number }}"
+        then:
+          - action: input_number.set_value
+            target:
+              entity_id: input_number.car_tracker_battery
+            data:
+              value: "{{ s.battery_pct }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.car_tracker_transport
+        data:
+          value: "{{ transport }}"
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.car_tracker_last_seq
+        data:
+          value: "{{ s.get('seq', 0) | int }}"
+
   # Frigate known_plates name the plate "Family Car" on
   # sensor.driveway_last_recognized_plate; Frigate also exposes
   # sensor.frigate_family_car_last_camera when that plate is seen.
