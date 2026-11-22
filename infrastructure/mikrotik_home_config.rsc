@@ -471,8 +471,12 @@ add action=accept chain=input comment="WireGuard - Mostar" dst-port=51820 \
     in-interface-list=WAN protocol=udp
 add action=drop chain=input comment="Drop anything else! # DO NOT ENABLE THIS \
     RULE BEFORE YOU MAKE SURE ABOUT ALL ACCEPT RULES YOU NEED"
-add action=accept chain=ICMP comment="Echo request - Avoiding Ping Flood" \
-    icmp-options=8:0 limit=1,5:packet protocol=icmp
+add action=accept chain=ICMP comment=\
+    "Echo request LAN/non-WAN unrestricted" icmp-options=8:0 \
+    in-interface-list=!WAN protocol=icmp
+add action=accept chain=ICMP comment=\
+    "Echo request WAN rate-limit (flood protect)" icmp-options=8:0 limit=\
+    1,5:packet protocol=icmp
 add action=accept chain=ICMP comment="Echo reply" icmp-options=0:0 protocol=\
     icmp
 add action=accept chain=ICMP comment="Time Exceeded" icmp-options=11:0 \
@@ -481,8 +485,9 @@ add action=accept chain=ICMP comment="Destination unreachable" icmp-options=\
     3:0-1 protocol=icmp
 add action=accept chain=ICMP comment=PMTUD icmp-options=3:4 protocol=icmp
 add action=drop chain=ICMP comment="Drop to the other ICMPs" protocol=icmp
-add action=jump chain=output comment="Jump for icmp output" jump-target=ICMP \
-    protocol=icmp
+add action=jump chain=output comment=\
+    "Jump for icmp output (disabled: was rate-limiting router pings)" \
+    disabled=yes jump-target=ICMP protocol=icmp
 add action=drop chain=forward disabled=yes dst-port=25 protocol=tcp \
     src-address=192.168.89.1
 /ip firewall mangle
@@ -774,8 +779,8 @@ set allowed-interface-list=LAN
 /tool mac-server mac-winbox
 set allowed-interface-list=LAN
 /tool netwatch
-add disabled=no down-script="log info \"Netwatch missed a ping to 8.8.8.8 - st\
-    arting timeout auto reboot script\" ; /system script run NetWatchBoot-8.8.\
-    8.8" host=8.8.8.8 interval=1m timeout=1s type=simple
+add disabled=yes down-script="log info \"Netwatch missed a ping to 8.8.8.8 - s\
+    tarting timeout auto reboot script\" ; /system script run NetWatchBoot-8.8\
+    .8.8" host=8.8.8.8 interval=1m timeout=1s type=simple
 /tool sniffer
 set filter-interface=all filter-ip-address=172.16.91.0/27

@@ -197,4 +197,5 @@ Full static map is in the sanitized `.rsc`.
 - Perimeter DHCP server is **disabled**.  
 - AWS site-to-site IPsec/BGP templates remain **disabled**.  
 - qBittorrent lives on NAS2 (`10.0.10.17`) with macvlan `172.16.55.2` — see [`../storage/nas2.md`](../storage/nas2.md).  
-- Do not commit raw `.backup` / unscrubbed `.rsc` under `infrastructure/configs/` (gitignored).  
+- Do not commit raw `.backup` / unscrubbed `.rsc` under `infrastructure/configs/` (gitignored).
+- **2026-11-21 reboot loop:** MSN UIS auto-reset was power-cycling the router after false ICMP loss. Root cause was the shared `ICMP` chain rate-limit (`1,5:packet`) applied to LAN forward/input and router `output`. Fix: accept echo from `!WAN` without limit, keep WAN rate-limit, disable `output→ICMP` jump, disable NetWatch `8.8.8.8` (down-script referenced missing `NetWatchBoot-8.8.8.8`). Leave router/modem UIS auto-reset **off** until checkers stay clean.
