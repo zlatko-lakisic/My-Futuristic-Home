@@ -106,7 +106,7 @@ Public-facing IPv4 is on the **ISP CPE**, not on Mostar ether1. Discovered every
 ### Gateway: MikroTik hAP ac (`Kuca`)
 
 - Primary L3 router / firewall / VPN concentrator for NYC
-- Watchdogs: Proxmox link bounce is Home Assistant on CSS326 port 6 (`binary_sensor.proxmox_host_ping`). Traefik recreate webhook, CloudNS DDNS, and DNS failover vs FreeIPA stay on the hAP.
+- Watchdogs: Proxmox link bounce is Home Assistant on CSS326 ports 7 then 6 (`binary_sensor.proxmox_host_ping`) for the active-backup bond. Traefik recreate webhook, CloudNS DDNS, and DNS failover vs FreeIPA stay on the hAP.
 
 ### Perimeter: MikroTik CSS326-24G-2S+
 

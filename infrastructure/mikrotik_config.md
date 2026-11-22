@@ -48,7 +48,7 @@ add comment=ap-mgmt interface=home_lan name=ap_mgmt_vlan vlan-id=30
 
 **Bridge membership:**
 
-- `perimiter`: ether2 (CSS326 port 1), ether3. `ether4` is not a bridge port. It is the camera LAN, `10.0.20.1/28`. Proxmox is on CSS326 port 6.
+- `perimiter`: ether2 (CSS326 port 1), ether3. `ether4` is not a bridge port. It is the camera LAN, `10.0.20.1/28`. Proxmox is on CSS326 ports 6+7 (active-backup bond).
 - `home_lan`: ether5, sfp1 (AP trunk to CSS326 SFP1, tagged VLANs 2, 4 and 30), wlan3 (5 GHz maint SSID)  
 - Wireless SSIDs include `Kuca 2g`, hidden maintenance SSID, plus virtual APs  
 
@@ -166,7 +166,7 @@ Detail: [`mikrotik_roaming_config.md`](mikrotik_roaming_config.md).
 | `cloudns-update` | Hourly dynamic DNS (credentials redacted in scrubbed export) |
 | `EnableDns` / `DisableDns` | Toggle DNS/NTP failover NAT toward `10.0.10.1` |
 | `DNS Fialover Scheduler` | Every 30s health-check of `10.0.10.10` |
-| `ping_proxmox_stack_scheduler` | Disabled. Scripts `ping_proxmox_stack` and `disable_enable_ether4` are removed. The link bounce now belongs on CSS326 port 6. |
+| `ping_proxmox_stack_scheduler` | Disabled. Scripts `ping_proxmox_stack` and `disable_enable_ether4` are removed. The link bounce now belongs on CSS326 ports 7 then 6 (Proxmox bond). |
 | `recreate-traefik-docker` | Watch Docker API on `10.0.10.6:2375`; webhook recreate if Traefik stopped |
 | `Daily Reboot` | 03:00 daily reboot |
 
@@ -192,7 +192,7 @@ Full static map is in the sanitized `.rsc`.
 
 ## Notes / drift
 
-- Proxmox host `10.0.10.11` is on CSS326 port 6. `ether4` is the camera LAN (`10.0.20.1/28`), not a perimeter bridge port. New sessions from `10.0.20.0/28` are dropped in the forward chain (`camera-lan-no-new-egress`). DHCP, DNS, and NTP to the router on `ether4` are accepted before the input drop. The camera subnet is not on the `support` list.
+- Proxmox host `10.0.10.11` is on CSS326 ports 6+7 (active-backup bond; USB primary on 7). `ether4` is the camera LAN (`10.0.20.1/28`), not a perimeter bridge port. New sessions from `10.0.20.0/28` are dropped in the forward chain (`camera-lan-no-new-egress`). DHCP, DNS, and NTP to the router on `ether4` are accepted before the input drop. The camera subnet is not on the `support` list.
 - APs moved to VLAN 30 on 2026-11-08. `mikrotik_home_config.rsc` predates this change and the camera LAN.
 - Perimeter DHCP server is **disabled**.  
 - AWS site-to-site IPsec/BGP templates remain **disabled**.  

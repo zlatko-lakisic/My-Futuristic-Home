@@ -13,7 +13,7 @@ The switching fabric is divided into two distinct tiers:
 * **Role:** Core distribution for the 10.0.10.x subnet.
 
 ### **SwOS Port Configuration**
-Checked live 2026-11-08 after the AP VLAN move and port rename. Ports not listed below are empty and keep their default names.
+Checked live 2026-11-22 after Proxmox dual-NIC bond. Ports not listed below are empty and keep their default names.
 
 | Port | Name | Learned device | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -22,7 +22,8 @@ Checked live 2026-11-08 after the AP VLAN move and port rename. Ports not listed
 | **3** | NVR-Mgmt | NVR `enp3s0` `10.0.10.16` | NVR management. Stays on VLAN 1 |
 | **4** | NAS1 | NAS1 `10.0.10.3` | Storage management |
 | **5** | NAS MSNSwitch | MSNSwitch `10.0.10.251` at 100M | Power switch |
-| **6** | Proxmox | Proxmox `10.0.10.11` | Home Assistant bounces this port when the host stops answering |
+| **6** | Proxmox-onboard | Proxmox onboard `enp0s31f6` (bond backup) | Standby path for `10.0.10.11` |
+| **7** | Proxmox-USB | Proxmox USB `enp0s13f0u2` (bond primary) | Active path for `10.0.10.11`; HA bounces 7 then 6 on host ping fail |
 | **9** | NAS2 | NAS2 `10.0.10.17` | Stays on VLAN 1 |
 | **10** | Beelink | Beelink `10.0.10.6` | Traefik / UniFi host. Stays on VLAN 1 |
 | **11** | Jetson | Jetson Ethernet `10.0.10.20`, `3C:6D:66:0C:8F:15` at 1G | Stays on VLAN 1 |

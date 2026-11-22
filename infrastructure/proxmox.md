@@ -8,8 +8,49 @@ The compute layer is hosted on a high-performance bare metal server. This node p
 ## **Hardware Specifications**
 - **CPU:** Dual Intel Xeon W-11855M (12 Cores / 24 Threads total)
 - **RAM:** 125GB DDR4 ECC
-- **Networking:** Single onboard Ethernet on **CSS326 port 6** (SwOS name `Proxmox`, 1G). Address stays `10.0.10.11`. A failed ping bounces that port from Home Assistant.
+- **Networking:** Dual 1G Ethernet in Linux **active-backup** bond (details below). Host IP stays `10.0.10.11`.
 - **IP Address:** `10.0.10.11`
+- **UI:** `https://proxmox.mostardesigns.com` via Traefik on Beelink (`10.0.10.6`) → host `:8006`
+
+## **Networking (active-backup bond)**
+
+Cut over live 2026-11-22. Single address; no second management IP.
+
+| Role | Interface | CSS326 | SwOS name | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| Bond primary | `enp0s13f0u2` (USB Realtek `0bda:8156`, driver `r8152`) | Port 7 | `Proxmox-USB` | Preferred active slave |
+| Bond backup | `enp0s31f6` (onboard `e1000e`) | Port 6 | `Proxmox-onboard` | Standby; takes over on link loss |
+| Bond | `bond0` | — | — | `mode active-backup`, `miimon 100`, `bond-primary enp0s13f0u2` |
+| Bridge | `vmbr0` | — | — | `bridge-ports bond0`; `10.0.10.11/24`, GW `10.0.10.1` |
+
+`/etc/network/interfaces` shape (host-managed; backup copy kept under `/root/interfaces.bak-*` on the node):
+
+```
+auto bond0
+iface bond0 inet manual
+	bond-slaves enp0s13f0u2 enp0s31f6
+	bond-miimon 100
+	bond-mode active-backup
+	bond-primary enp0s13f0u2
+
+auto vmbr0
+iface vmbr0 inet static
+	address 10.0.10.11/24
+	gateway 10.0.10.1
+	bridge-ports bond0
+	bridge-stp off
+	bridge-fd 0
+```
+
+Verify with `cat /proc/net/bonding/bond0` (active slave should be USB when port 7 is up). Failover was tested by bouncing CSS326 port 7; traffic moved to onboard and returned to USB after restore.
+
+### Link watchdog
+
+Home Assistant package [`homeassistant/packages/proxmox_link_watchdog.yaml`](../homeassistant/packages/proxmox_link_watchdog.yaml): five failed pings to `10.0.10.11` → bounce CSS326 **port 7 then port 6** (2s each). Covers a soft-hung active bond member on either path.
+
+### Auth (LDAP realm)
+
+Proxmox realm `mostardesigns.com` is LDAP against FreeIPA (`10.0.10.10`, bind `uid=proxmox,...`). Synced userids are **lowercase** (e.g. `zlatko.lakisic@mostardesigns.com`). The UI userid is case-sensitive: `Zlatko.Lakisic@...` fails with `no such user`. Use the realm dropdown + lowercase uid, or `root@pam` for local break-glass.
 
 ## **Storage Configuration**
 The server utilizes four **Western Digital SN810 2TB NVMe** drives, optimized for high-IOPS virtualization workloads.

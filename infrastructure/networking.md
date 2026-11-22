@@ -67,7 +67,7 @@ flowchart TB
   subgraph PERZ["Perimeter 10.0.10.0/24"]
     PER --- E2[ether2 CSS326 / servers]
     PER --- E3[ether3 MSNSwitch 10.0.10.254]
-    E2 --- PX["CSS326 port 6 Proxmox 10.0.10.11"]
+    E2 --- PX["CSS326 ports 6+7 Proxmox bond 10.0.10.11"]
     E2 --- NAS2["NAS2 OMV 10.0.10.17"]
     E2 --- BEE[Beelink Traefik/UniFi 10.0.10.6]
     E2 --- JETE["Jetson Ethernet 10.0.10.20"]
